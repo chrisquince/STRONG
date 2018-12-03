@@ -1,0 +1,47 @@
+include: "Common.snake"
+
+configfile: "config.yaml"
+
+import os.path
+
+rule all:
+    input:  expand("assembly/spades/{group}.fasta", group=GROUPS)
+    message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
+
+# ---- Assembly ----------------------------------------------------------------
+
+# Assemble with MegaHIT
+#TODO limit memory
+rule megahit:
+    input:   left=left_reads, right=right_reads
+    output:  "assembly/megahit/{group}/final.contigs.fa"
+    params:  left=lambda w: ",".join(expand("{r}", r=left_reads(w))),
+             right=lambda w: ",".join(expand("{r}", r=right_reads(w))),
+             dir="assembly/megahit/{group}"
+    threads: 16
+    log:     "assembly/megahit/{group}.log"
+    message: "Assembling {wildcards.group} with MegaHIT"
+    shell:   "rm -rf {params.dir} && "
+             "{SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
+             " -t {threads} -o {params.dir} &> {log}"
+
+rule megahit_convert:
+    input:   "assembly/megahit/{group}/final.contigs.fa"
+    output:  "assembly/megahit/{group}.fasta"
+    message: "Converting megahit contig names from {wildcards.group} into our format"
+    shell:   "sed -r 's/>(k[0-9]+)_([0-9]+) flag=. multi=([0-9]+|[0-9]+\.[0-9]+) len=([0-9]+)/>NODE_\\2_length_\\4_cov_\\3/' {input} > {output}"
+
+# Assemble with SPAdes
+rule spades:
+    input:   left=left_reads, right=right_reads
+    output:  "assembly/spades/{group}.fasta"
+    params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
+             right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
+             mem=120,
+             dir="assembly/spades/{group}", 
+             bh=lambda w: "" if is_fastq(w) else "--only-assembler"
+    threads: 16
+    log:     "assembly/spades/{group}.log"
+    message: "Assembling {wildcards.group} with metaSPAdes"
+    shell: 
+        '{ASSEMBLER_DIR}/spades.py --meta {params.bh} --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log} && cp {params.dir}/scaffolds.fasta {output}'

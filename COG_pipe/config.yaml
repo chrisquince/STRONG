@@ -1,0 +1,5 @@
+data: data_folder # path to data folder
+soft: ""
+assembly: 
+    assembler: spades
+    dir: assembler_folder # path to assembler (spades.py)

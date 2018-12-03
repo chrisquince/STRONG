@@ -1,0 +1,125 @@
+configfile: "config.yaml"
+
+from itertools import chain
+from functools import partial
+import os.path
+import tempfile
+
+from scripts.common import detect_reads, fill_default_values
+
+#Config parameters
+fill_default_values(config)
+
+TMP_DIR_ROOT = "/localscratch"
+IN = config["data"]
+ASSEMBLER = config["assembly"]["assembler"]
+ASSEMBLER_DIR = config["assembly"]["dir"]
+BIN = config["bin"]
+SCRIPTS = config["scripts"]
+SOFT = config["soft"]
+ASSEMBLY_K = config["assembly"]["k"]
+THREADS = config["threads"]
+
+#Autodetect samples and their reads
+#Check that sample names are consecutive and all are presented
+SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
+SAMPLE_COUNT = config.get("count", len(SAMPLE_DIRS))
+SAMPLES = list()
+for i in range(1, SAMPLE_COUNT + 1):
+    sample_name = "sample" + str(i)
+    if sample_name not in SAMPLE_DIRS:
+        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
+    SAMPLES.append(sample_name)
+
+SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
+
+#Group samples
+GROUP_SAMPLES = config["assembly"]["groups"]
+#Form /N groups
+#FIXME weird behavior if not a multiple
+if type(GROUP_SAMPLES) == str:
+    if not GROUP_SAMPLES[0] == "/":
+        raise WorkflowException("Wrong format of assembly groups")
+    group_cnt = int(GROUP_SAMPLES[1:])
+    group_size = SAMPLE_COUNT // group_cnt
+    GROUP_SAMPLES = [["sample"+str(j) for j in range(i, min(i + group_size, SAMPLE_COUNT + 1))]
+                     for i in range(1, SAMPLE_COUNT, group_size)]
+else:
+    USED_SAMPLES = set()
+
+    def process_sample(i):
+        if type(i) == int:
+            res = "sample" + str(i)
+        elif type(i) == str and i.startswith("sample"):
+            res = i
+        else:
+            raise WorkflowException("Samples in groups must be named either sampleXX or XX, but got " + str(i))
+        return res
+
+    def process_group(g):
+        if type(g) == list:
+            res = list(map(process_sample, g))
+        elif type(g) == str and g == "*": #Replace the wildcard group with unused samples
+            res = [sample for sample in SAMPLES if sample not in USED_SAMPLES]
+        else:
+            raise WorkflowException("Groups must be either list of samples or a wildcard *, but got " + str(g))
+        USED_SAMPLES.update(res)
+        return res
+
+    GROUP_SAMPLES = list(map(process_group, GROUP_SAMPLES))
+
+    #Add a single-sample group from the rest of the samples
+    for sample in SAMPLES:
+        if sample not in USED_SAMPLES:
+            GROUP_SAMPLES.append([sample])
+
+#Dictionary: {group name: [samples of the group]}
+#Can be iterated to retrieve all group names
+GROUPS = dict()
+group_id = 1
+for group in GROUP_SAMPLES:
+    if len(group) == 1:
+        key = group[0] #Groups of a single sample are simply called sampleXX
+    else:
+        key = "group" + str(group_id)
+        SAMPLE_READS[key] = ([SAMPLE_READS[s][0] for s in group], [SAMPLE_READS[s][1] for s in group])
+        group_id += 1
+    GROUPS[key] = group
+
+#Helpers for locating input files
+
+#Returns all filepaths with left/right reads for a sample/group/bin/etc, used as Snakemake input
+def reads_input(dict):
+    return (partial(dict, 0), partial(dict, 1))
+
+def sample_reads(dir, wildcards):
+    return SAMPLE_READS[wildcards["sample"]][dir]
+
+left_sample_reads, right_sample_reads = reads_input(sample_reads)
+
+def group_reads(dir, wildcards):
+    return SAMPLE_READS[wildcards["group"]][dir]
+
+left_reads, right_reads = reads_input(group_reads)
+
+def is_fastq(wildcards):
+    name = getattr(wildcards, "sample", None)
+    if not name:
+        try:
+            name = GROUPS[wildcards.group][0]
+        except KeyError:
+            name = wildcards.group
+
+    for ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"}:
+        if SAMPLE_READS[name][0].endswith(ext):
+            return True
+    return False
+
+def check_scratch_avail(root):
+    if os.path.isdir(root):
+        try:
+            with tempfile.TemporaryDirectory(dir=root) as temp_dir:
+                return True
+        except:
+            print("Launch with tmpdir failed")
+    return False

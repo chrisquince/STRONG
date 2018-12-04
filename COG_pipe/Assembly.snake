@@ -5,7 +5,8 @@ configfile: "config.yaml"
 import os.path
 
 rule all:
-    input:  expand("assembly/%s/{group}.fasta" % ASSEMBLER, group=GROUPS)
+    input:  expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS),
+            expand("profile/scaffolds/{group}.cov", group=GROUPS)
     message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 # ---- Assembly ----------------------------------------------------------------
@@ -54,7 +55,7 @@ rule copy_group_fasta:
 rule depth:
     input:   expand("profile/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
     output:  "profile/{frags}/{group}.cov"
-    log:     "profile/{frags}/{group}.{type}.log"
+    log:     "profile/{frags}/{group}.log"
     message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
     threads: THREADS
     shell:   """

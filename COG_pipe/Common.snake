@@ -163,5 +163,5 @@ rule samtools_sort:
     log:
         "{path}/{name}.sort.log"
     message: "Sorting {input}"
-    shell:
-        "samtools sort --threads %d -T {temp_dir}/{wildcards.name} -O bam -o {output} {input} &> {log}" % (threads - 1)
+    run:
+        shell("samtools sort --threads %d -T {wildcards.path}/{wildcards.name}.tmp -O bam -o {output} {input} &> {log}" % (threads - 1))

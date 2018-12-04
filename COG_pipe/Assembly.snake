@@ -5,7 +5,7 @@ configfile: "config.yaml"
 import os.path
 
 rule all:
-    input:  expand("assembly/spades/{group}.fasta", group=GROUPS)
+    input:  expand("assembly/%s/{group}.fasta" % ASSEMBLER, group=GROUPS)
     message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 # ---- Assembly ----------------------------------------------------------------
@@ -45,3 +45,33 @@ rule spades:
     message: "Assembling {wildcards.group} with metaSPAdes"
     shell: 
         '{ASSEMBLER_DIR}/spades.py --meta {params.bh} --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log} && cp {params.dir}/scaffolds.fasta {output}'
+
+rule copy_group_fasta:
+    input:   "assembly/%s/{group}.fasta" % ASSEMBLER
+    output:  "profile/scaffolds/{group}.fasta"
+    shell: "cp {input} {output}"
+
+rule depth:
+    input:   expand("profile/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
+    output:  "profile/{frags}/{group}.cov"
+    log:     "profile/{frags}/{group}.{type}.log"
+    message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
+    threads: THREADS
+    shell:   """
+             touch {output}
+             """
+
+#rule depth:
+#    input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
+#    output:  "profile/jgi/{frags}/{group}.{type,mpl|var}"
+#    params:  lambda w: "" if w.type == "var" else "--noIntraDepthVariance"
+#    log:     "profile/jgi/{frags}/{group}.{type}.log"
+#    message: "Calculating depths for {wildcards.frags} contigs from {wildcards.group}"
+#    threads: THREADS
+#    shell:   """
+#             . /home/snurk/miniconda3/etc/profile.d/conda.sh
+#             set +u; conda activate metabat; set -u
+#             export OMP_NUM_THREADS={threads} 
+#             jgi_summarize_bam_contig_depths {params} \
+#                  --outputDepth {output} {input} &> {log}
+#             """

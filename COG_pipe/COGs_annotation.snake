@@ -25,7 +25,7 @@ rule cut_contigs:
         fa="assembly/{assembler}/{group}/{group}.fasta",
         gff="annotation/{assembler}/{group}/{group}.gff"
     output:
-        contig="annotation/{assembler}/split_c10k/{group}.fasta",
+        contig="profile/split_c10k/{group}.fasta",
         gff="annotation/{assembler}/{group}/{group}_C10K.gff",
         fna="annotation/{assembler}/{group}/{group}_C10K.fna",
         faa="annotation/{assembler}/{group}/{group}_C10K.faa"

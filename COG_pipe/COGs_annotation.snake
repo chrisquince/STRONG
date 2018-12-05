@@ -10,7 +10,7 @@ rule all:
 #find for ORFs
 rule prodigal:
     input:
-        "assembly/{group}/{group}.fasta"
+        "assembly/{{assembler}}/{group}/{group}.fasta"
     output:
         faa="annotation/{group}/{group}.faa",
         fna="annotation/{group}/{group}.fna",

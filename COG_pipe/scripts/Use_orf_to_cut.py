@@ -46,16 +46,19 @@ def get_gff_dico(Chunk_size,Gff_file):
 	Limit_size=2*Chunk_size
 	Dico_contigid_gff=defaultdict(list)
 	Handle = open(Gff_file)
+	Dico_contigs={}
 	for Seq_data,Model,ORF_list in prodigal_gff_parser(Handle) :
 		Seq_len=int(Seq_data.split(";")[1].split("=")[1])
-		if Seq_len>Limit_size :
-			for ORF in ORF_list :
-				(seqid,source,type,start,end,score,strand,phase,attributes)=ORF.split()
-				start=int(start)-1
-				end=int(end)-1
+		for ORF in ORF_list :
+			(seqid,source,type,start,end,score,strand,phase,attributes)=ORF.split()
+			Dico_contigs[seqid]=Seq_len
+			start=int(start)-1
+			end=int(end)-1
+			if Seq_len>Limit_size :
 				Dico_contigid_gff[seqid].append([start,end])
+		if Seq_len>Limit_size :
 			Dico_contigid_gff[seqid].append([end,Seq_len])
-	return Dico_contigid_gff
+	return Dico_contigid_gff,Dico_contigs
 
 def Cut_contigs(Chunk_size,Dico_contigid_gff):
 	Contigid_Cut_location={}
@@ -116,7 +119,7 @@ def Rename_FA(FA_file,Chunk_size,Dico_contigid_Dico_ORfnb_index) :
 	Handle.close()
 
 def main(Fasta_file,Gff_file,Chunk_size) :
-	Dico_contigid_gff=get_gff_dico(Chunk_size,Gff_file)
+	Dico_contigid_gff,Dico_contigs=get_gff_dico(Chunk_size,Gff_file)
 	Dico_Contigid_Cutlocation=Cut_contigs(Chunk_size,Dico_contigid_gff)	
 	Dico_contigid_Dico_ORfnb_index={Contig:{index_orf:next(index for index,value in enumerate([i[1] for i in Dico_Contigid_Cutlocation[Contig]]) if ORF[1]<=value) for index_orf,ORF in enumerate(List_ORF)} for Contig,List_ORF in Dico_contigid_gff.items() if Contig in Dico_Contigid_Cutlocation}
 	Lim=2*Chunk_size
@@ -135,6 +138,15 @@ def main(Fasta_file,Gff_file,Chunk_size) :
 	# Rename contigs in FNA file
 	FNA_file=delete_ending(".",Gff_file)+".fna"
 	Rename_FA(FNA_file,Chunk_size,Dico_contigid_Dico_ORfnb_index)
+	# Output cuts contigs, as feature on intial contigs, in a bed file
+	Contig_bed=delete_ending(".",Gff_file)+"_C"+str(Chunk_size//1000)+"K_contig.bed"
+	Handle=open(Contig_bed,"w")
+	List_uncut_contigs=[[contig,"1",str(length),contig] for contig,length in Dico_contigs.items() if contig not in Dico_Contigid_Cutlocation]
+	List_cut_contigs=[[contig,str(start+1),str(end),contig+"."+str(index)] for contig,list_coordinate in Dico_Contigid_Cutlocation.items() for index,(start,end) in enumerate(list_coordinate)]
+	Handle.write("\n".join("\t".join(List) for List in List_uncut_contigs+List_cut_contigs))
+	Handle.close()
+
+
 	# Move non cut files in a new folder
 	CWD=os.getcwd()
 	GFF_Directory="/".join(Gff_file.split("/")[:-1])

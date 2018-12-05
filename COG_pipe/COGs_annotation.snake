@@ -4,7 +4,7 @@ configfile: "config.yaml"
 
 
 rule all: 
-   input:expand("annotation/{group}/{group}_C10K_Cogs_filtered.tsv", group=GROUPS)
+    input:expand("annotation/{group}/{group}_SCG.bed", group=GROUPS)
 
 #find for ORFs
 rule prodigal:
@@ -41,7 +41,7 @@ rule split_fasta:
     threads:
         THREADS
     shell:
-        "Fasta_Batchs.py {input} {threads} -t annotation/{wildcards.assembler}/{wildcards.group}/temp_splits/" 
+        "Fasta_Batchs.py {input} {threads} -t annotation/{wildcards.group}/temp_splits/" 
 
 
 #Do rpsblast annotation  
@@ -57,11 +57,11 @@ rule rpsblast_on_folder:
         THREADS
     shell:
         """
-        Rpsblast_loop.sh annotation/{wildcards.assembler}/{wildcards.group}/temp_splits {threads} &>log
-        mv annotation/{wildcards.assembler}/{wildcards.group}/temp_splits/Complete_Rpsblast_cogs.tsv {output}
+        Rpsblast_loop.sh annotation/{wildcards.group}/temp_splits {threads} &>log
+        mv annotation/{wildcards.group}/temp_splits/Complete_Rpsblast_cogs.tsv {output}
         """
 
-# select best hit and use criterion : min 5% coverage, mine 1e-10 evalue
+# select best hit and use criterion : min 5% coverage, min 1e-10 evalue
 rule parse_cogs_annotation:
     input:
         "annotation/{group}/{filename}_Rpsblast_cogs.tsv"    
@@ -69,3 +69,13 @@ rule parse_cogs_annotation:
         "annotation/{group}/{filename}_Cogs_filtered.tsv"
     shell:
         "Filter_Cogs.py {input} --cdd_cog_file /home/sebr/seb/Applications/CONCOCT/scgs/cdd_to_cog.tsv  > {output}"
+
+# extract from the bed file all position of SCG 
+rule build_SCG_bed:
+    input:
+        "annotation/{group}/{filename}_Cogs_filtered.tsv"
+    output:
+        "annotation/{group}/{filename}_SCG.bed"
+    shell:
+        "Extract_SCG.py annotation/{wildcards.group}/No_Cut_Prodigal/{wildcards.filename}.bed2 annotation/{wildcards.group}/{wildcards.filename}_Cogs_filtered.tsv /home/sebr/seb/Applications/CONCOCT/scgs/scg_cogs_min0.97_max1.03_unique_genera.txt>{output}"
+

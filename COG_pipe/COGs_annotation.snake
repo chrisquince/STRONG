@@ -10,7 +10,7 @@ rule all:
 #find for ORFs
 rule prodigal:
     input:
-        "assembly/{{assembler}}/{group}/{group}.fasta"
+        "assembly/%/{group}.fasta" % ASSEMBLER
     output:
         faa="annotation/{group}/{group}.faa",
         fna="annotation/{group}/{group}.fna",
@@ -23,7 +23,7 @@ rule prodigal:
 #cut contigs by ORFs 
 rule cut_contigs:
     input:
-        fa="assembly/{group}/{group}.fasta",
+        fa="assembly/%/{group}.fasta" % ASSEMBLER,
         gff="annotation/{group}/{group}.gff"
     output:
         contig="profile/split_c10k/{group}.fasta",

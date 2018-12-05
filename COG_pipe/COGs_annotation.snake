@@ -47,7 +47,7 @@ rule split_fasta:
 #Do rpsblast annotation  
 rule rpsblast_on_folder:
     input:
-        name="annotation/{group}/{filename}.faa",
+        name="annotation/{group}/{filename}_C10K.faa",
         touch="annotation/{group}/temp_splits/folder.done"
     output:
         "annotation/{group}/{filename}_Rpsblast_cogs.tsv"

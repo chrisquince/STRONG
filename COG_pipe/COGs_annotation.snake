@@ -27,7 +27,7 @@ rule split_fasta:
     threads:
         THREADS
     shell:
-        "Fasta_Batchs.py {input} {threads} -t annotation/{wildcards.group}/temp_splits/" 
+        "{SCRIPTS}/Fasta_Batchs.py {input} {threads} -t annotation/{wildcards.group}/temp_splits/" 
 
 
 #Do rpsblast annotation  
@@ -43,7 +43,7 @@ rule rpsblast_on_folder:
         THREADS
     shell:
         """
-        Rpsblast_loop.sh annotation/{wildcards.group}/temp_splits {threads} &>log
+        {SCRIPTS}/Rpsblast_loop.sh annotation/{wildcards.group}/temp_splits {threads} &>log
         mv annotation/{wildcards.group}/temp_splits/Complete_Rpsblast_cogs.tsv {output}
         """
 
@@ -54,7 +54,7 @@ rule parse_cogs_annotation:
     output:
         "annotation/{group}/{filename}_Cogs_filtered.tsv"
     shell:
-        "Filter_Cogs.py {input} --cdd_cog_file /home/sebr/seb/Applications/CONCOCT/scgs/cdd_to_cog.tsv  > {output}"
+        "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file /home/sebr/seb/Applications/CONCOCT/scgs/cdd_to_cog.tsv  > {output}"
 
 # transform gff into bed  
 rule gff_to_bed:
@@ -63,7 +63,7 @@ rule gff_to_bed:
     output:
         "annotation/{group}/{group}.bed2"
     shell:
-        "Gff_to_bed.py {input}"
+        "{SCRIPTS}/Gff_to_bed.py {input}"
 
 
 # extract from the bed file all position of SCG 
@@ -74,5 +74,10 @@ rule build_SCG_bed:
     output:
         "annotation/{group}/{filename}_SCG.bed"
     shell:
-        "Extract_SCG.py {input.bed} {input.annotation} /home/sebr/seb/Applications/CONCOCT/scgs/scg_cogs_min0.97_max1.03_unique_genera.txt>{output}"
+        "{SCRIPTS}/Extract_SCG.py {input.bed} {input.annotation} /home/sebr/seb/Applications/CONCOCT/scgs/scg_cogs_min0.97_max1.03_unique_genera.txt>{output}"
+
+
+
+
+
 

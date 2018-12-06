@@ -17,6 +17,19 @@ rule prodigal:
     shell:
         "prodigal -i {input} -a {output.faa} -d {output.fna} -f gff -p meta -o {output.gff} &> {log} "
 
+#cut contigs by ORFs 
+rule cut_contigs:
+    input:
+        fa="assembly/%s/{group}.fasta" % ASSEMBLER,
+        gff="annotation/{group}/{group}.gff"
+    output:
+        contig="profile/split_c10k/{group}.fasta",
+        gff="annotation/{group}/{group}_C10K.gff",
+        fna="annotation/{group}/{group}_C10K.fna",
+        faa="annotation/{group}/{group}_C10K.faa",
+        moved_geff="annotation/{group}/No_Cut_Prodigal/{group}.gff"
+    shell:
+        "Use_orf_to_cut.py {input.fa} {input.gff} > {output.contig}"
 
 #Cut faa file in chunks, so that we can have faster annotation  
 rule split_fasta:

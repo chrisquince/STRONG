@@ -1,0 +1,12 @@
+-# This file may be used to create an environment using:
+-# $ conda create --name exp-design -c bioconda --file <this file>
+-python=3.5.2
+-snakemake=5.2.2
+-pyyaml=3.11
+-seqtk
+-fastqc
+-cutadapt
+-bowtie2
+-samtools
+-r-essentials
+-blast

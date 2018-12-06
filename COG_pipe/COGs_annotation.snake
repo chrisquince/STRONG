@@ -2,15 +2,12 @@ include: "Common.snake"
 
 configfile: "config.yaml"
 
-
 rule all: 
    input:expand("annotation/{group}/{group}_SCG.bed", group=GROUPS)
 
-
 #find for ORFs
 rule prodigal:
-    input:
-        "assembly/%/{group}.fasta" % ASSEMBLER
+    input:"assembly/%s/{group}.fasta" % ASSEMBLER
     output:
         faa="annotation/{group}/{group}.faa",
         fna="annotation/{group}/{group}.fna",
@@ -20,24 +17,11 @@ rule prodigal:
     shell:
         "prodigal -i {input} -a {output.faa} -d {output.fna} -f gff -p meta -o {output.gff} &> {log} "
 
-#cut contigs by ORFs 
-rule cut_contigs:
-    input:
-        fa="assembly/%/{group}.fasta" % ASSEMBLER,
-        gff="annotation/{group}/{group}.gff"
-    output:
-        contig="profile/split_c10k/{group}.fasta",
-        gff="annotation/{group}/{group}_C10K.gff",
-        fna="annotation/{group}/{group}_C10K.fna",
-        faa="annotation/{group}/{group}_C10K.faa",
-        moved_geff="annotation/{group}/No_Cut_Prodigal/{group}.gff"
-    shell:
-        "Use_orf_to_cut.py {input.fa} {input.gff} > {output.contig}"
 
 #Cut faa file in chunks, so that we can have faster annotation  
 rule split_fasta:
     input:
-        "annotation/{group}/{group}_C10K.faa"
+        "annotation/{group}/{group}.faa"
     output:
         touch("annotation/{group}/temp_splits/folder.done")
     threads:
@@ -49,7 +33,7 @@ rule split_fasta:
 #Do rpsblast annotation  
 rule rpsblast_on_folder:
     input:
-        name="annotation/{group}/{filename}_C10K.faa",
+        name="annotation/{group}/{filename}.faa",
         touch="annotation/{group}/temp_splits/folder.done"
     output:
         "annotation/{group}/{filename}_Rpsblast_cogs.tsv"
@@ -75,9 +59,9 @@ rule parse_cogs_annotation:
 # transform gff into bed  
 rule gff_to_bed:
     input:
-        "annotation/{group}/No_Cut_Prodigal/{group}.gff"
+        "annotation/{group}/{group}.gff"
     output:
-        "annotation/{group}/No_Cut_Prodigal/{group}.bed2"
+        "annotation/{group}/{group}.bed2"
     shell:
         "Gff_to_bed.py {input}"
 
@@ -86,7 +70,7 @@ rule gff_to_bed:
 rule build_SCG_bed:
     input:
         annotation="annotation/{group}/{filename}_Cogs_filtered.tsv",
-        bed="annotation/{group}/No_Cut_Prodigal/{group}.bed2"
+        bed="annotation/{group}/{group}.bed2"
     output:
         "annotation/{group}/{filename}_SCG.bed"
     shell:

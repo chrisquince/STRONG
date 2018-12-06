@@ -45,7 +45,7 @@ rule spades:
     log:     "assembly/spades/{group}.log"
     message: "Assembling {wildcards.group} with metaSPAdes"
     shell: 
-        '{ASSEMBLER_DIR}/spades.py --meta {params.bh} --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log} && cp {params.dir}/scaffolds.fasta {output}'
+        '{ASSEMBLER_DIR}/spades.py --only-assembler --meta {params.bh} --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log} && cp {params.dir}/scaffolds.fasta {output}'
 
 rule copy_group_fasta:
     input:   "assembly/%s/{group}.fasta" % ASSEMBLER

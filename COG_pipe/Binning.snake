@@ -1,0 +1,88 @@
+include: "Common.snake"
+include: "COGs_annotation.snake"
+configfile: "config.yaml"
+
+
+rule all_local: 
+    input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
+
+#cut contigs by ORFs and get the bed file
+rule cut_contigs:
+    input:  fa="assembly/%s/{group}.fasta" % ASSEMBLER,
+            gff="annotation/{group}/{group}.gff"
+    output: contig="profile/split_c10k/{group}.fasta",
+            Contig_bed="annotation/{group}/{group}_C10K_contig.bed"
+    shell:  "Use_orf_to_cut.py {input.fa} {input.gff} > {output.contig}"
+
+
+rule index_samples_bam:
+    input:   "profile/{frags}/{group}/{sample}.sorted.bam",
+    output:  "profile/{frags}/{group}/{sample}.sorted.bam.bai",
+    message: "Indexing each bam file before coverage calcul"
+    threads: THREADS
+    shell:   "samtools index {input}"
+
+# use mosdepth to compute coverage by feature on a bed file, may eat up all your ram for reasons
+rule depth_local:
+    input:   sample="profile/{frags}/{group}/{sample}.sorted.bam",
+             index="profile/{frags}/{group}/{sample}.sorted.bam.bai",
+             bed_file="annotation/{group}/{group}_C10K_contig.bed"
+    output:  cov="profile/{frags}/{group}/{sample}.cov",
+             gz_cov=temp("profile/{frags}/{group}/{sample}.regions.bed.gz")
+    log:     "profile/{frags}/{group}/{sample}.log"
+    message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
+    threads: THREADS
+    shell:   """
+             mosdepth -t {threads} -n  -b {input.bed_file} profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample} {input.sample}>{log}
+             zcat {output.gz_cov} | awk '{{print $5}}'>{output.cov}
+             zcat {output.gz_cov} | awk '{{print $4}}'>profile/{wildcards.frags}/{wildcards.group}/header.txt
+             rm profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample}.mosdepth.global.dist.txt
+             rm profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample}.mosdepth.region.dist.txt
+             rm profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample}.regions.bed.gz.csi
+             """
+
+# merge all samples 
+rule merge:
+    input:   samples=expand("profile/scaffolds/{{group}}/{sample}.sorted.bam", sample=SAMPLES),
+             cov=expand("profile/scaffolds/{{group}}/{sample}.cov",sample=SAMPLES)
+    output:  cov="binning/{group}/C10K_coverage.tsv",
+             temp=temp("profile/scaffolds/{group}/{group}_temp.txt")
+    params:  tab='\t'.join(SAMPLES),
+    		 space=" ".join(map(lambda x:"profile/scaffolds/{group}/"+x+".cov",SAMPLES))
+    shell:   """
+    		 echo {params.space}
+             paste {params.space} >{output.temp}
+             echo -e 'contig\t'{params.tab}>{output.cov}
+             paste profile/scaffolds/{wildcards.group}/header.txt {output.temp} >> {output.cov}
+             """
+
+#  concoct 
+rule concoct:
+    input:   cov="binning/{group}/C10K_coverage.tsv",
+             fasta="profile/split_c10k/{group}.fasta"
+    output:  "binning/{group}/clustering_gt1000.csv"
+    threads: THREADS
+    shell:   "concoct --coverage_file {input} --composition_file Contigs/Contigs_F500_C10K.fa -c 1200 -l 2000 -t {threads}"
+
+
+
+
+
+
+
+
+
+# mosdepth -t 100 -n -b ../Contigs/test.bed cov p6_H09.mapped.sorted.bam
+# mosdepth -t 100 -n -b ../Contigs/test2.bed cov p6_H09.mapped.sorted.bam
+
+# bedtools genomecov -ibam ${stub}.mapped.sorted.bam > ${stub}_cov.txt
+# awk -F"\t" '{l[$1]=l[$1]+($2 *$3);r[$1]=$4} END {for (i in l){print i","(l[i]/r[i])}}' $i > Map/${stub}_cov.csv
+
+
+# coverageBed -abam -a p6_H09.mapped.sorted.bam -b ../Contigs/test2.bed -hist> p6_H09.test_cov
+
+
+
+
+
+

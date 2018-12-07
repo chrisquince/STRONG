@@ -5,6 +5,7 @@ configfile: "config.yaml"
 
 rule all_local: 
     input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
+           bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS)
 
 #cut contigs by ORFs and get the bed file
 rule cut_contigs:
@@ -48,42 +49,29 @@ rule merge:
     output:  cov="binning/{group}/C10K_coverage.tsv",
              temp=temp("profile/scaffolds/{group}/{group}_temp.txt")
     params:  tab='\t'.join(SAMPLES),
-    		 space=" ".join(map(lambda x:"profile/scaffolds/{group}/"+x+".cov",SAMPLES))
+             space=" ".join(map(lambda x:"profile/scaffolds/{group}/"+x+".cov",SAMPLES))
     shell:   """
-    		 echo {params.space}
+             echo {params.space}
              paste {params.space} >{output.temp}
              echo -e 'contig\t'{params.tab}>{output.cov}
              paste profile/scaffolds/{wildcards.group}/header.txt {output.temp} >> {output.cov}
              """
 
+rule initial_quantity_of_bins:
+    # we take a look at all the SCG, take the median over the 36 of them, and multiply that by 10
+    input: "annotation/{group}/{group}_SCG.fna"
+    output:"annotation/{group}/{group}_nb_ini_bins.txt"
+    shell: "{SCRIPTS}/get_num_bin_ini.py {input}>{output}"
+
 #  concoct 
 rule concoct:
     input:   cov="binning/{group}/C10K_coverage.tsv",
-             fasta="profile/split_c10k/{group}.fasta"
-    output:  "binning/{group}/clustering_gt1000.csv"
+             fasta="profile/split_c10k/{group}.fasta",
+             nb_bin="annotation/{group}/{group}_nb_ini_bins.txt"
+    output:  "binning/{group}/clustering_gt500.csv"
     threads: THREADS
-    shell:   "concoct --coverage_file {input.cov} --composition_file {fasta.fasta} -c 1200 -l 2000 -t {threads}"
-
-# merge contigs
-
-
-
-
-
-
-
-
-# mosdepth -t 100 -n -b ../Contigs/test.bed cov p6_H09.mapped.sorted.bam
-# mosdepth -t 100 -n -b ../Contigs/test2.bed cov p6_H09.mapped.sorted.bam
-
-# bedtools genomecov -ibam ${stub}.mapped.sorted.bam > ${stub}_cov.txt
-# awk -F"\t" '{l[$1]=l[$1]+($2 *$3);r[$1]=$4} END {for (i in l){print i","(l[i]/r[i])}}' $i > Map/${stub}_cov.csv
-
-
-# coverageBed -abam -a p6_H09.mapped.sorted.bam -b ../Contigs/test2.bed -hist> p6_H09.test_cov
-
-
-
-
+    shell:   """
+             cat {input.nb_bin} | xargs concoct --coverage_file {input.cov} --composition_file {input.fasta} -c "$1" -l 500 -t {threads}
+             """
 
 

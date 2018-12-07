@@ -31,7 +31,7 @@ rule depth_local:
              gz_cov=temp("profile/{frags}/{group}/{sample}.regions.bed.gz")
     log:     "profile/{frags}/{group}/{sample}.log"
     message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
-    threads: THREADS
+    threads: min(THREADS,4)
     shell:   """
              mosdepth -t {threads} -n  -b {input.bed_file} profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample} {input.sample}>{log}
              zcat {output.gz_cov} | awk '{{print $5}}'>{output.cov}
@@ -62,8 +62,9 @@ rule concoct:
              fasta="profile/split_c10k/{group}.fasta"
     output:  "binning/{group}/clustering_gt1000.csv"
     threads: THREADS
-    shell:   "concoct --coverage_file {input} --composition_file Contigs/Contigs_F500_C10K.fa -c 1200 -l 2000 -t {threads}"
+    shell:   "concoct --coverage_file {input.cov} --composition_file {fasta.fasta} -c 1200 -l 2000 -t {threads}"
 
+# merge contigs
 
 
 

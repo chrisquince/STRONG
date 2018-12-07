@@ -3,7 +3,7 @@ include: "Common.snake"
 configfile: "config.yaml"
 
 rule all: 
-   input:expand("annotation/{group}/{group}_SCG.bed", group=GROUPS)
+   input:expand("annotation/{group}/{group}_SCG.faa", group=GROUPS)
 
 #find for ORFs
 rule prodigal:
@@ -67,15 +67,15 @@ rule gff_to_bed:
 
 
 # extract from the bed file all position of SCG 
-rule build_SCG_bed:
+rule extract_SCG_sequences:
     input:
         annotation="annotation/{group}/{filename}_Cogs_filtered.tsv",
-        bed="annotation/{group}/{group}.bed2"
+        gff="annotation/{group}/{filename}.gff",
+        faa="annotation/{group}/{filename}.faa"
     output:
-        "annotation/{group}/{filename}_SCG.bed"
+        "annotation/{group}/{filename}_SCG.faa"
     shell:
-        "{SCRIPTS}/Extract_SCG.py {input.bed} {input.annotation} /home/sebr/seb/Applications/CONCOCT/scgs/scg_cogs_min0.97_max1.03_unique_genera.txt>{output}"
-
+        "{SCRIPTS}/Extract_SCG.py {input.faa} {input.annotation} /home/sebr/seb/Applications/CONCOCT/scgs/scg_cogs_min0.97_max1.03_unique_genera.txt {input.gff}>{output}"
 
 
 

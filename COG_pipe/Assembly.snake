@@ -6,7 +6,8 @@ import os.path
 
 rule all:
     input:  expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS),
-            expand("profile/scaffolds/{group}.cov", group=GROUPS)
+            expand("profile/scaffolds/{group}.cov", group=GROUPS),
+            "samples.yaml"
     message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 # ---- Assembly ----------------------------------------------------------------
@@ -52,6 +53,12 @@ rule spades:
         cp {params.dir}/scaffolds.fasta {output.assembly}
         cp {params.dir}/saves/00_before_simplification/graph_pack* $(dirname {output.high_res})
         """
+
+rule reads_yaml:
+    input:   left=left_sample_reads, right=right_sample_reads
+    output: "samples.yaml"
+    run:
+        samples_yaml(output)
 
 rule simplify:
     input:

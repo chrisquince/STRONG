@@ -35,17 +35,39 @@ rule megahit_convert:
 # Assemble with SPAdes
 rule spades:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/spades/{group}.fasta"
+    output:
+        assembly="assembly/spades/{group}.fasta",
+        high_res="assembly/high_res/{group}/graph_pack.gfa"
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
              mem=120,
-             dir="assembly/spades/{group}", 
-             bh=lambda w: "" if is_fastq(w) else "--only-assembler"
+             dir="assembly/spades/{group}"
+             #bh=lambda w: "" if is_fastq(w) else "--only-assembler"
     threads: 16
     log:     "assembly/spades/{group}.log"
     message: "Assembling {wildcards.group} with metaSPAdes"
     shell: 
-        '{ASSEMBLER_DIR}/spades.py --only-assembler --meta {params.bh} --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log} && cp {params.dir}/scaffolds.fasta {output}'
+        """
+        {ASSEMBLER_DIR}/spades.py --meta --only-assembler --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log}
+        cp {params.dir}/scaffolds.fasta {output.assembly}
+        cp {params.dir}/saves/00_before_simplification/graph_pack* $(dirname {output.high_res})
+        """
+
+rule simplify:
+    input:
+        "{path}/graph_pack.gfa"
+    output:
+        "{path}/simplified.gfa"
+    params:  
+        gp="{path}/graph_pack",
+        out="{path}/simplified",
+        tmp="{path}/tmp"
+    threads: 16
+    log:     "{path}/simplification.log"
+    message: "Simplifying high-res graph in {wildcards.path}"
+    shell: 
+        '{SOFT}/spades-gsimplifier {params.gp} {params.out} --gfa -k {ASSEMBLY_K} '
+        '-read-length {READ_LENGTH} -t {threads} -tmpdir {params.tmp} &> {log}'
 
 rule copy_group_fasta:
     input:   "assembly/%s/{group}.fasta" % ASSEMBLER
@@ -61,7 +83,6 @@ rule depth:
     shell:   """
              touch {output}
              """
-
 #rule depth:
 #    input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
 #    output:  "profile/jgi/{frags}/{group}.{type,mpl|var}"

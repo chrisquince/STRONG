@@ -12,6 +12,7 @@ fill_default_values(config)
 
 TMP_DIR_ROOT = "/localscratch"
 IN = config["data"]
+READ_LENGTH = config["read_length"]
 ASSEMBLER = config["assembly"]["assembler"]
 ASSEMBLER_DIR = config["assembly"]["dir"]
 BIN = config["bin"]

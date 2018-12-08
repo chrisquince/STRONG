@@ -1,4 +1,5 @@
 data: data_folder # path to data folder
+read_length: 100
 soft: ""
 assembly: 
     assembler: spades

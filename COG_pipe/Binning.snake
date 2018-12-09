@@ -53,7 +53,7 @@ rule merge:
     shell:   """
              echo {params.space}
              paste {params.space} >{output.temp}
-             echo -e 'contig\t'{params.tab}>{output.cov}
+             echo -e 'contig\t'"{params.tab}">{output.cov}
              paste profile/scaffolds/{wildcards.group}/header.txt {output.temp} >> {output.cov}
              """
 
@@ -71,7 +71,7 @@ rule concoct:
     output:  "binning/{group}/clustering_gt500.csv"
     threads: THREADS
     shell:   """
-             cat {input.nb_bin} | xargs concoct --coverage_file {input.cov} --composition_file {input.fasta} -c "$1" -l 500 -t {threads}
+             concoct --coverage_file {input.cov} --composition_file {input.fasta} -b binning/{wildcards.group} -c $(<{input.nb_bin}) -l 500 -t {threads}
              """
 
 

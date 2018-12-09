@@ -3,9 +3,9 @@ include: "COGs_annotation.snake"
 configfile: "config.yaml"
 
 
-rule all_local: 
-    input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
-           bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS)
+#rule all_local: 
+ #   input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
+  #         bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS)
 
 #cut contigs by ORFs and get the bed file
 rule cut_contigs:
@@ -13,7 +13,7 @@ rule cut_contigs:
             gff="annotation/{group}/{group}.gff"
     output: contig="profile/split_c10k/{group}.fasta",
             Contig_bed="annotation/{group}/{group}_C10K_contig.bed"
-    shell:  "Use_orf_to_cut.py {input.fa} {input.gff} > {output.contig}"
+    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} > {output.contig}"
 
 
 rule index_samples_bam:

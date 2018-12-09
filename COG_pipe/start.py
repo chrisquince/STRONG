@@ -85,4 +85,4 @@ with cd(exec_dir):
     fill_default_values(config)
 
     print("Step #1 - Assembly")
-    call_snake(["--snakefile", "Assembly.snake"])
+    call_snake(["--snakefile", "SCogSubGraph.snake"])

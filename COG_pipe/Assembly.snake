@@ -4,11 +4,11 @@ configfile: "config.yaml"
 
 import os.path
 
-rule all:
-    input:  expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS),
-            expand("profile/scaffolds/{group}.cov", group=GROUPS),
-            expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS)
-    message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
+#rule all:
+ #   input:  expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS),
+  #          expand("profile/scaffolds/{group}.cov", group=GROUPS),
+   #         expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS)
+    #message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 # ---- Assembly ----------------------------------------------------------------
 
@@ -94,15 +94,15 @@ rule copy_group_fasta:
     output:  "profile/scaffolds/{group}.fasta"
     shell: "cp {input} {output}"
 
-rule depth:
-    input:   expand("profile/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
-    output:  "profile/{frags}/{group}.cov"
-    log:     "profile/{frags}/{group}.log"
-    message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
-    threads: THREADS
-    shell:   """
-             touch {output}
-             """
+#rule depth:
+ #   input:   expand("profile/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
+  #  output:  "profile/{frags}/{group}.cov"
+   # log:     "profile/{frags}/{group}.log"
+    #message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
+    #threads: THREADS
+    #shell:   """
+     #        touch {output}
+      #       """
 #rule depth:
 #    input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
 #    output:  "profile/jgi/{frags}/{group}.{type,mpl|var}"

@@ -2,8 +2,8 @@ include: "Common.snake"
 
 configfile: "config.yaml"
 
-rule all: 
-   input:expand("annotation/{group}/{group}_SCG.fna", group=GROUPS)
+#rule all: 
+ #  input:expand("annotation/{group}/{group}_SCG.fna", group=GROUPS)
 
 #find for ORFs
 rule prodigal:
@@ -33,12 +33,12 @@ rule split_fasta:
 #Do rpsblast annotation  
 rule rpsblast_on_folder:
     input:
-        name="annotation/{group}/{filename}.faa",
+        name="annotation/{group}/{group}.faa",
         touch="annotation/{group}/temp_splits/folder.done"
     output:
-        "annotation/{group}/{filename}_Rpsblast_cogs.tsv"
+        "annotation/{group}/{group}_Rpsblast_cogs.tsv"
     log:
-        "annotation/{group}/{filename}_Rpsblast.log"
+        "annotation/{group}/{group}_Rpsblast.log"
     threads:
         THREADS
     shell:

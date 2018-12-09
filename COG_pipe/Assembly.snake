@@ -7,7 +7,7 @@ import os.path
 rule all:
     input:  expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS),
             expand("profile/scaffolds/{group}.cov", group=GROUPS),
-            "samples.yaml"
+            expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS)
     message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 # ---- Assembly ----------------------------------------------------------------
@@ -51,14 +51,13 @@ rule spades:
         """
         {ASSEMBLER_DIR}/spades.py --meta --only-assembler --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log}
         cp {params.dir}/scaffolds.fasta {output.assembly}
-        cp {params.dir}/saves/00_before_simplification/graph_pack* $(dirname {output.high_res})
+        cp {params.dir}/K{ASSEMBLY_K}/saves/00_before_simplification/graph_pack* $(dirname {output.high_res})
         """
 
 rule reads_yaml:
-    input:   left=left_sample_reads, right=right_sample_reads
     output: "samples.yaml"
     run:
-        samples_yaml(output)
+        print(samples_yaml(), file=open(output[0], 'w'))
 
 rule simplify:
     input:
@@ -75,6 +74,20 @@ rule simplify:
     shell: 
         '{SOFT}/spades-gsimplifier {params.gp} {params.out} --gfa -k {ASSEMBLY_K} '
         '-read-length {READ_LENGTH} -t {threads} -tmpdir {params.tmp} &> {log}'
+
+rule unitig_profiles:
+    input:
+        graph="{path}.gfa",
+        reads_desc="samples.yaml"
+    output:
+        "{path}.mult_prof"
+    log:
+        "{path}.mult_prof.log"
+    threads:
+        THREADS
+    shell:
+        "{SOFT}/spades-edge-profiles {input.reads_desc} {input.graph} {output} "
+        "-k {ASSEMBLY_K} -t {threads} -tmpdir $(dirname {output})/tmp &> {log}"
 
 rule copy_group_fasta:
     input:   "assembly/%s/{group}.fasta" % ASSEMBLER

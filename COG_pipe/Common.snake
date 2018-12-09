@@ -99,15 +99,17 @@ def sample_reads(dir, wildcards):
 
 left_sample_reads, right_sample_reads = reads_input(sample_reads)
 
-def samples_yaml(yaml_file):
-    left_reads = [SAMPLE_READS[s][0] for s in SAMPLES]
-    right_reads = [SAMPLE_READS[s][1] for s in SAMPLES]
-    dataset_data = {}
-    dataset_data["orientation"] = "fr"
-    dataset_data["type"] = "paired-end"
-    dataset_data["left reads"] = left_reads
-    dataset_data["right reads"] = right_reads
-    yaml.dump(dataset_data, file(yaml_file, 'w'))
+def samples_yaml():
+    libs = []
+    for s in SAMPLES:
+        info = {}
+        info["left reads"] = [SAMPLE_READS[s][0]]
+        info["right reads"] = [SAMPLE_READS[s][1]]
+        info["type"] = "paired-end"
+        info["orientation"] = "fr"
+        libs.append(info)
+
+    return yaml.dump(libs, default_style='"', default_flow_style=False)
 
 def group_reads(dir, wildcards):
     return SAMPLE_READS[wildcards["group"]][dir]

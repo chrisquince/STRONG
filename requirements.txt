@@ -2,7 +2,7 @@
 -# $ conda create --name exp-design -c bioconda --file <this file>
 -python=3.5.2
 -snakemake=5.2.2
--pyyaml=3.11
+-pyyaml
 -seqtk
 -fastqc
 -cutadapt
@@ -10,3 +10,4 @@
 -samtools
 -r-essentials
 -blast
+-mosdepth

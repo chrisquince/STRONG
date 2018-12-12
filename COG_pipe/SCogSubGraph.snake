@@ -11,4 +11,5 @@ rule all:
     input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
            bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS),
            profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
-           scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS) 
+           scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
+           touch=expand("binning/{group}/bin_creation.done",group=GROUPS)

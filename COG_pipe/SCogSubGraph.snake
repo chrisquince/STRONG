@@ -1,0 +1,14 @@
+include: "Common.snake"
+include: "Assembly.snake"
+include: "Binning.snake"
+include: "COGs_annotation.snake"
+
+configfile: "config.yaml"
+
+import os.path
+
+rule all: 
+    input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
+           bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS),
+           profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
+           scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS) 

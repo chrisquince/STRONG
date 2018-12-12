@@ -4,8 +4,10 @@ configfile: "config.yaml"
 
 
 #rule all_local: 
- #   input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
-  #         bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS)
+#   input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
+#          bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS)
+#          touch=expand("binning/{group}/bin_creation.done",group=GROUPS)
+
 
 #cut contigs by ORFs and get the bed file
 rule cut_contigs:
@@ -73,5 +75,25 @@ rule concoct:
     shell:   """
              concoct --coverage_file {input.cov} --composition_file {input.fasta} -b binning/{wildcards.group} -c $(<{input.nb_bin}) -l 500 -t {threads}
              """
+
+rule merge_contigs:
+    input:   "{path}/clustering_gt500.csv",
+    output:  "{path}/clustering_gt500_merged.csv"
+    log:     "{path}/consensus.log"
+    threads: THREADS
+    shell:   "{SCRIPTS}/Consensus.py {input} >{output} 2>{log}"
+
+rule create_bin_folders:
+    input:   bin="binning/{group}/clustering_gt500_merged.csv",
+             fasta="annotation/{group}/{group}_SCG.fna"
+    output:  touch("binning/{group}/bin_creation.done")
+    shell:   "{SCRIPTS}/BinFolders.py {input.bin} {input.fasta} binning/{wildcards.group}/"
+
+
+
+
+
+
+
 
 

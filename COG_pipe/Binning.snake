@@ -25,7 +25,7 @@ rule index_samples_bam:
     threads: THREADS
     shell:   "samtools index {input}"
 
-# use mosdepth to compute coverage by feature on a bed file, may eat up all your ram for reasons
+# use mosdepth to compute coverage by feature on a bed file
 rule depth_local:
     input:   sample="profile/{frags}/{group}/{sample}.sorted.bam",
              index="profile/{frags}/{group}/{sample}.sorted.bam.bai",
@@ -86,14 +86,6 @@ rule merge_contigs:
 rule create_bin_folders:
     input:   bin="binning/{group}/clustering_gt500_merged.csv",
              fasta="annotation/{group}/{group}_SCG.fna"
-    output:  touch("binning/{group}/bin_creation.done")
+    output:  dynamic("binning/{group}/Bin_{number}/{path}/seq.fna")
     shell:   "{SCRIPTS}/BinFolders.py {input.bin} {input.fasta} binning/{wildcards.group}/"
-
-
-
-
-
-
-
-
 

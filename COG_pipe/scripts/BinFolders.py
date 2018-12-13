@@ -20,13 +20,15 @@ def main(Bin_file,path,Fasta_file):
 				Dico_bins_SCG[Bin][SCG]+=list_values
 	# which are 75% complete
 	List_Mags=[Bin for Bin,List_contigs in Dico_bins_SCG.items() if sum(map(lambda x:x==1,Counter([SCG for SCG,list_fasta in List_contigs.items() for header,seq in list_fasta]).values()))>0.75*36]
-	# create a folder by Mag with sequences inside
+	# create a folder by Mag with a folder by COG and their sequences inside
 	for Mag in List_Mags :
 		List_contigs_SCG=[]
-		Mag_path=path+"/Bin_"+Mag
+		Mag_path=path+"Bin_"+Mag
 		os.system("mkdir "+Mag_path)
 		for COG,List_fasta in Dico_bins_SCG[Mag].items():
-			Handle=open(Mag_path+"/"+COG+".fna","w")
+			COG_Path=Mag_path+"/"+COG+"/"
+			os.system("mkdir "+COG_Path)
+			Handle=open(COG_Path+"seq.fna","w")
 			Handle.write("".join(map(lambda x:">"+x[0]+"\n"+x[1]+"\n",List_fasta)))
 			Handle.close()
 

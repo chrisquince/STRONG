@@ -2,7 +2,6 @@ include: "Common.snake"
 include: "Assembly.snake"
 include: "Binning.snake"
 include: "COGs_annotation.snake"
-
 configfile: "config.yaml"
 
 import os.path
@@ -12,4 +11,4 @@ rule all:
            bins=expand("binning/{group}/clustering_gt500.csv",group=GROUPS),
            profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
            scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
-           touch=expand("binning/{group}/bin_creation.done",group=GROUPS)
+           fna=dynamic(expand("binning/{group}/Bin_{{number}}/{{path}}/seq.fna",group=GROUPS))

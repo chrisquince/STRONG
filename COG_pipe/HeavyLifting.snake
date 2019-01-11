@@ -1,0 +1,17 @@
+include: "Common.snake"
+configfile: "config.yaml"
+
+import glob
+
+LIST_COGPATHS=[path.replace("/seq.fna","") for path in  glob.glob("binning/*/Bin_*/COG*/seq.fna")]
+
+rule all:
+    input:   dynamic(expand("{cogpaths}/{{nb}}.gfa",cogpaths=LIST_COGPATHS))
+
+
+rule extract_subgraphs:
+    input:   cogs="binning/{group}/{path1}/{path2}/seq.fna",
+             gfa="assembly/high_res/{group}/simplified.gfa"
+    output:  dynamic("binning/{group}/{path1}/{path2}/{nb}.gfa")
+    threads: THREADS
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2} -k 55 -t {threads} "

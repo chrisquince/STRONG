@@ -84,5 +84,7 @@ with cd(exec_dir):
         config = yaml.load(config_in)
     fill_default_values(config)
 
-    print("Step #1 - Assembly")
+    print("Step #1 - Assembly / binning / COG calling")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
+    print("Step #2 - graph processing / strain calling")
+    call_snake(["--snakefile", "HeavyLifting.snake"])

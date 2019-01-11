@@ -1,7 +1,3 @@
-include: "Common.snake"
-include: "COGs_annotation.snake"
-configfile: "config.yaml"
-
 
 #rule all_local: 
 #   input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
@@ -86,6 +82,6 @@ rule merge_contigs:
 rule create_bin_folders:
     input:   bin="binning/{group}/clustering_gt500_merged.csv",
              fasta="annotation/{group}/{group}_SCG.fna"
-    output:  dynamic("binning/{group}/Bin_{number}/{path}/seq.fna")
+    output:  dynamic("binning/{group}/Bin_{path1}/{path2}/seq.fna")
     shell:   "{SCRIPTS}/BinFolders.py {input.bin} {input.fasta} binning/{wildcards.group}/"
 

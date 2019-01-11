@@ -19,6 +19,7 @@ ASSEMBLER_DIR = config["assembly"]["dir"]
 BIN = config["bin"]
 SCRIPTS = config["scripts"]
 SOFT = config["soft"]
+COG_DB= config["cog_database"]
 ASSEMBLY_K = config["assembly"]["k"]
 THREADS = config["threads"]
 

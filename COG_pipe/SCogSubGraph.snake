@@ -2,7 +2,6 @@ include: "Common.snake"
 include: "Assembly.snake"
 include: "Binning.snake"
 include: "COGs_annotation.snake"
-configfile: "config.yaml"
 
 import os.path
 
@@ -12,3 +11,4 @@ rule all:
            profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
            scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
            gfa=dynamic(expand("binning/{group}/Bin_{{path1}}/{{path2}}/seq.fna",group=GROUPS))
+

@@ -14,5 +14,4 @@ rule extract_subgraphs:
              gfa="assembly/high_res/{group}/simplified.gfa"
     output:  touch("binning/{group}/{path1}/{path2}/done")
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2} -k 55 -t {threads} >binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2}/extract_subgraph.log"
-
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2} -k 55 -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2}/extract_subgraph.log

@@ -22,6 +22,7 @@ SOFT = config["soft"]
 COG_DB= config["cog_database"]
 ASSEMBLY_K = config["assembly"]["k"]
 THREADS = config["threads"]
+SCG_DATA = config["scg_data"]
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented

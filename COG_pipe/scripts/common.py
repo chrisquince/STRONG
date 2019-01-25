@@ -30,6 +30,7 @@ def fill_default_values(config):
     if local_dir:
         default_values["bin"] = os.path.join(local_dir, "build/bin")
         default_values["scripts"] = os.path.join(local_dir, "scripts")
+        default_values["scg_data"]= os.path.join(local_dir, "scg_data")
     setdefault_recursively(config)
 
 def sample_name(fullname):

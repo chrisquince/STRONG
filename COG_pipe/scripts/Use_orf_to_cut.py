@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 
 import os 
@@ -9,13 +9,13 @@ import numpy as np
 from collections import Counter,defaultdict
 
 def prodigal_gff_parser(Handle) :
-	# specific to prodigal output, does not seem to be universal gff  
-	# directly adapted from  SimpleFastaParser in Bio.SeqIO.FastaIO
+	# specific to prodigal output, does not seem to be universal gff	
+	# directly adapted from	SimpleFastaParser in Bio.SeqIO.FastaIO
 	while True: 
-		line = Handle.readline() 
+		line = Handle.readline()
 		if line == "": 
 			return 
-		if line[:16] == "# Sequence Data:" : 
+		if line[:16] == "# Sequence Data:" :
 			break 
 	while True: 
 		if not line :
@@ -23,7 +23,7 @@ def prodigal_gff_parser(Handle) :
 		if line[:16] != "# Sequence Data:" : 
 			print (line)
 			raise ValueError("GFF Output from prodigal should start with '# Sequence Data:'") 
-		seq_data = line.rstrip() 
+		seq_data = line.rstrip()
 		Model_data = Handle.readline().rstrip() 
 		line=Handle.readline().rstrip()
 		ORF_list=[]
@@ -38,7 +38,7 @@ def prodigal_gff_parser(Handle) :
 				break 
 		yield seq_data,Model_data,ORF_list 
 	if not line: 
-		return  # StopIteration
+		return	# StopIteration
 
 
 
@@ -65,17 +65,17 @@ def Cut_contigs(Chunk_size,Dico_contigid_gff):
 	for key,List_start_end in Dico_contigid_gff.items() :
 		List_cut_location=[0]
 		List_end_orf=[end for start,end in List_start_end]
-		Previous_cut=0
+		Previous_cut=-1
 		for end in List_end_orf :
 			if (end - Previous_cut)>Chunk_size :
 				if List_end_orf[-1]-end > Chunk_size : 
-					List_cut_location.append(end)
-					Previous_cut=end
+					List_cut_location.append(end+1)
+					Previous_cut=end+1
 		List_cut_location.append(List_end_orf[-1])
 		Contigid_Cut_location[key]=[[List_cut_location[a],List_cut_location[a+1]] for a in range(len(List_cut_location)-1)]
 	return Contigid_Cut_location
 
-def Rename_ORF(ORF_list,Dico_contigid_Dico_ORfnb_index) :
+def Rename_ORF(ORF_list,Dico_contigid_Dico_ORfnb_index,Dico_Contigid_Cutlocation) :
 	if ORF_list :
 		Contig=ORF_list[0].split()[0]
 		if Contig in Dico_contigid_Dico_ORfnb_index :
@@ -83,7 +83,13 @@ def Rename_ORF(ORF_list,Dico_contigid_Dico_ORfnb_index) :
 			for index,ORF in enumerate(ORF_list) :
 				#print ORF
 				ORF_s=ORF.split("\t")
-				New_ORF="\t".join([Contig+"."+str(Dico_contigid_Dico_ORfnb_index[Contig][index+1])]+ORF_s[1:])
+				Split_position=Dico_contigid_Dico_ORfnb_index[Contig][index]
+				Starting_contig_position=Dico_Contigid_Cutlocation[Contig][Split_position][0]
+				New_ORF_position=[int(string)-Starting_contig_position for string in ORF_s[3:5]]
+				New_ORF_position[0]=(New_ORF_position[0]<0)*0+(New_ORF_position[0]>=0)*New_ORF_position[0] 
+				New_ORF_name=Contig+"."+str(Split_position)
+				New_ORF="\t".join([New_ORF_name]+ORF_s[1:3]+[str(number) for number in New_ORF_position]+ORF_s[5:])
+				"\t".join([]+ORF_s[1:])
 				Renamed_ORF_list+=[New_ORF]
 			return Renamed_ORF_list
 		else :
@@ -94,10 +100,10 @@ def Rename_ORF(ORF_list,Dico_contigid_Dico_ORfnb_index) :
 def delete_ending(sep,name) :
 	return sep.join((name.split(sep)[:-1]))	
 
-def Rename_GFF(Gff_file,Chunk_size,Dico_contigid_Dico_ORfnb_index) :
+def Rename_GFF(Gff_file,Chunk_size,Dico_contigid_Dico_ORfnb_index,Dico_Contigid_Cutlocation) :
 	Handle=open(delete_ending(".",Gff_file)+"_C"+str(Chunk_size//1000)+"K.gff","w")
 	for (index,(Seq_data,Model,ORF_list)) in enumerate(prodigal_gff_parser(open(Gff_file))) :
-		ORF_list=Rename_ORF(ORF_list,Dico_contigid_Dico_ORfnb_index)
+		ORF_list=Rename_ORF(ORF_list,Dico_contigid_Dico_ORfnb_index,Dico_Contigid_Cutlocation)
 		Chunk_gff="\n".join([Seq_data,Model]+ORF_list)+"\n"
 		Handle.write(Chunk_gff)	
 	Handle.close()
@@ -122,6 +128,7 @@ def main(Fasta_file,Gff_file,Chunk_size,Replace) :
 	Dico_contigid_gff,Dico_contigs=get_gff_dico(Chunk_size,Gff_file)
 	Dico_Contigid_Cutlocation=Cut_contigs(Chunk_size,Dico_contigid_gff)	
 	Dico_contigid_Dico_ORfnb_index={Contig:{index_orf:next(index for index,value in enumerate([i[1] for i in Dico_Contigid_Cutlocation[Contig]]) if ORF[1]<=value) for index_orf,ORF in enumerate(List_ORF)} for Contig,List_ORF in Dico_contigid_gff.items() if Contig in Dico_Contigid_Cutlocation}
+	# Output cuts contigs		
 	Lim=2*Chunk_size
 	for title, sequence in SimpleFastaParser(open(Fasta_file)) :
 		if (len(sequence)>Lim)&(title in Dico_Contigid_Cutlocation) :
@@ -139,7 +146,7 @@ def main(Fasta_file,Gff_file,Chunk_size,Replace) :
 	if Replace :
 		# After cuting big contigs in chunks we need to update all prodigal annotations
 		# Rename contigs in GFF file
-		Rename_GFF(Gff_file,Chunk_size,Dico_contigid_Dico_ORfnb_index)
+		Rename_GFF(Gff_file,Chunk_size,Dico_contigid_Dico_ORfnb_index,Dico_Contigid_Cutlocation)
 		# Rename contigs in FAA file
 		FAA_file=delete_ending(".",Gff_file)+".faa"
 		Rename_FA(FAA_file,Chunk_size,Dico_contigid_Dico_ORfnb_index)
@@ -170,6 +177,7 @@ if __name__ == "__main__":
 	Fasta_file=args.Fasta_file
 	Gff_file=args.GFF
 	Replace=args.r
-	print(Replace)
 	main(Fasta_file,Gff_file,Chunk_size,Replace)
+
+
 

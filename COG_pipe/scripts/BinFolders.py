@@ -25,18 +25,15 @@ def main(Bin_file,path,Fasta_file):
 		List_contigs_SCG=[]
 		Mag_path=path+"Bin_"+Mag
 		os.system("mkdir "+Mag_path)
-		for COG,List_fasta in Dico_bins_SCG[Mag].items():
-			COG_Path=Mag_path+"/"+COG+"/"
-			os.system("mkdir "+COG_Path)
-			Handle=open(COG_Path+"seq.fna","w")
-			Handle.write("".join(map(lambda x:">"+x[0]+"\n"+x[1]+"\n",List_fasta)))
-			Handle.close()
+		Handle=open(Mag_path+"/SCG.fna","w")
+		Handle.write("".join(map(lambda x:">"+x[0]+"\n"+x[1]+"\n",[Fasta for List_fasta in Dico_bins_SCG[Mag].values() for Fasta in List_fasta])))
+		Handle.close()
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("Bin_file",help="Binning result file, csv, first column is the contig, second column is the bin")
   parser.add_argument("SCG_Fasta",help="fasta file of Orfs annotated as SCG")
-  parser.add_argument("folder",help="path to wher you want to store the bins folders",default=".")
+  parser.add_argument("folder",help="path to where you want to store the bins folders",default=".")
   args = parser.parse_args()
   Bin_file=args.Bin_file
   path=args.folder

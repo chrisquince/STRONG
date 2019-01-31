@@ -2,16 +2,16 @@ include: "Common.snake"
 
 import glob
 
-LIST_COGPATHS=[path.replace("/seq.fna","") for path in  glob.glob("binning/*/Bin_*/COG*/seq.fna")]
+LIST_COGPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_*/SCG.fna")]
 
 rule all:
      input:   expand("{cogpaths}/done",cogpaths=LIST_COGPATHS)
-#    input:   dynamic(expand("{cogpaths}/{{nb}}.gfa",cogpaths=LIST_COGPATHS))
 
 
 rule extract_subgraphs:
-    input:   cogs="binning/{group}/{path1}/{path2}/seq.fna",
+    input:   cogs="binning/{group}/{path1}/SCG.fna",
              gfa="assembly/high_res/{group}/simplified.gfa"
-    output:  touch("binning/{group}/{path1}/{path2}/done")
+    output:  touch("binning/{group}/{path1}/done")
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2} -k 55 -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/{wildcards.path2}/extract_subgraph.log"
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1} -k 55 -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/extract_subgraph.log"
+

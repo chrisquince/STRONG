@@ -5,7 +5,7 @@ import glob
 LIST_COGPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_*/SCG.fna")]
 
 rule all:
-     input:   expand("{cogpaths}/done",cogpaths=LIST_COGPATHS)
+     input: expand("{cogpaths}/folder_done",cogpaths=LIST_COGPATHS)
 
 
 rule extract_subgraphs:
@@ -14,4 +14,18 @@ rule extract_subgraphs:
     output:  touch("binning/{group}/{path1}/done")
     threads: THREADS
     shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1} -k 55 -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/extract_subgraph.log"
+
+rule create_cog_folders:
+    input:   "{path}/done"
+    output:  touch("{path}/folder_done")
+    shell:   """for file in {wildcards.path}/*.gfa
+                do 
+                cog=$(basename $file)
+                cog=${{cog%.gfa}}
+                mkdir {wildcards.path}/$cog
+    			mv $file {wildcards.path}/$cog/$cog'.gfa'
+    			mv {wildcards.path}/$cog'.deadends' {wildcards.path}/$cog/$cog'.deadends'
+    			done
+                """
+
 

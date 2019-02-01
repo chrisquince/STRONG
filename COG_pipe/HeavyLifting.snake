@@ -5,7 +5,7 @@ import glob
 LIST_COGPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_*/SCG.fna")]
 
 rule all:
-     input: expand("{cogpaths}/folder_done",cogpaths=LIST_COGPATHS)
+     input: expand("{cogpaths}/profile_done",cogpaths=LIST_COGPATHS)
 
 
 rule extract_subgraphs:
@@ -18,14 +18,31 @@ rule extract_subgraphs:
 rule create_cog_folders:
     input:   "{path}/done"
     output:  touch("{path}/folder_done")
-    shell:   """for file in {wildcards.path}/*.gfa
+    shell:   """
+    			for file in {wildcards.path}/*.gfa
                 do 
                 cog=$(basename $file)
                 cog=${{cog%.gfa}}
+                if [ ! -d {wildcards.path}/$cog ];then
                 mkdir {wildcards.path}/$cog
+                fi
+                if [ ! -f {wildcards.path}/$cog/$cog'.gfa' ];then
     			mv $file {wildcards.path}/$cog/$cog'.gfa'
     			mv {wildcards.path}/$cog'.deadends' {wildcards.path}/$cog/$cog'.deadends'
+    			fi
     			done
                 """
 
-
+rule create_unitig_profile:
+	input:  "{path}/folder_done"
+	output: touch('{path}/profile_done')
+	shell : """
+            for file in {wildcards.path}/COG*/*gfa; do
+              stub=${{file%.gfa}}
+              if [ ! -f ${{stub}}.csv ]; then
+                awk '/^S/{{print ">"$2"\\n"$3 }}' $file | grep ">" | sed 's/>//g' > $stub.id    
+                awk 'FNR==NR {{hash[$1]; next}} $1 in hash' $stub.id assembly/high_res/group1/simplified.mult_prof | sed 's/\t/,/g' | sed s'/.$//' > ${{stub}}.csv
+                rm $stub.id
+              fi
+            done
+            """

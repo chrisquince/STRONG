@@ -12,8 +12,9 @@ rule extract_subgraphs:
     input:   cogs="binning/{group}/{path1}/SCG.fna",
              gfa="assembly/high_res/{group}/simplified.gfa"
     output:  touch("binning/{group}/{path1}/done")
+    params:  k=ASSEMBLY_K
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1} -k 55 -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/extract_subgraph.log"
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1} -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/extract_subgraph.log"
 
 rule create_cog_folders:
     input:   "{path}/done"

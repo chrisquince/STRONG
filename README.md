@@ -14,6 +14,7 @@ python3 ./start.py --config config.yaml output_dir
 
 ## Config file
 
+```
 data: /mnt/gpfs/Hackathon/SyntheticCommunity  # path to data folder
 cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog
 soft: "/home/sergei/cog_tools"
@@ -24,3 +25,4 @@ assembly:
     assembler: spades
     dir: /home/sergei/cog_tools/spades/bin
     groups: ['*']
+```

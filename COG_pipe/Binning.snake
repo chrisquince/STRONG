@@ -66,15 +66,35 @@ rule concoct:
     input:   cov="binning/{group}/C10K_coverage.tsv",
              fasta="profile/split_c10k/{group}.fasta",
              nb_bin="annotation/{group}/{group}_nb_ini_bins.txt"
-    output:  "binning/{group}/clustering_gt"+str(MIN_CONTIG_SIZE)+".csv"
+    output:  bins="binning/{group}/clustering_gt%d.csv"%MIN_CONTIG_SIZE,
+             Data="binning/{group}/original_data_gt%d.csv"%MIN_CONTIG_SIZE             
     params:  mine_contig_size=MIN_CONTIG_SIZE
     threads: THREADS
     shell:   """
              concoct --coverage_file {input.cov} --composition_file {input.fasta} -b binning/{wildcards.group} -c $(<{input.nb_bin}) -l {params} -t {threads}
              """
 
+
+rule refine:
+    input:  bins="binning/{group}/clustering_gt%d.csv"%MIN_CONTIG_SIZE,
+            SCG="annotation/{group}/{group}_SCG.fna",
+            Data="binning/{group}/original_data_gt%d.csv"%MIN_CONTIG_SIZE
+    output: R=temp("binning/{group}/clustering_gt%dR.csv")%MIN_CONTIG_SIZE,
+            table="binning/{group}/clustering_gt%d_SCG_table.csv"%MIN_CONTIG_SIZE,
+            bins_R="binning/{group}/clustering_refine.csv",
+            table_R="binning/{group}/clustering_gt%d_SCG_table_R.csv"%MIN_CONTIG_SIZE
+    log:    temp("binning/{group}/clustering.log")
+    threads: 1000
+    shell:  """ {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
+            sed '1d' {input.bins}  > {output.R}
+            cd binning/{wildcards.group}
+            concoct_refine ../../{output.R} ../../{input.Data} ../../{output.table} -t {threads} &>../../{log}
+            cd ../../
+            {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
+            """
+
 rule merge_contigs:
-    input:   "{path}/clustering_gt"+str(MIN_CONTIG_SIZE)+".csv",
+    input:   "{path}/clustering_refine.csv",
     output:  "{path}/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv"
     log:     "{path}/consensus.log"
     threads: THREADS
@@ -84,5 +104,5 @@ rule create_bin_folders:
     input:   bin="binning/{group}/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
              fasta="annotation/{group}/{group}_SCG.fna"
     output:  dynamic("binning/{group}/Bin_{path1}/SCG.fna")
-    shell:   "{SCRIPTS}/BinFolders.py {input.bin} {input.fasta} binning/{wildcards.group}/"
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f binning/{wildcards.group}/"
 

@@ -29,7 +29,8 @@ rule create_cog_folders:
                 fi
                 if [ ! -f {wildcards.path}/$cog/$cog'.gfa' ];then
     			mv $file {wildcards.path}/$cog/$cog'.gfa'
-    			mv {wildcards.path}/$cog'.deadends' {wildcards.path}/$cog/$cog'.deadends'
+    			mv {wildcards.path}/$cog'.deadends' {wildcards.path}/$cog/
+                mv {wildcards.path}/$cog'.stops' {wildcards.path}/$cog/
     			fi
     			done
                 """

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import subprocess
+from subprocess import PIPE,Popen
 import sys
 import os
 import os.path
@@ -24,14 +25,14 @@ class cd:
         os.chdir(self.savedPath)
 
 parser = argparse.ArgumentParser(description="STRONG - STrain Resolution ON Graphs")
-
 parser.add_argument("--threads", "-t", type=int, default=1, help="Number of threads")
 parser.add_argument("dir", type=str, help="Output directory")
 parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to be copied to the directory (unnecessary if config.yaml is already there)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--dryrun", action="store_true", help="Show tasks, do not execute them")
 parser.add_argument("--unlock", "-u", action="store_true", help="Unlock the directory")
-
+parser.add_argument("--dag", "-d", help="file where you want the dag to be stored")
+parser.add_argument('-s', nargs=argparse.REMAINDER,help="Pass additional argument directly to snakemake")
 args = parser.parse_args()
 
 exec_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -42,15 +43,16 @@ base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores"
 if args.verbose:
     # Output commands + give reasons + verbose (add "-n" for dry-run)
     base_params.extend(["-p", "-r", "--verbose"]) 
-
 if args.dryrun:
     base_params.extend(["--dryrun"])
-
 if args.unlock:
     base_params.extend(["--unlock"])
-
 if not os.path.exists(args.dir):
     os.makedirs(args.dir)
+if args.dag:
+    base_params.extend(["--dag"])
+if args.s :
+    base_params.extend(args.s)
 
 print("Output folder set to", args.dir)
 
@@ -66,7 +68,14 @@ if args.config:
 
 with cd(exec_dir):
     def call_snake(extra_params=[]):
-        subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
+        call_snake.nb+=1
+        if args.dag:
+            p1=Popen(base_params + extra_params, stdout=PIPE, stderr=sys.stderr)
+            p2=Popen(["dot","-Tpdf"],stdin=p1.stdout, stdout=PIPE, stderr=sys.stderr)
+            with open(args.dag.replace(".pdf",str(call_snake.nb)+".pdf"),"bw") as f :
+                f.write(p2.communicate()[0])
+        else :
+            subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
 
     def reuse_dir(dir_from, dir_name):
         if not dir_from:
@@ -83,7 +92,7 @@ with cd(exec_dir):
     with open(config_path) as config_in:
         config = yaml.load(config_in)
     fill_default_values(config)
-
+    call_snake.nb=0
     print("Step #1 - Assembly / binning / COG calling")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
     print("Step #2 - graph processing / strain calling")

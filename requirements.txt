@@ -11,3 +11,4 @@
 -r-essentials
 -blast
 -mosdepth
+-gfapy

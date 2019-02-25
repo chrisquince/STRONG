@@ -11,35 +11,47 @@ rule all:
 rule extract_subgraphs:
     input:   cogs="binning/{group}/{path1}/SCG.fna",
              gfa="assembly/high_res/{group}/simplified.gfa"
-    output:  touch("binning/{group}/{path1}/done")
+    output:  temp(touch("binning/{group}/{path1}/done")),
+             Dir=directory("binning/{group}/{path1}/StrainAnalysis")
+    log:     "binning/{group}/{path1}/extract_subgraph.log"
     params:  k=ASSEMBLY_K
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1} -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/extract_subgraph.log"
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o {output.Dir} -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
 
-rule create_cog_folders:
-    input:   "{path}/done"
-    output:  touch("{path}/folder_done")
-    shell:   """
-    			for file in {wildcards.path}/*.gfa
-                do 
-                cog=$(basename $file)
-                cog=${{cog%.gfa}}
-                if [ ! -d {wildcards.path}/$cog ];then
-                mkdir {wildcards.path}/$cog
-                fi
-                if [ ! -f {wildcards.path}/$cog/$cog'.gfa' ];then
-    			mv $file {wildcards.path}/$cog/$cog'.gfa'
-    			mv {wildcards.path}/$cog'.deadends' {wildcards.path}/$cog/
-                mv {wildcards.path}/$cog'.stops' {wildcards.path}/$cog/
-    			fi
-    			done
-                """
+# rule extract_subgraphs:
+#     input:   cogs="binning/{group}/{path1}/SCG.fna",
+#              gfa="assembly/high_res/{group}/simplified.gfa"
+#     output:  touch("binning/{group}/{path1}/done")
+#     params:  k=ASSEMBLY_K
+#     threads: THREADS
+#     shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1} -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv >binning/{wildcards.group}/{wildcards.path1}/extract_subgraph.log"
+
+
+
+# rule create_cog_folders:
+#     input:   "{path}/done"
+#     output:  touch("{path}/folder_done")
+#     shell:   """
+#     			for file in {wildcards.path}/*.gfa
+#                 do 
+#                 cog=$(basename $file)
+#                 cog=${{cog%.gfa}}
+#                 if [ ! -d {wildcards.path}/$cog ];then
+#                 mkdir {wildcards.path}/$cog
+#                 fi
+#                 if [ ! -f {wildcards.path}/$cog/$cog'.gfa' ];then
+#     			mv $file {wildcards.path}/$cog/$cog'.gfa'
+#     			mv {wildcards.path}/$cog'.deadends' {wildcards.path}/$cog/
+#                 mv {wildcards.path}/$cog'.stops' {wildcards.path}/$cog/
+#     			fi
+#     			done
+#                 """
 
 rule create_unitig_profile:
-	input:  "{path}/folder_done"
+	input:  "{path}/done"
 	output: touch('{path}/profile_done')
 	shell : """
-            for file in {wildcards.path}/COG*/*gfa; do
+            for file in {wildcards.path}/StrainAnalysis/*gfa; do
               stub=${{file%.gfa}}
               if [ ! -f ${{stub}}.csv ]; then
                 awk '/^S/{{print ">"$2"\\n"$3 }}' $file | grep ">" | sed 's/>//g' > $stub.id    
@@ -48,3 +60,17 @@ rule create_unitig_profile:
               fi
             done
             """
+
+
+
+rule BayesAGraphSVA:
+    input:  "{path}/done"
+    output: "{path}/StrainAnalysis_stdout.txt"
+    params : kmer=ASSEMBLY_K,
+             read_len=READ_LENGTH
+    shell : "python3 /mnt/gpfs/chris/repos/BayesAGraphSVA/BayesPaths.py StrainAnalysis {kmer} StrainAnalysis -g 16 -e /mnt/gpfs/chris/repos/BayesAGraphSVA/runfg_source -r {read_len} > {output} " 
+
+
+
+
+

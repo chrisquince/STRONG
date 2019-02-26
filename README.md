@@ -9,8 +9,10 @@ STRONG resolves strain on assembly graphs by resolving variants on core COGs usi
 Run from within the COG_pipe directory. Using the following command:
 
 ```
-python3 ./start.py --config config.yaml output_dir
+python3 ./start.py --config config.yaml output_dir --threads 32
 ```
+
+Optionally pass snakemake parameters e.g. '--dryrun'
 
 ## Config file
 
@@ -26,3 +28,7 @@ assembly:
     dir: /home/sergei/cog_tools/spades/bin
     groups: ['*']
 ```
+
+## Pipeline
+
+![alt tag](./Figures/Dag1.png)

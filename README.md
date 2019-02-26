@@ -32,3 +32,5 @@ assembly:
 ## Pipeline
 
 ![alt tag](./Figures/Dag1.png)
+
+![alt tag](./Figures/Dag2.pdf)

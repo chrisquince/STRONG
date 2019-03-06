@@ -41,7 +41,7 @@ rule spades:
         high_res="assembly/high_res/{group}/graph_pack.gfa"
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
-             mem=120,
+             mem=MEM,
              dir="assembly/spades/{group}"
              #bh=lambda w: "" if is_fastq(w) else "--only-assembler"
     threads: 16

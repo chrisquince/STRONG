@@ -13,6 +13,7 @@ import re
 default_values = {
     "concoct_contig_size":500,
     "threads":     8,
+    "mem":2000,
     "assembly":    {"assembler": "spades", "k": 55, "groups": [] }
 }
 

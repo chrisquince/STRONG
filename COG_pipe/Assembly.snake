@@ -50,7 +50,7 @@ rule spades:
     shell: 
         """
         {ASSEMBLER_DIR}/spades.py --meta --only-assembler --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log}
-        cp {params.dir}/scaffolds.fasta {output.assembly}
+        cp {params.dir}/contigs.fasta {output.assembly}
         cp {params.dir}/K{ASSEMBLY_K}/saves/00_before_simplification/graph_pack* $(dirname {output.high_res})
         """
 

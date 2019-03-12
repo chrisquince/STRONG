@@ -13,8 +13,7 @@ import re
 default_values = {
     "concoct_contig_size":500,
     "threads":     8,
-    "mem":2000,
-    "assembly":    {"assembler": "spades", "k": 55, "groups": [] }
+    "assembly":    {"assembler": "spades", "k": 55,"mem":2000,"groups": [] }
 }
 
 # Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python

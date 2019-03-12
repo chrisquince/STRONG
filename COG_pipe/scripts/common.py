@@ -11,9 +11,9 @@ import os.path
 import re
 
 default_values = {
-    "concoct_contig_size":500,
+    "concoct_contig_size": 500,
     "threads":     8,
-    "assembly":    {"assembler": "spades", "k": 55,"mem":2000,"groups": [] }
+    "assembly":    {"assembler": "spades", "k": [21,33,55], "mem": 120, "groups": [] }
 }
 
 # Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python

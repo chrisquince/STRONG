@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import print_function
 import argparse 
 from collections import Counter,defaultdict
@@ -6,7 +6,7 @@ import sys
 
 def main(Bin_file):
 	Handle=open(Bin_file)
-	_=Handle.next()
+	_=next(Handle)
 	Dico_contig_bins={}
 	for line in Handle:
 		contig,bin=line.rstrip().split(",")

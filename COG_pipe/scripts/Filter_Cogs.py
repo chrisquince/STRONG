@@ -3,6 +3,7 @@
 import argparse
 from collections import defaultdict,Counter 
 import numpy as np
+np.warnings.filterwarnings('ignore')
 
 def Print_Final_annotation(Querry_Annotation) :
   # best evalue

@@ -41,7 +41,8 @@ rule spades:
         high_res="assembly/high_res/{group}/graph_pack.gfa"
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
-             mem=MEM,
+             mem=config["assembly"]["mem"],
+             ks=','.join(map(str, config["assembly"]["k"])),
              dir="assembly/spades/{group}"
              #bh=lambda w: "" if is_fastq(w) else "--only-assembler"
     threads: 16
@@ -49,7 +50,7 @@ rule spades:
     message: "Assembling {wildcards.group} with metaSPAdes"
     shell: 
         """
-        {ASSEMBLER_DIR}/spades.py --meta --only-assembler --save-gp -t {threads} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log}
+        {ASSEMBLER_DIR}/spades.py --meta --only-assembler --save-gp -t {threads} -k {params.ks} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log}
         cp {params.dir}/contigs.fasta {output.assembly}
         cp {params.dir}/K{ASSEMBLY_K}/saves/00_before_simplification/graph_pack* $(dirname {output.high_res})
         """

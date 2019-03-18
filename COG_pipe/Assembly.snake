@@ -82,12 +82,14 @@ rule unitig_profiles:
         reads_desc="samples.yaml"
     output:
         "{path}.mult_prof"
+    params:
+        gp="{path}"
     log:
         "{path}.mult_prof.log"
     threads:
         THREADS
     shell:
-        "{SOFT}/spades-edge-profiles {input.reads_desc} {input.graph} {output} "
+        "{SOFT}/spades-edge-profiles {input.reads_desc} {params.gp} {output} "
         "-k {ASSEMBLY_K} -t {threads} -tmpdir $(dirname {output})/tmp &> {log}"
 
 rule copy_group_fasta:

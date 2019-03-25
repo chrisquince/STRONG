@@ -8,7 +8,7 @@ LIST_COG=open(SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt").read().spl
 LIST_OTHER_COG=[cog for cog in LIST_COG if cog not in set(LIST_LONG_COG)]
 
 rule all:
-     input: expand("{cogpaths}/StrainAnalysis_stdout.txt",cogpaths=LIST_COGPATHS)
+     input: expand("{cogpaths}/profile_done",cogpaths=LIST_COGPATHS)
 
 
 rule extract_subgraphs:
@@ -45,14 +45,4 @@ rule move_non_interesting_COGs:
             os.system("mv %s %s/other_cogs/"%(file,wildcards.path))
 
 
-rule BayesAGraphSVA:
-    input:  "{path}/profile_done"
-    output: "{path}/StrainAnalysis_stdout.txt"
-    log:    "{path}/BayesPaths.log"
-    params : kmer=ASSEMBLY_K,
-             read_len=READ_LENGTH
-    shell : """
-            cd {wildcards.path}
-            python3 /mnt/gpfs/Hackathon/BayesAGraphSVA/BayesPaths.py ../../../{wildcards.path}/StrainAnalysis {params.kmer} ../../../{wildcards.path}/StrainAnalysis -g 16 -e /mnt/gpfs/Hackathon/BayesAGraphSVA/runfg_source/ -r {params.read_len} > ../../../{output} 2>../../../{log}
-            """ 
 

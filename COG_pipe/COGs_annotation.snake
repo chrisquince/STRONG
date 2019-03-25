@@ -55,16 +55,6 @@ rule parse_cogs_annotation:
     shell:
         "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file /home/sebr/seb/Applications/CONCOCT/scgs/cdd_to_cog.tsv  > {output}"
 
-# transform gff into bed  
-rule gff_to_bed:
-    input:
-        "annotation/{group}/{group}.gff"
-    output:
-        "annotation/{group}/{group}.bed2"
-    shell:
-        "{SCRIPTS}/Gff_to_bed.py {input}"
-
-
 # extract from the bed file all position of SCG 
 rule extract_SCG_sequences:
     input:

@@ -1,0 +1,15 @@
+include: "HeavyLifting.snake"
+
+rule all_second:
+     input: expand("{cogpaths}/StrainAnalysis_stdout.txt",cogpaths=LIST_COGPATHS)
+
+rule BayesAGraphSVA:
+    input:  "{path}/profile_done"
+    output: "{path}/StrainAnalysis_stdout.txt"
+    log:    "{path}/BayesPaths.log"
+    params : kmer=ASSEMBLY_K,
+             read_len=READ_LENGTH
+    shell : """
+            cd {wildcards.path}
+            python3 /mnt/gpfs/Hackathon/BayesAGraphSVA/BayesPaths.py ../../../{wildcards.path}/StrainAnalysis {params.kmer} ../../../{wildcards.path}/StrainAnalysis -g 16 -e /mnt/gpfs/Hackathon/BayesAGraphSVA/runfg_source/ -r {params.read_len} > ../../../{output} 2>../../../{log}
+            """ 

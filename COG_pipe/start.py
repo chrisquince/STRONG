@@ -92,7 +92,6 @@ with cd(exec_dir):
     with open(config_path) as config_in:
         config = yaml.load(config_in)
     fill_default_values(config)
-    print(config)
     DESMAN_execution=config["desman"]["execution"]
     call_snake.nb=0
     print("Step #1 - Assembly / binning / COG calling")

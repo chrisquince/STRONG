@@ -24,6 +24,8 @@ ASSEMBLY_K = config["assembly"]["k"][-1]
 THREADS = config["threads"]
 SCG_DATA = config["scg_data"]
 MIN_CONTIG_SIZE = config["concoct_contig_size"]
+DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
+DESMAN_REPEAT = config["desman"]["nb_repeat"]
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented

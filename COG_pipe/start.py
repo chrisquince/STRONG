@@ -92,8 +92,18 @@ with cd(exec_dir):
     with open(config_path) as config_in:
         config = yaml.load(config_in)
     fill_default_values(config)
+    DESMAN_execution=config["desman"]["execution"]
     call_snake.nb=0
     print("Step #1 - Assembly / binning / COG calling")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
     print("Step #2 - graph processing / strain calling")
     call_snake(["--snakefile", "HeavyLifting.snake"])
+    if DESMAN_execution :
+        print("Step #4 - strain calling using Desman") 
+        call_snake(["--snakefile", "Desman.snake"])
+    # print("Step #3 - strain calling")
+    # call_snake(["--snakefile", "BayesAGraphsSVA_for_debug_purpose.snake"])
+
+
+
+    

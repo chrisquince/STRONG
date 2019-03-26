@@ -9,3 +9,7 @@ assembly:
     mem: 2000
     dir: /home/sergei/cog_tools/spades/bin
     groups: ['*']
+desman:
+    execution: 1
+    nb_haplotypes: 10
+    nb_repeat: 5

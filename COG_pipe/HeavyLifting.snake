@@ -1,48 +1,30 @@
 include: "Common.snake"
 
 import glob
+import os
 
-LIST_COGPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_*/SCG.fna")]
-LIST_LONG_COG=open(SCG_DATA+"/long_scg.txt").read().split()
-LIST_COG=open(SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt").read().split()
-LIST_OTHER_COG=[cog for cog in LIST_COG if cog not in set(LIST_LONG_COG)]
+BIN_PATHS=[os.path.dirname(path) for path in glob.glob("binning/*/Bin_*/SCG.fna")]
 
 rule all:
-     input: expand("{cogpaths}/profile_done",cogpaths=LIST_COGPATHS)
-
+     input: expand("{bin}/StrainAnalysis/profile.done", bin=BIN_PATHS)
 
 rule extract_subgraphs:
     input:   cogs="binning/{group}/{bin}/SCG.fna",
              gfa="assembly/high_res/{group}/simplified.gfa"
-    output:  touch("binning/{group}/{bin}/done"),
-    log:     "binning/{group}/{bin}/extract_subgraph.log"
-    params:  k=ASSEMBLY_K
+    output:  touch("binning/{group}/{bin}/StrainAnalysis/subgraph.done"),
+    log:     "binning/{group}/{bin}/StrainAnalysis/subgraph.log"
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.bin}/StrainAnalysis -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o $(dirname {output}) -k {ASSEMBLY_K} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
 
 rule create_unitig_profile:
-	input:  "{path}/moving_done"
-	output: touch('{path}/profile_done')
+	input: flag="binning/{group}/{bin}/StrainAnalysis/subgraph.done",
+           mult_prof="assembly/high_res/{group}/simplified.mult_prof"
+	output: touch('binning/{group}/{bin}/StrainAnalysis/profile.done')
 	shell : """
-            for file in {wildcards.path}/StrainAnalysis/*gfa; do
-              stub=${{file%.gfa}}
-              if [ ! -f ${{stub}}.csv ]; then
+            for file in $(dirname {input.flag})/*gfa; do
+                stub=${{file%.gfa}}
                 awk '/^S/{{print ">"$2"\\n"$3 }}' $file | grep ">" | sed 's/>//g' > $stub.id    
-                awk 'FNR==NR {{hash[$1]; next}} $1 in hash' $stub.id assembly/high_res/group1/simplified.mult_prof | sed 's/\t/,/g' | sed s'/.$//' > ${{stub}}.csv
+                awk 'FNR==NR {{hash[$1]; next}} $1 in hash' $stub.id {input.mult_prof} | sed 's/\t/,/g' | sed s'/.$//' > ${{stub}}.csv
                 rm $stub.id
-              fi
             done
             """
-
-rule move_non_interesting_COGs:
-    input:   "{path}/done"
-    output:  touch("{path}/moving_done")
-    run:
-        list_files=glob.glob(wildcards.path+"/StrainAnalysis/COG*")
-        list_moves=[files for files in list_files if files.split(".")[0].split('/')[-1] in LIST_OTHER_COG]
-        os.system("mkdir %s/other_cogs" % wildcards.path)
-        for file in list_moves :
-            os.system("mv %s %s/other_cogs/" % (file,wildcards.path))
-
-
-

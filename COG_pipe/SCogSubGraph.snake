@@ -6,9 +6,9 @@ include: "COGs_annotation.snake"
 import os.path
 
 rule all: 
-    input: cov=expand("binning/{group}/C10K_coverage.tsv",group=GROUPS),
-           bins=expand("binning/{group}/clustering_gt"+str(MIN_CONTIG_SIZE)+".csv",group=GROUPS),
+    input: cov=expand("binning/{group}/C10K_coverage.tsv", group=GROUPS),
+           bins=expand("binning/{group}/clustering_merged.csv", group=GROUPS),
            profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
            scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
-           gfa=dynamic(expand("binning/{group}/Bin_{{path1}}/SCG.fna",group=GROUPS))
+           gfa=expand("binning/{group}/bin_folders.done", group=GROUPS)
 

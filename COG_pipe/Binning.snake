@@ -127,5 +127,5 @@ rule merge_contigs:
 rule create_bin_folders:
     input:   bin="binning/{group}/clustering_merged.csv",
              fasta="annotation/{group}/{group}_SCG.fna"
-    output:  dynamic("binning/{group}/Bin_{path1}/SCG.fna")
+    output:  touch("binning/{group}/bin_folders.done")
     shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f binning/{wildcards.group}/"

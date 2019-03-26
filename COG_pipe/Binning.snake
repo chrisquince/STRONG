@@ -107,12 +107,12 @@ rule refine:
             table="binning/{group}/clustering_SCG_table.csv",
             bins_R="binning/{group}/clustering_refine.csv",
             table_R="binning/{group}/clustering_SCG_table_R.csv"
-    log:    temp("binning/{group}/clustering.log")
+    log:    "binning/{group}/clustering.log"
     threads: 1000
     shell:  """ {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
             sed '1d' {input.bins}  > {output.R}
             cd binning/{wildcards.group}
-            concoct_refine ../../{output.R} ../../{input.data} ../../{output.table} -t {threads} &>../../{log}
+            concoct_refine ../../{output.R} ../../{input.data} ../../{output.table} -t {threads} &> ../../{log}
             cd ../../
             {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
             """

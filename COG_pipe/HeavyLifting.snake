@@ -12,16 +12,16 @@ rule all:
 
 
 rule extract_subgraphs:
-    input:   cogs="binning/{group}/{path1}/SCG.fna",
+    input:   cogs="binning/{group}/{bin}/SCG.fna",
              gfa="assembly/high_res/{group}/simplified.gfa"
-    output:  touch("binning/{group}/{path1}/done"),
-    log:     "binning/{group}/{path1}/extract_subgraph.log"
+    output:  touch("binning/{group}/{bin}/done"),
+    log:     "binning/{group}/{bin}/extract_subgraph.log"
     params:  k=ASSEMBLY_K
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.path1}/StrainAnalysis -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
+    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o binning/{wildcards.group}/{wildcards.bin}/StrainAnalysis -k {params} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
 
 rule create_unitig_profile:
-	input:  "{path}/StrainAnalysis/moving_done"
+	input:  "{path}/moving_done"
 	output: touch('{path}/profile_done')
 	shell : """
             for file in {wildcards.path}/StrainAnalysis/*gfa; do
@@ -36,13 +36,13 @@ rule create_unitig_profile:
 
 rule move_non_interesting_COGs:
     input:   "{path}/done"
-    output:  touch("{path}/StrainAnalysis/moving_done")
+    output:  touch("{path}/moving_done")
     run:
-        List_files=glob.glob(wildcards.path+"/StrainAnalysis/COG*")
-        List_moves=[files for files in List_files if files.split(".")[0].split('/')[-1] in LIST_OTHER_COG]
-        os.system("mkdir %s/other_cogs"%wildcards.path)
-        for file in List_moves :
-            os.system("mv %s %s/other_cogs/"%(file,wildcards.path))
+        list_files=glob.glob(wildcards.path+"/StrainAnalysis/COG*")
+        list_moves=[files for files in list_files if files.split(".")[0].split('/')[-1] in LIST_OTHER_COG]
+        os.system("mkdir %s/other_cogs" % wildcards.path)
+        for file in list_moves :
+            os.system("mv %s %s/other_cogs/" % (file,wildcards.path))
 
 
 

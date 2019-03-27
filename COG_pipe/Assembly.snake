@@ -45,7 +45,7 @@ rule spades:
              ks=','.join(map(str, config["assembly"]["k"])),
              dir="assembly/spades/{group}"
              #bh=lambda w: "" if is_fastq(w) else "--only-assembler"
-    threads: 16
+    threads: config["assembly"]["threads"]
     log:     "assembly/spades/{group}.log"
     message: "Assembling {wildcards.group} with metaSPAdes"
     shell: 

@@ -7,6 +7,7 @@ assembly:
     assembler: spades
     k: [21,33,55]
     mem: 2000
+    threads: 24
     dir: /home/sergei/cog_tools/spades/bin
     groups: ['*']
 desman:

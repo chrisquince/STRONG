@@ -1,6 +1,6 @@
 data: /mnt/gpfs/Hackathon/SyntheticCommunity  # path to data folder
 cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog
-soft: /home/sergei/cog_tools
+soft: /home/sergei/cog_tools2
 concoct_contig_size: 1000
 read_length: 150
 assembly: 

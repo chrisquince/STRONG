@@ -15,7 +15,7 @@ rule all :
   # input: expand("{bin_path}/Samples_files/SCG_bed_like.tsv",bin_path=LIST_BINPATHS)
   input: expand("{bin_path}/Desman/best_run.txt",bin_path=LIST_BINPATHS),
          expand("{bin_path}/Desman/Deviance.pdf",bin_path=LIST_BINPATHS),
-         expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
+         # expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
 
 
 
@@ -97,12 +97,12 @@ rule bam_readcount_chris:
         fasta = "{path}/contigs.fa",
         bam_file = "{path}/Samples_files/{sample}.bam",
         bed_file = "{path}/Samples_files/bin.bed"
-    output: "{path}/Samples_files/{sample}_chris.cnt"
+    output: "{path}/Samples_files/{sample}_chris.cnt.gz"
     log:
         "{path}/Samples_files/bam_readcount_{sample}_chris.log"
     shell:"""
         samtools index {input.bam_file} {input.bam_file}.bai
-        bam-readcount -l {input.bed_file} -f {input.fasta} {input.bam_file} 2> {log} > {output}
+        bam-readcount -l {input.bed_file} -f {input.fasta} {input.bam_file} 2> {log} | gzip > {output}
         """
 
 
@@ -157,7 +157,7 @@ rule get_bed_like_file_for_ExtractCountFreqGenes :
 
 rule extract_counts_chris:
     input:
-        all_counts = lambda wildcards: expand("{path}/{sample}_chris.cnt",sample=SAMPLES,path=wildcards.path),
+        all_counts = lambda wildcards: expand("{path}/{sample}_chris.cnt.gz",sample=SAMPLES,path=wildcards.path),
         SCG_bedlike="{path}/SCG_bed_like.tsv"
     output:
         "{path}/count_chris.csv"
@@ -166,7 +166,6 @@ rule extract_counts_chris:
     log:
         "{path}/extract_counts_chris.log"
     shell:"""
-    gzip -f {input.all_counts}
     python {SCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
         """
 

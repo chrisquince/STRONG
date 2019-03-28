@@ -174,9 +174,6 @@ rule generate_data_for_fastree:
     {SCRIPTS}/MapTI.pl {SCG_DATA}/TaxaSpeciesR.txt < $({SCRIPTS}/CombineGenes.pl {output.names} {input.trimed}) > {output.gfa}
     """
 
-
-
-
 rule Launch_FastTree:
     input: "{path}/AlignAllR.gfa"
     output: "{path}/AlignAllR.tree"

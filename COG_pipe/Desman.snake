@@ -13,8 +13,8 @@ rule all :
   # input: expand("{bin_path}/{sample}.cnt",bin_path=LIST_BINPATHS,sample=SAMPLES)
   # input: expand("{bin_path}/Desman/freqs_{pipeline}.csv",bin_path=LIST_BINPATHS,pipeline=["chris_sel_var","sergey"])
   # input: expand("{bin_path}/Samples_files/SCG_bed_like.tsv",bin_path=LIST_BINPATHS)
-  input: expand("{bin_path}/Desman/best_run.txt",bin_path=LIST_BINPATHS),
-         expand("{bin_path}/Desman/Deviance.pdf",bin_path=LIST_BINPATHS),
+  input: expand("{bin_path}/Desman/desman_analysis_done",bin_path=LIST_BINPATHS)
+         # expand("{bin_path}/Desman/Deviance.pdf",bin_path=LIST_BINPATHS),
          # expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
 
 
@@ -178,7 +178,7 @@ rule Filter_Variant:
     log:
         "{path}/Samples_files/Filter_variant.log"
     shell:"""
-        Variant_Filter.py {input} -o {params} -p -m 1.0 2>{log}
+        {SCRIPTS}/Variant_Filter.py {input} -o {params} -p -m 1.0 2>{log}
         """
 
 rule run_desman:
@@ -186,7 +186,7 @@ rule run_desman:
         sel_var = "{path}/freqs_chris_sel_var.csv",
         err="{path}/freqs_chris_tran_df.csv"
     output:
-        desman_results = expand("{{path}}/Run_{{g}}_{{r}}/{file_type}",file_type = ["log_file.txt", "fit.txt", "Gamma_star.csv", "Eta_star.csv"])
+        touch("{path}/Run_{g}_{r}/desman_done")
     params:"{path}/Run_{g}_{r}"
     threads:10
     log:
@@ -195,40 +195,66 @@ rule run_desman:
       desman {input.sel_var} -e {input.err} -o {params} -i 100 -g {wildcards.g} -s {wildcards.r} &> {log}
       """
 
-rule plot_posterior_deviance:
-  input:
-      Fits=expand("{{path}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
-  output:
-      dev="{path}/Deviance.csv",
-      plot="{path}/Deviance.pdf"
-  shell:"""
-  cat {input.Fits} | cut -d"," -f2- > {output.dev}
-  sed -i '1iH,G,LP,Dev' {output.dev}
-  {SCRIPTS}/PlotDev.R -l {output.dev} -o {output.plot} 2> /dev/null
-  """
-rule choose_haplotype_nb:
-  input:
-      Fits=expand("{{path}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
-  output:
-      "{path}/best_run.txt"
-  params:"{path}/Run"
-  shell: "python {SCRIPTS}/resolvenhap.py {params} > {output} "
+# TODO REplace all of that with some checkpoint rules
 
-rule get_variants_cores:
-  input: 
-    contigs=lambda w:"profile/scaffolds/"+w.path.split("/")[1]+".fasta",
-    SCG="{path}/Samples_files/SCG_bed_like.tsv",
-    variants="{path}/Desman/freqs_chris_sel_var.csv",
-    best_run="{path}/Desman/best_run.txt"
-  output:
-    seq=touch("{path}/Desman/haplotype_seqs/done"),
-    coregenes="{path}/Desman/coregenes.txt"
-  params:
-    filt_tau_best=lambda wildcards:open(wildcards.path+"/Desman/best_run.txt").read().rstrip().split(",")[-1],
-    output_dir=lambda wildcards:wildcards.path+"/Desman/haplotype_seqs/"
-  shell:"""
-    cut -d"," -f 1 < {input.variants} | sort | uniq | sed '1d' > {output.coregenes}
-    python {SCRIPTS}/GetVariantsCore.py {input.contigs} {input.SCG} {params.filt_tau_best} {output.coregenes} -o {params.output_dir}
-    """
+rule Desman_post_processing:
+  input: expand("{{path}}/Run_{g}_{r}/desman_done",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
+  output: touch("{path}/desman_analysis_done")
+  params: lambda w: "profile/scaffolds/"+w.path.split("/")[1]+".fasta"
+  shell : """
+  if [ -f {wildcards.path}/Run_{DESMAN_HAPLOTYPE_NB}_0/fit.txt ]
+  then
+    # plot posterior deviance 
+    cat $( ls {wildcards.path}/Run_*/fit.txt) | cut -d"," -f2- > {wildcards.path}/Deviance.csv
+    sed -i '1iH,G,LP,Dev' {wildcards.path}/Deviance.csv
+    {SCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {wildcards.path}/Deviance.pdf 2> /dev/null
+
+    #choose choose_haplotype_nb
+    python {SCRIPTS}/resolvenhap.py {wildcards.path}/Run > {wildcards.path}/best_run.txt
+
+    #extract relevant sequences
+    cut -d"," -f 1 < {wildcards.path}/freqs_chris_sel_var.csv | sort | uniq | sed '1d' > {wildcards.path}/coregenes.txt
+    mkdir -p {wildcards.path}/haplotype_seqs
+    python {SCRIPTS}/GetVariantsCore.py {params} {wildcards.path}/../Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {wildcards.path}/best_run.txt) {wildcards.path}/coregenes.txt -o {wildcards.path}/haplotype_seqs/
+  fi
+  """
+
+
+# rule plot_posterior_deviance:
+#   input:
+#       Fits=expand("{{path}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
+#   output:
+#       dev="{path}/Deviance.csv",
+#       plot="{path}/Deviance.pdf"
+#   shell:"""
+#   cat {input.Fits} | cut -d"," -f2- > {output.dev}
+#   sed -i '1iH,G,LP,Dev' {output.dev}
+#   {SCRIPTS}/PlotDev.R -l {output.dev} -o {output.plot} 2> /dev/null
+#   """
+
+# rule choose_haplotype_nb:
+#   input:
+#       Fits=expand("{{path}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
+#   output:
+#       "{path}/best_run.txt"
+#   params:"{path}/Run"
+#   shell: "python {SCRIPTS}/resolvenhap.py {params} > {output} "
+
+# rule get_variants_cores:
+#   input: 
+#     contigs=lambda w:"profile/scaffolds/"+w.path.split("/")[1]+".fasta",
+#     SCG="{path}/Samples_files/SCG_bed_like.tsv",
+#     variants="{path}/Desman/freqs_chris_sel_var.csv",
+#     best_run="{path}/Desman/best_run.txt"
+#   output:
+#     seq=touch("{path}/Desman/desman_analysis_done"),
+#     coregenes="{path}/Desman/coregenes.txt"
+#   params:
+#     output_dir=lambda wildcards:wildcards.path+"/Desman/haplotype_seqs/"
+#   shell:"""
+#     cut -d"," -f 1 < {input.variants} | sort | uniq | sed '1d' > {output.coregenes}
+#     python {SCRIPTS}/GetVariantsCore.py {input.contigs} {input.SCG} $(cut -d"," -f5 "" "{wildcards.path}/Desman/best_run.txt") {output.coregenes} -o {params.output_dir}
+#     """
+
 
 # python $DESMAN/scripts/GetVariantsCore.py profile/scaffolds/group1.fasta binning/group1/Bin_0/Samples_files/SCG_bed_like.tsv binning/group1/Bin_0/Desman/Run_3_0/Filtered_Tau_star.csv binning/group1/Bin_0/Desman/coregenes.txt -o test

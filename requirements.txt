@@ -1,15 +1,14 @@
--# This file may be used to create an environment using:
--# $ conda create --name exp-design -c bioconda --file <this file>
--python
--snakemake
--biopython
--pyyaml
--seqtk
--fastqc
--cutadapt
--bowtie2
--samtools
--r-essentials
--blast
--mosdepth
--gfapy
+# This file may be used to create an environment using:
+# $ conda create --name exp-design -c bioconda --file <this file>
+snakemake
+biopython
+pyyaml
+seqtk
+fastqc
+cutadapt
+bowtie2
+samtools
+r-essentials
+blast
+mosdepth
+gfapy

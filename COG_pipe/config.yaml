@@ -8,7 +8,7 @@ assembly:
     k: [21,33,55]
     mem: 2000
     threads: 24
-    dir: /home/sergei/cog_tools/spades/bin
+    dir: /home/sergei/cog_tools2/spades/bin
     groups: ['*']
 desman:
     execution: 1

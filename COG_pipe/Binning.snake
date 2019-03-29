@@ -90,7 +90,7 @@ rule concoct:
              Data="binning/{group}/original_data_gt%d.csv"%MIN_CONTIG_SIZE             
     params:  mine_contig_size=MIN_CONTIG_SIZE
     log :   "binning/{group}/concoct.logs"
-    threads: THREADS
+    threads: 1000
     shell:   """
              concoct --coverage_file {input.cov} --composition_file {input.fasta} -b binning/{wildcards.group} -c $(<{input.nb_bin}) -l {params} -t {threads} &>{log} 
              """

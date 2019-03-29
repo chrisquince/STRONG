@@ -94,10 +94,10 @@ with cd(exec_dir):
     fill_default_values(config)
     DESMAN_execution=config["desman"]["execution"]
     call_snake.nb=0
-    # print("Step #1 - Assembly / binning / COG calling")
-    # call_snake(["--snakefile", "SCogSubGraph.snake"])
-    # print("Step #2 - graph processing / strain calling")
-    # call_snake(["--snakefile", "HeavyLifting.snake"])
+    print("Step #1 - Assembly / binning / COG calling")
+    call_snake(["--snakefile", "SCogSubGraph.snake"])
+    print("Step #2 - graph processing / strain calling")
+    call_snake(["--snakefile", "HeavyLifting.snake"])
     #print("Step #3 - strain calling")
     #call_snake(["--snakefile", "BayesAGraphsSVA_for_debug_purpose.snake"])
     if DESMAN_execution :

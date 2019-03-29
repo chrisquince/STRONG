@@ -83,6 +83,7 @@ rule bam_readcount_sergey:
     input:
         sites_list = "{path}/selected_sites.tsv",
         fasta = "{path}/contigs.fa",
+        fai = "{path}/contigs.fai",       
         bam_file = "{path}/Samples_files/{sample}.bam"
     output: "{path}/Samples_files/{sample}_sergey.cnt"
     log:
@@ -91,10 +92,18 @@ rule bam_readcount_sergey:
         samtools index {input.bam_file} {input.bam_file}.bai
         bam-readcount -l {input.sites_list} -f {input.fasta} {input.bam_file} 2> {log} > {output}
         """
+rule index_fasta_files:
+  input:
+    fasta = "{path}.fa"
+  output:
+    fai = "{path}.fai"
+  shell: "samtools index {input.fasta} {output.fai}"
+
 
 rule bam_readcount_chris:
     input:
         fasta = "{path}/contigs.fa",
+        fai = "{path}/contigs.fai",
         bam_file = "{path}/Samples_files/{sample}.bam",
         bed_file = "{path}/Samples_files/bin.bed"
     output: "{path}/Samples_files/{sample}_chris.cnt.gz"
@@ -178,7 +187,7 @@ rule Filter_Variant:
     log:
         "{path}/Samples_files/Filter_variant.log"
     shell:"""
-        {SCRIPTS}/Variant_Filter.py {input} -o {params} -p -m 1.0 2>{log}
+        {SCRIPTS}/Variant_Filter.py {input} -o {params} -p -m {MIN_COV_DESMAN} 2>{log}
         """
 
 rule run_desman:
@@ -192,7 +201,7 @@ rule run_desman:
     log:
         "{path}/Run_{g}_{r}/{g}_{r}.log"
     shell:"""
-      desman {input.sel_var} -e {input.err} -o {params} -i 100 -g {wildcards.g} -s {wildcards.r} &> {log}
+      desman {input.sel_var} -e {input.err} -o {params} -m {MIN_COV_DESMAN} -i 100 -g {wildcards.g} -s {wildcards.r} &> {log}
       """
 
 # TODO REplace all of that with some checkpoint rules

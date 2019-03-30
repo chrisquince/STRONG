@@ -52,6 +52,6 @@ rule simplify_subgraphs:
               in=$(dirname {input})
               for g in $in/*gfa; do
                   name=$(basename $g .gfa)
-                  {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
+                  {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
               done
               """)

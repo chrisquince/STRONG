@@ -38,7 +38,7 @@ args = parser.parse_args()
 exec_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 LOCAL_DIR = os.path.realpath(exec_dir)
 
-base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR, "--latency-wait", "120"]
+base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR, "--latency-wait", "120","-k"]
 
 if args.verbose:
     # Output commands + give reasons + verbose (add "-n" for dry-run)

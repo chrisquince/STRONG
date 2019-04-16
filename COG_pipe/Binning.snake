@@ -33,7 +33,7 @@ rule bedtools:
 # ---- use a awk onliner to regroup all coverages into a unique file -----------------------
 rule coverage:
     input:   lambda w : ["profile/scaffolds/"+w.group+"/"+sample.split('/')[-1]+".cov" for sample in  GROUPS[w.group]]
-    output:  "binning/{group}/C10K_coverage.tsv"
+    output:  "binning/{group}/Bin_ini/C10K_coverage.tsv"
     shell :  """
             echo -e "contig\t""$(ls {input} | cut -f1 -d "." | rev | cut -f1 -d "/" |rev | tr "\n" "\t" | sed 's/\t$//')"> {output}
             awk 'NR==FNR{{Matrix_coverage[1,FNR]=$4}}FNR==1{{f++}}{{Matrix_coverage[f+1,FNR]=$5}}END{{for(x=1;x<=FNR;x++){{for(y=1;y<ARGC+1;y++){{if(y<ARGC){{printf("%s\t",Matrix_coverage[y,x])}}if(y==ARGC){{printf("%s",Matrix_coverage[y,x]);print""}}}}}}}}' {input} >>{output}"""
@@ -83,34 +83,34 @@ rule initial_quantity_of_bins:
 
 #  concoct 
 rule concoct:
-    input:   cov="binning/{group}/C10K_coverage.tsv",
+    input:   cov="binning/{group}/Bin_ini/C10K_coverage.tsv",
              fasta="profile/split_c10k/{group}.fasta",
              nb_bin="annotation/{group}/{group}_nb_ini_bins.txt"
-    output:  bins="binning/{group}/clustering_gt%d.csv"%MIN_CONTIG_SIZE,
-             Data="binning/{group}/original_data_gt%d.csv"%MIN_CONTIG_SIZE             
+    output:  bins="binning/{group}/Bin_ini/clustering_gt%d.csv"%MIN_CONTIG_SIZE,
+             Data="binning/{group}/Bin_ini/original_data_gt%d.csv"%MIN_CONTIG_SIZE             
     params:  mine_contig_size=MIN_CONTIG_SIZE
-    log :   "binning/{group}/concoct.logs"
+    log :   "binning/{group}/Bin_ini/concoct.logs"
     threads: 1000
     shell:   """
-             concoct --coverage_file {input.cov} --composition_file {input.fasta} -b binning/{wildcards.group} -c $(<{input.nb_bin}) -l {params} -t {threads} &>{log} 
+             concoct --coverage_file {input.cov} --composition_file {input.fasta} -b binning/{wildcards.group}/Bin_ini -c $(<{input.nb_bin}) -l {params} -t {threads} &>{log} 
              """
 
 
 rule refine:
-    input:  bins="binning/{group}/clustering_gt%d.csv"%MIN_CONTIG_SIZE,
+    input:  bins="binning/{group}/Bin_ini/clustering_gt%d.csv"%MIN_CONTIG_SIZE,
             SCG="annotation/{group}/{group}_SCG.fna",
-            Data="binning/{group}/original_data_gt%d.csv"%MIN_CONTIG_SIZE
-    output: R=temp("binning/{group}/clustering_gt%dR.csv")%MIN_CONTIG_SIZE,
-            table="binning/{group}/clustering_gt%d_SCG_table.csv"%MIN_CONTIG_SIZE,
-            bins_R="binning/{group}/clustering_refine.csv",
-            table_R="binning/{group}/clustering_gt%d_SCG_table_R.csv"%MIN_CONTIG_SIZE
-    log:    temp("binning/{group}/clustering.log")
+            Data="binning/{group}/Bin_ini/original_data_gt%d.csv"%MIN_CONTIG_SIZE
+    output: R=temp("binning/{group}/Bin_ini/clustering_gt%dR.csv")%MIN_CONTIG_SIZE,
+            table="binning/{group}/Bin_ini/clustering_gt%d_SCG_table.csv"%MIN_CONTIG_SIZE,
+            bins_R="binning/{group}/Bin_ini/clustering_refine.csv",
+            table_R="binning/{group}/Bin_ini/clustering_gt%d_SCG_table_R.csv"%MIN_CONTIG_SIZE
+    log:    temp("binning/{group}/Bin_ini/clustering.log")
     threads: 1000
     shell:  """ {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
             sed '1d' {input.bins}  > {output.R}
-            cd binning/{wildcards.group}
-            concoct_refine ../../{output.R} ../../{input.Data} ../../{output.table} -t {threads} &>../../{log}
-            cd ../../
+            cd binning/{wildcards.group}/Bin_ini/
+            concoct_refine ../../../{output.R} ../../../{input.Data} ../../../{output.table} -t {threads} &>../../../{log}
+            cd ../../../
             {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
             """
 
@@ -122,22 +122,22 @@ rule merge_contigs:
     shell:   "{SCRIPTS}/Consensus.py {input} >{output} 2>{log}"
 
 rule create_bin_folders:
-    input:   bin="binning/{group}/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
+    input:   bin="binning/{group}/Bin_ini/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
              fasta="annotation/{group}/{group}_SCG.fna"
-    output:  touch("binning/{group}/folder_done")
-    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f binning/{wildcards.group}/"
+    output:  touch("binning/{group}/Bin_ini/folder_done")
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f binning/{wildcards.group}/Bin_ini/"
 
 rule compute_avg_cov:
-    input:   "binning/{group}/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
-    output:  "binning/{group}/bin_cov.tsv"
+    input:   "binning/{group}/Bin_ini/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    output:  "binning/{group}/Bin_ini/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 # --------- Start of MagAnalysis -----------------------------------------------------------------
 
 rule aggregate_SCG:
     input: "binning/{group}/folder_done"
-    output: expand("binning/{{group}}/MagAnalysis/SCGs/{COG}.fna",COG=LIST_COGS) 
-    params: "binning/{group}/"
+    output: expand("binning/{{group}}/Bin_ini/MagAnalysis/SCGs/{COG}.fna",COG=LIST_COGS) 
+    params: "binning/{group}/Bin_ini/"
     shell: """
      {SCRIPTS}/ExtractSCGs.py {params} {SCG_DATA}/scg_cogs_min0.97_max1.03_unique_genera.txt {params}MagAnalysis/
       """

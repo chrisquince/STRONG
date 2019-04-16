@@ -59,7 +59,7 @@ def get_list_subgraph_done(wildcards):
   group,Bin_type=(wildcards["group"],wildcards["Bin_type"])
   checkpoint_output = checkpoints.fuse.get(group=group,Bin_type=Bin_type)
   List_bins=[os.path.dirname(path) for path in glob.glob("binning/"+group+"/"+Bin_type+"/Bin_*/SCG.fna")]
-  return [path+"/StrainAnalysis/subgraph.done" for path in List_bins]
+  return [path+"/StrainAnalysis/simplif.done" for path in List_bins]
  
 checkpoint fuse:
     input : "binning/{group}/{Bin_type}/folder_done"
@@ -122,18 +122,18 @@ rule flag_bad_cogs:
           Handle.write("\n".join(sorted(List_cogs)))
           Handle.close()
 
-def List_all_bins(wildcards):
-    checkpoint_output = checkpoints.Merge_Bins.get(path="binning/"+wildcards.group).output[0]
-    BIN_PATHS_local=[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/*/Bin_*/SCG.fna")]
-    return BIN_PATHS_local
+def List_cogs_selected(wildcards):
+    checkpoint_output = checkpoints.Merge_Bins.get(path="binning/"+wildcards.group)
+    BIN_PATHS_local=[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/Bin_ini/Bin_*/SCG.fna")]+[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/Merged_Bin/Bin_*/SCG.fna")]
+    List_cogs=[binpath+"/StrainAnalysis/List_cogs_selected.tsv" for binpath in BIN_PATHS_local]
+    return List_cogs
 
-rule Select_Bin_to_run:
-  input : List_all_bins
+checkpoint Select_Bin_to_run:
+  input :  List_cogs_selected
   output : touch("binning/{group}/Bin_Selected/bin_selected.done")
   run :
-    List_cogselect=[bin_path+"/StrainAnalysis/List_cogs_selected.tsv" for bin_path in input]
-    Dict_Bin_ini={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in List_cogselect if "Bin_ini" in path}
-    Dict_Merged_bin={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in List_cogselect if "Merged_Bin" in path if path.split("/")[-3] not in Dict_Bin_ini}
+    Dict_Bin_ini={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in input if "Bin_ini" in path}
+    Dict_Merged_bin={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in input if "Merged_Bin" in path if path.split("/")[-3] not in Dict_Bin_ini}
     Dict_Bin_cogslist={key:value for key,value in list(Dict_Bin_ini.items())+list(Dict_Merged_bin.items())}
     for Bin,coglist in Dict_Bin_cogslist.items() :
       if len(list(open(coglist).readlines()))>=10 :
@@ -150,9 +150,17 @@ rule BayesAGraphSVA:
     shell : """
             cd {wildcards.path}
             python3 /mnt/gpfs/Hackathon/BayesAGraphSVA/BayesPaths.py -l ../../../../../{input.Cogs} ../../../../../{wildcards.path} {params.kmer} ../../../../../{wildcards.path}/simplif -g 16 -e /mnt/gpfs/Hackathon/BayesAGraphSVA/runfg_source/ -r {params.read_len} > ../../../../../{output} 2>../../../../../{log}
-            """ 
+            """
+
+def List_bins_selected(wildcards):
+    checkpoint_output = checkpoints.Select_Bin_to_run.get(group=wildcards.group)
+    BIN_PATHS_local=[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/Bin_Selected/Bin_*/SCG.fna")]
+    List_cogs=[binpath+"/StrainAnalysis/StrainAnalysis_stdout.txt" for binpath in BIN_PATHS_local]
+    return List_cogs
+
 
 rule define_results:
-  input: lambda wildcard:[binpath+"/StrainAnalysis/StrainAnalysis_stdout.txt" for binpath in List_all_bins(wildcard) if "Bin_Selected" in binpath]
+  input:  "binning/{group}/Bin_Selected/bin_selected.done",
+          List_bins_selected
   output: touch("binning/{group}/pipeline.done")
 

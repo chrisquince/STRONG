@@ -6,12 +6,12 @@ include: "COGs_annotation.snake"
 import os.path
 
 rule all: 
-    input: cov=expand("binning/{group}/C10K_coverage.tsv", group=GROUPS),
-           bins=expand("binning/{group}/clustering_gt"+str(MIN_CONTIG_SIZE)+".csv", group=GROUPS),
+    input: cov=expand("binning/{group}/Bin_ini/C10K_coverage.tsv", group=GROUPS),
+           bins=expand("binning/{group}/Bin_ini/clustering_gt"+str(MIN_CONTIG_SIZE)+".csv", group=GROUPS),
            profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
            scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
-           gfa=expand("binning/{group}/folder_done", group=GROUPS),
-           bin_cov=expand("binning/{group}/bin_cov.tsv", group=GROUPS),
-           # tree=expand("binning/{group}/MagAnalysis/AlignAll/AlignAllR.tree", group=GROUPS)
+           gfa=expand("binning/{group}/Bin_ini/folder_done", group=GROUPS),
+           bin_cov=expand("binning/{group}/Bin_ini/bin_cov.tsv", group=GROUPS),
+           # tree=expand("binning/{group}/Bin_ini/MagAnalysis/AlignAll/AlignAllR.tree", group=GROUPS)
 
 

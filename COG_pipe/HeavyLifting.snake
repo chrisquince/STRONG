@@ -2,31 +2,26 @@ include: "Common.snake"
 
 import glob
 import os
+import re
 
-BIN_PATHS=[os.path.dirname(path) for path in glob.glob("binning/*/Bin_*/SCG.fna")]
-
-BIN_AVG_COV=dict()
-#TODO deal with groups!
-for l in open("binning/group1/bin_cov.tsv"):
-    bin, cov = l.strip().split()
-    BIN_AVG_COV["Bin_" + bin] = cov
+BIN_PATHS=[os.path.dirname(path) for path in glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna")]
 
 rule all:
-     input: expand("{bin}/StrainAnalysis/simplif.done", bin=BIN_PATHS)
+     input:
+      expand("binning/{group}/pipeline.done",group=GROUPS)
 
 rule extract_subgraphs:
-    input:   cogs="binning/{group}/{bin}/SCG.fna",
+    input:   cogs="binning/{group}/{Bin_type}/{bin}/SCG.fna",
              gfa="assembly/high_res/{group}/simplified.gfa"
-    output:  touch("binning/{group}/{bin}/StrainAnalysis/subgraph.done"),
-    log:     "binning/{group}/{bin}/StrainAnalysis/subgraph.log"
+    output:  touch("binning/{group}/{Bin_type}/{bin}/StrainAnalysis/subgraph.done"),
+    log:     "binning/{group}/{Bin_type}/{bin}/StrainAnalysis/subgraph.log"
     threads: THREADS
     shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o $(dirname {output}) -k {ASSEMBLY_K} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
 
-#TODO remove for cycles
 rule create_unitig_profile:
-    input: flag="binning/{group}/{bin}/StrainAnalysis/subgraph.done",
+    input: flag="binning/{group}/{Bin_type}/{bin}/StrainAnalysis/subgraph.done",
            mult_prof="assembly/high_res/{group}/simplified.mult_prof"
-    output: touch('binning/{group}/{bin}/StrainAnalysis/profile.done')
+    output: touch('binning/{group}/{Bin_type}/{bin}/StrainAnalysis/profile.done')
     shell:  """
             rm -rf $(dirname {input.flag})/*.tsv
             for file in $(dirname {input.flag})/*gfa; do
@@ -39,19 +34,125 @@ rule create_unitig_profile:
 
 #FIXME do I need to specify tmp folder
 rule simplify_subgraphs:
-    input: "{path}/{bin}/StrainAnalysis/profile.done"
-    output: touch('{path}/{bin}/StrainAnalysis/simplif.done')
+    input: "binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/profile.done"
+    output: touch('binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/simplif.done')
     threads: THREADS
     run:
-        #TODO add the cov file within bin folder
-        avg_cov = BIN_AVG_COV[wildcards["bin"]]
-        shell("""
-              out=$(dirname {output})/simplif
-              rm -rf $out
-              mkdir -p $out/tmp
-              in=$(dirname {input})
-              for g in $in/*gfa; do
-                  name=$(basename $g .gfa)
-                  {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
-              done
-              """)
+      BIN_AVG_COV=dict()
+      Path="/".join(["binning",wildcards["group"],wildcards["Bin_type"],"bin_cov.tsv"])
+      for l in open(Path):
+          bin, cov = l.strip().split()
+          BIN_AVG_COV["Bin_" + bin] = cov
+      avg_cov = BIN_AVG_COV[wildcards["Bin"]]
+      shell("""
+            out=$(dirname {output})/simplif
+            rm -rf $out
+            mkdir -p $out/tmp
+            in=$(dirname {input})
+            for g in $in/*gfa; do
+                name=$(basename $g .gfa)
+                {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
+            done
+            """)
+
+def get_list_subgraph_done(wildcards):
+  group,Bin_type=(wildcards["group"],wildcards["Bin_type"])
+  checkpoint_output = checkpoints.fuse.get(group=group,Bin_type=Bin_type)
+  List_bins=[os.path.dirname(path) for path in glob.glob("binning/"+group+"/"+Bin_type+"/Bin_*/SCG.fna")]
+  return [path+"/StrainAnalysis/subgraph.done" for path in List_bins]
+ 
+checkpoint fuse:
+    input : "binning/{group}/{Bin_type}/folder_done"
+    output: touch("binning/{group}/{Bin_type}/fuse.done")
+
+rule Check_out_which_bins_need_dereplication :
+    input:   flag=get_list_subgraph_done
+    output:  ignore="binning/{group}/{Bin_type}/List_bin_cogs_to_ignore.tsv",
+             merge="binning/{group}/{Bin_type}/List_bin_to_merge.tsv"
+    shell:   "{SCRIPTS}/Common_unitigs.py binning/{wildcards.group}/{wildcards.Bin_type}/ binning/{wildcards.group}/{wildcards.Bin_type}/"
+
+checkpoint Merge_Bins :
+    input:   "{path}/Bin_ini/List_bin_to_merge.tsv"
+    output:  "{path}/Merged_Bin/bin_cov.tsv",
+              touch("{path}/Merged_Bin/folder_done")
+    run:
+      # merge and remove old bins
+      List_all_bins=[re.search("Bin_\d+",Bin).group() for Bin in BIN_PATHS]
+      for line in open(input[0]) :
+        Split_line=line.rstrip().split("\t")
+        name_new_bin=Split_line[0]
+        List_bins_to_merge=Split_line[1:]
+        New_bin_path=wildcards.path+"/Merged_Bin/"+name_new_bin
+        os.system('mkdir -p '+New_bin_path)
+        List_stufs=lambda text:" ".join([wildcards.path+"/Bin_ini/"+Bin+"/"+text for Bin in List_bins_to_merge])
+        os.system('cat '+List_stufs("contigs.fa")+" > "+New_bin_path+"/contigs.fa")
+        os.system('cat '+List_stufs("SCG.fna")+" > "+New_bin_path+"/SCG.fna")
+        for bins in set(List_all_bins)-set(List_bins_to_merge) :
+          os.system("ln -s ../Bin_ini/"+bins+" "+wildcards.path+"/Merged_Bin/")
+      # create a new contig assignation file 
+      Dico_bin_new_name={element.replace("Bin_",""):line.rstrip().split()[0].replace("Bin_","") for line in open(input[0]) for element in  line.rstrip().split()[1:]}
+      Handle=open(wildcards.path+"/Merged_Bin/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv","w")
+      for line in open(wildcards.path+"/Bin_ini/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv") :
+        contig,bins=line.rstrip().split(",")
+        if bins in Dico_bin_new_name :
+          Handle.write(",".join([contig,Dico_bin_new_name[bins]])+"\n")
+        else :
+          Handle.write(line)
+      Handle.close()
+      # redo the bin_cov.tsv file
+      os.system(SCRIPTS+"/bin_cov.py " +wildcards.path+"/Merged_Bin/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv " +wildcards.path+"/Merged_Bin/bin_cov.tsv "+str(ASSEMBLY_K))
+
+
+rule flag_bad_cogs:
+    input:  "binning/{group}/{Bin_type}/List_bin_cogs_to_ignore.tsv",
+            "binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/simplif.done"
+    output:  "binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/List_cogs_selected.tsv",
+    run:
+      os.system("touch "+output[0])
+      for line in open(input[0]) :
+        Split_line=line.rstrip().split("\t")
+        Bin_name=Split_line[0]
+        if Bin_name==wildcards.Bin :
+          Set_cogs_to_flags=set([])
+          if len(Split_line)!=1 :
+            Set_cogs_to_flags={cog for cog in Split_line[1:]}
+          Cog_path="/".join(["binning",wildcards.group,wildcards.Bin_type,Bin_name,"StrainAnalysis/"])
+          List_cogs=[pathcog.split('/')[-1].split(".")[0] for pathcog in glob.glob(Cog_path+"COG*.gfa") if pathcog.split('/')[-1].split(".")[0] not in Set_cogs_to_flags]
+          Handle=open(Cog_path+"List_cogs_selected.tsv","w")
+          Handle.write("\n".join(sorted(List_cogs)))
+          Handle.close()
+
+def List_all_bins(wildcards):
+    checkpoint_output = checkpoints.Merge_Bins.get(path="binning/"+wildcards.group).output[0]
+    BIN_PATHS_local=[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/*/Bin_*/SCG.fna")]
+    return BIN_PATHS_local
+
+rule Select_Bin_to_run:
+  input : List_all_bins
+  output : touch("binning/{group}/Bin_Selected/bin_selected.done")
+  run :
+    List_cogselect=[bin_path+"/StrainAnalysis/List_cogs_selected.tsv" for bin_path in input]
+    Dict_Bin_ini={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in List_cogselect if "Bin_ini" in path}
+    Dict_Merged_bin={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in List_cogselect if "Merged_Bin" in path if path.split("/")[-3] not in Dict_Bin_ini}
+    Dict_Bin_cogslist={key:value for key,value in list(Dict_Bin_ini.items())+list(Dict_Merged_bin.items())}
+    for Bin,coglist in Dict_Bin_cogslist.items() :
+      if len(list(open(coglist).readlines()))>=10 :
+        MAG_path=os.path.abspath("/".join(coglist.split('/')[:-2]))
+        os.system("ln -s "+MAG_path+" binning/"+wildcards['group']+"/Bin_Selected/")
+      
+rule BayesAGraphSVA:
+    input:  flag="{path}/simplif.done",
+            Cogs="{path}/List_cogs_selected.tsv"
+    output: "{path}/StrainAnalysis_stdout.txt"
+    log:    "{path}/BayesPaths.log"
+    params : kmer=ASSEMBLY_K,
+             read_len=READ_LENGTH
+    shell : """
+            cd {wildcards.path}
+            python3 /mnt/gpfs/Hackathon/BayesAGraphSVA/BayesPaths.py -l ../../../../../{input.Cogs} ../../../../../{wildcards.path} {params.kmer} ../../../../../{wildcards.path}/simplif -g 16 -e /mnt/gpfs/Hackathon/BayesAGraphSVA/runfg_source/ -r {params.read_len} > ../../../../../{output} 2>../../../../../{log}
+            """ 
+
+rule define_results:
+  input: lambda wildcard:[binpath+"/StrainAnalysis/StrainAnalysis_stdout.txt" for binpath in List_all_bins(wildcard) if "Bin_Selected" in binpath]
+  output: touch("binning/{group}/pipeline.done")
+

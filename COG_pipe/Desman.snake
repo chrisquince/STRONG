@@ -83,7 +83,7 @@ rule bam_readcount_sergey:
     input:
         sites_list = "{path}/selected_sites.tsv",
         fasta = "{path}/contigs.fa",
-        fai = "{path}/contigs.fai",       
+        fai = "{path}/contigs.fa.fai",       
         bam_file = "{path}/Samples_files/{sample}.bam"
     output: "{path}/Samples_files/{sample}_sergey.cnt"
     log:
@@ -96,14 +96,14 @@ rule index_fasta_files:
   input:
     fasta = "{path}.fa"
   output:
-    fai = "{path}.fai"
-  shell: "samtools index {input.fasta} {output.fai}"
+    fai = "{path}.fa.fai"
+  shell: "samtools faidx {input.fasta}"
 
 
 rule bam_readcount_chris:
     input:
         fasta = "{path}/contigs.fa",
-        fai = "{path}/contigs.fai",
+        fai = "{path}/contigs.fa.fai",
         bam_file = "{path}/Samples_files/{sample}.bam",
         bed_file = "{path}/Samples_files/bin.bed"
     output: "{path}/Samples_files/{sample}_chris.cnt.gz"

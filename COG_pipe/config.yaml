@@ -10,6 +10,9 @@ assembly:
     threads: 24
     dir: /home/sergei/cog_tools2/spades/bin
     groups: ['*']
+bayespaths:
+    nb_strains: 16
+    dir: /mnt/gpfs/Hackathon/BayesAGraphSVA
 desman:
     execution: 1
     nb_haplotypes: 10

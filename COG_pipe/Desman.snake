@@ -14,6 +14,7 @@ rule all :
   # input: expand("{bin_path}/Desman/freqs_{pipeline}.csv",bin_path=LIST_BINPATHS,pipeline=["chris_sel_var","sergey"])
   # input: expand("{bin_path}/Samples_files/SCG_bed_like.tsv",bin_path=LIST_BINPATHS)
   input: expand("{bin_path}/Desman/desman_analysis_done",bin_path=LIST_BINPATHS)
+  # input: expand("{bin}/contigs.fa",bin=LIST_BINPATHS)
          # expand("{bin_path}/Desman/Deviance.pdf",bin_path=LIST_BINPATHS),
          # expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
 
@@ -25,14 +26,15 @@ rule Get_Bins_contigs :
     fasta="profile/scaffolds/{group}.fasta"
   output:
     expand("binning/{{group}}/Bin_ini/{bin}/contigs.fa",bin=[path.split("/")[-1] for path in LIST_BINPATHS])
-  params: " ".join(map(lambda x:x.split("Bin_")[1],LIST_BINPATHS))
+  params: " ".join(map(lambda x:x.split("Bin_ini/Bin_")[1],LIST_BINPATHS))
   shell:"""
   {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} binning/{wildcards.group}/Bin_ini -l {params}
   for file in binning/{wildcards.group}/Bin_ini/Bin_*.fasta
   do
-  bin_nb=${{file#*Bin_}}
+  bin_nb=$(basename $file)
+  bin_nb=${{bin_nb#*Bin_}}
   bin_nb=${{bin_nb%.fasta}}
-  mv $file binning/{wildcards.group}/Bin_$bin_nb/contigs.fa
+  mv $file binning/{wildcards.group}/Bin_ini/Bin_$bin_nb/contigs.fa
   done
   """
 

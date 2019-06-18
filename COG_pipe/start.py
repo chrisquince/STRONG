@@ -98,10 +98,6 @@ with cd(exec_dir):
     call_snake(["--snakefile", "SCogSubGraph.snake"])
     print("Step #2 - graph processing / strain calling")
     call_snake(["--snakefile", "HeavyLifting.snake"])
-    # print("Step #2.5 - graph processing / strain calling")
-    # call_snake(["--snakefile", "HeavyLifting2.snake"])
-    # print("Step #3 - strain calling")
-    # call_snake(["--snakefile", "BayesAGraphsSVA_for_debug_purpose.snake"])
     if DESMAN_execution :
         print("Step #4 - strain calling using Desman") 
         call_snake(["--snakefile", "Desman.snake"])

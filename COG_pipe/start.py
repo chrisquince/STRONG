@@ -99,7 +99,7 @@ with cd(exec_dir):
     print("Step #2 - graph processing / strain calling")
     call_snake(["--snakefile", "HeavyLifting.snake"])
     if DESMAN_execution :
-        print("Step #4 - strain calling using Desman") 
+        print("Step #3 - strain calling using Desman") 
         call_snake(["--snakefile", "Desman.snake"])
 
 

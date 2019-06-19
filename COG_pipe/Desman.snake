@@ -187,7 +187,7 @@ rule Filter_Variant:
         "{path}/Samples_files/count.csv"
     output :
         expand("{{path}}/Desman/freqs_{output_file_type}",output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
-    params : "{path}/Desman/freqs_chris_"
+    params : "{path}/Desman/freqs_"
     log:
         "{path}/Samples_files/Filter_variant.log"
     shell:"""

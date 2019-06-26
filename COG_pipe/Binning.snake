@@ -135,7 +135,7 @@ rule compute_avg_cov:
 # --------- Start of MagAnalysis -----------------------------------------------------------------
 
 rule aggregate_SCG:
-    input: "binning/{group}/folder_done"
+    input: "binning/{group}/Bin_ini/folder_done"
     output: expand("binning/{{group}}/Bin_ini/MagAnalysis/SCGs/{COG}.fna",COG=LIST_COGS) 
     params: "binning/{group}/Bin_ini/"
     shell: """

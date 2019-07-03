@@ -168,10 +168,12 @@ rule generate_data_for_fastree:
     input: trimed=expand("{{path}}/{COG}_al.gfa",COG=LIST_COGS),
            alignement=expand("{{path}}/{COG}_all.gffn",COG=LIST_COGS)
     output: gfa="{path}/AlignAllR.gfa",
-            names="{path}/Names.txt"
+            names="{path}/Names.txt",
+            temp=temp("{path}/temp_combine_genes.tmp")
     shell:"""
     cat {input.alignement} | grep ">" | sed 's/_COG.*//' | sort | uniq | sed 's/>//g' > {output.names}
-    {SCRIPTS}/MapTI.pl {SCG_DATA}/TaxaSpeciesR.txt < $({SCRIPTS}/CombineGenes.pl {output.names} {input.trimed}) > {output.gfa}
+    {SCRIPTS}/CombineGenes.pl {output.names} {input.trimed} > {output.temp}
+    {SCRIPTS}/MapTI.pl {SCG_DATA}/TaxaSpeciesR.txt < {output.temp} > {output.gfa}
     """
 
 rule Launch_FastTree:

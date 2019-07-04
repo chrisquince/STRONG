@@ -22,6 +22,7 @@ def main(argv):
 
 #    import ipdb; ipdb.set_trace()
 
+
     with open(args.cogs_list, 'r') as f:
         core_cogs = set([x.rstrip() for x in f.readlines()])
 

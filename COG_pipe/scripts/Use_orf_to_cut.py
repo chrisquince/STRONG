@@ -131,13 +131,15 @@ def main(Fasta_file,Gff_file,Chunk_size,Replace) :
 	# Output cuts contigs		
 	Lim=2*Chunk_size
 	for title, sequence in SimpleFastaParser(open(Fasta_file)) :
-		if (len(sequence)>Lim)&(title in Dico_Contigid_Cutlocation) :
-			for (index,(start,end)) in enumerate(Dico_Contigid_Cutlocation[title]) :
-				print (">"+title+"."+str(index)+"\n"+sequence[start:end])
+		contig=title.split()[0]
+		Dico_contigs[contig]=len(sequence)
+		if (len(sequence)>Lim)&(contig in Dico_Contigid_Cutlocation) :
+			for (index,(start,end)) in enumerate(Dico_Contigid_Cutlocation[contig]) :
+				print (">"+contig+"."+str(index)+"\n"+sequence[start:end])
 		else :
 			print(">"+title+"\n"+sequence)
 	# Output cuts contigs, as feature on intial contigs, in a bed file
-	Contig_bed=delete_ending(".",Gff_file)+"_C"+str(Chunk_size//1000)+"K_contig.bed"
+	Contig_bed=delete_ending(".",Gff_file)+"_C"+str(Chunk_size//1000)+"K.bed"
 	Handle=open(Contig_bed,"w")
 	List_uncut_contigs=[[contig,"1",str(length),contig] for contig,length in Dico_contigs.items() if contig not in Dico_Contigid_Cutlocation]
 	List_cut_contigs=[[contig,str(start+1),str(end),contig+"."+str(index)] for contig,list_coordinate in Dico_Contigid_Cutlocation.items() for index,(start,end) in enumerate(list_coordinate)]

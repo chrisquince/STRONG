@@ -1,0 +1,3 @@
+[submodule "BayesAGraphSVA"]
+	path = BayesAGraphSVA
+	url = https://github.com/chrisquince/BayesAGraphSVA.git

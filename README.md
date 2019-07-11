@@ -4,6 +4,13 @@
 
 STRONG resolves strain on assembly graphs by resolving variants on core COGs using co-occurrence across multiple samples.
 
+## Installation
+
+Requires recursive cloning:
+
+git clone --recurse-submodules https://github.com/chrisquince/STRONG.git
+
+
 ## Quick start
 
 Run from within the COG_pipe directory. Using the following command:

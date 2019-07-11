@@ -3,9 +3,10 @@ import glob,os
 include: "Common.snake"
 include: "Binning.snake"
 
-LIST_BINPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_*/SCG.fna")]
+LIST_BINPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna")]
 
 rule all : 
+  input: expand("{bin_path}/Desman/desman_analysis_done",bin_path=LIST_BINPATHS)
   # input: expand("{bin_path}/contigs.fa",bin_path=LIST_BINPATHS)
   # input: expand("annotation/{group}/{group}_SCG.bed",group=GROUPS)
   # input: expand("{bin_path}/selected_sites.tsv",bin_path=LIST_BINPATHS)
@@ -13,7 +14,7 @@ rule all :
   # input: expand("{bin_path}/{sample}.cnt",bin_path=LIST_BINPATHS,sample=SAMPLES)
   # input: expand("{bin_path}/Desman/freqs_{pipeline}.csv",bin_path=LIST_BINPATHS,pipeline=["chris_sel_var","sergey"])
   # input: expand("{bin_path}/Samples_files/SCG_bed_like.tsv",bin_path=LIST_BINPATHS)
-  input: expand("{bin_path}/Desman/desman_analysis_done",bin_path=LIST_BINPATHS)
+  # input: expand("{bin}/contigs.fa",bin=LIST_BINPATHS)
          # expand("{bin_path}/Desman/Deviance.pdf",bin_path=LIST_BINPATHS),
          # expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
 
@@ -21,18 +22,19 @@ rule all :
 
 rule Get_Bins_contigs :
   input :
-    bin="binning/{group}/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
+    bin="binning/{group}/Bin_ini/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
     fasta="profile/scaffolds/{group}.fasta"
   output:
-    expand("binning/{{group}}/{bin}/contigs.fa",bin=[path.split("/")[-1] for path in LIST_BINPATHS])
-  params: " ".join(map(lambda x:x.split("Bin_")[1],LIST_BINPATHS))
+    expand("binning/{{group}}/Bin_ini/{bin}/contigs.fa",bin=[path.split("/")[-1] for path in LIST_BINPATHS])
+  params: " ".join(map(lambda x:x.split("Bin_ini/Bin_")[1],LIST_BINPATHS))
   shell:"""
-  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} binning/{wildcards.group} -l {params}
-  for file in binning/{wildcards.group}/Bin_*.fasta
+  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} binning/{wildcards.group}/Bin_ini -l {params}
+  for file in binning/{wildcards.group}/Bin_ini/Bin_*.fasta
   do
-  bin_nb=${{file#*Bin_}}
+  bin_nb=$(basename $file)
+  bin_nb=${{bin_nb#*Bin_}}
   bin_nb=${{bin_nb%.fasta}}
-  mv $file binning/{wildcards.group}/Bin_$bin_nb/contigs.fa
+  mv $file binning/{wildcards.group}/Bin_ini/Bin_$bin_nb/contigs.fa
   done
   """
 
@@ -51,47 +53,13 @@ rule Get_Bins_contigs_bed :
 rule bam_by_bin :
     input: 
         global_bam="profile/scaffolds/{group}/{sample}.sorted.bam",
-         bin_bed="binning/{group}/{bin}/Samples_files/bin.bed"
+        bin_bed="binning/{group}/Bin_ini/{bin}/Samples_files/bin.bed"
     output: 
-      bin_bam="binning/{group}/{bin}/Samples_files/{sample}.bam"
+      bin_bam="binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.bam"
     threads: THREADS
     shell :"""
     samtools view -b -L {input.bin_bed} {input.global_bam} -@{threads} > {output.bin_bam}
     """
-
-rule varscan:
-    input:
-        contigs = "{path}/contigs.fa",
-        bam =expand("{{path}}/Samples_files/{sample}.bam",sample=SAMPLES)
-    output:
-        "{path}/varscan.out"
-    log:
-        "{path}/varscan.log"
-    shell: """
-  samtools mpileup -A -B -Q 20 -f {input.contigs} {input.bam} | varscan mpileup2snp --min-coverage 5 --min-reads2 2 > {output} 2> {log}
-    """
-
-rule select_sites:
-    input: varscan="{path}/varscan.out"
-    output: "{path}/selected_sites.tsv"
-    log: "{path}/select_sites.log"
-    shell: """
-        python {SCRIPTS}/filter_SNVs.py {input.varscan} {output} 3000 2> {log}
-        """
-
-rule bam_readcount_sergey:
-    input:
-        sites_list = "{path}/selected_sites.tsv",
-        fasta = "{path}/contigs.fa",
-        fai = "{path}/contigs.fa.fai",       
-        bam_file = "{path}/Samples_files/{sample}.bam"
-    output: "{path}/Samples_files/{sample}_sergey.cnt"
-    log:
-        "{path}/Samples_files/bam_readcount_{sample}_sergey.log"
-    shell:"""
-        samtools index {input.bam_file} {input.bam_file}.bai
-        bam-readcount -l {input.sites_list} -f {input.fasta} {input.bam_file} 2> {log} > {output}
-        """
 rule index_fasta_files:
   input:
     fasta = "{path}.fa"
@@ -100,33 +68,20 @@ rule index_fasta_files:
   shell: "samtools faidx {input.fasta}"
 
 
-rule bam_readcount_chris:
+
+rule bam_readcount:
     input:
         fasta = "{path}/contigs.fa",
         fai = "{path}/contigs.fa.fai",
         bam_file = "{path}/Samples_files/{sample}.bam",
         bed_file = "{path}/Samples_files/bin.bed"
-    output: "{path}/Samples_files/{sample}_chris.cnt.gz"
+    output: "{path}/Samples_files/{sample}.cnt.gz"
     log:
-        "{path}/Samples_files/bam_readcount_{sample}_chris.log"
+        "{path}/Samples_files/bam_readcount_{sample}.log"
     shell:"""
         samtools index {input.bam_file} {input.bam_file}.bai
         bam-readcount -l {input.bed_file} -f {input.fasta} {input.bam_file} 2> {log} | gzip > {output}
         """
-
-
-rule extract_counts_sergey:
-    input:
-        all_counts = lambda wildcards: expand("{path}/Samples_files/{sample}_sergey.cnt", \
-                                              sample=SAMPLES,path=wildcards.path)
-    output:
-        "{path}/Desman/freqs_sergey.csv"
-    params:
-        input_dir = "{path}/Samples_files/"
-    log:
-        "{path}/extract_counts_sergey.log"
-    shell:
-        "python {SCRIPTS}/extract_counts.py {params.input_dir} {output} 2> {log}"
 
 rule get_SCG_bed :
   input:
@@ -147,9 +102,9 @@ rule get_SCG_bed :
 rule get_bed_like_file_for_ExtractCountFreqGenes :
   input:
       SCG_bed="annotation/{group}/{group}_SCG.bed",
-      Bin_SCG="binning/{group}/{bin}/SCG.fna"
+      Bin_SCG="binning/{group}/Bin_ini/{path}/SCG.fna"
   output: 
-      bedlike="binning/{group}/{bin}/Samples_files/SCG_bed_like.tsv"
+      bedlike="binning/{group}/Bin_ini/{path}/Samples_files/SCG_bed_like.tsv"
   run:
     Dico_SCG={header.split()[0]:header.split() for header,seq in SimpleFastaParser(open(input.Bin_SCG))}
   # NODE_11_length_160076_cov_189.092050_50 COG0552 strand=+
@@ -164,26 +119,26 @@ rule get_bed_like_file_for_ExtractCountFreqGenes :
         Handle.write(",".join([cog,contig,start,end,orf,strand])+"\n")  
     Handle.close()
 
-rule extract_counts_chris:
+rule extract_counts:
     input:
-        all_counts = lambda wildcards: expand("{path}/{sample}_chris.cnt.gz",sample=SAMPLES,path=wildcards.path),
+        all_counts = lambda wildcards: expand("{path}/{sample}.cnt.gz",sample=SAMPLES,path=wildcards.path),
         SCG_bedlike="{path}/SCG_bed_like.tsv"
     output:
-        "{path}/count_chris.csv"
+        "{path}/count.csv"
     params:
         input_dir = "{path}"
     log:
-        "{path}/extract_counts_chris.log"
+        "{path}/extract_counts.log"
     shell:"""
     python {SCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
         """
 
-rule Filter_Variant:
+checkpoint Filter_Variant:
     input:
-        "{path}/Samples_files/count_chris.csv"
+        "{path}/Samples_files/count.csv"
     output :
-        expand("{{path}}/Desman/freqs_chris_{output_file_type}",output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
-    params : "{path}/Desman/freqs_chris_"
+        expand("{{path}}/Desman/freqs_{output_file_type}",output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
+    params : "{path}/Desman/freqs_"
     log:
         "{path}/Samples_files/Filter_variant.log"
     shell:"""
@@ -192,8 +147,8 @@ rule Filter_Variant:
 
 rule run_desman:
     input:
-        sel_var = "{path}/freqs_chris_sel_var.csv",
-        err="{path}/freqs_chris_tran_df.csv"
+        sel_var = "{path}/freqs_sel_var.csv",
+        err="{path}/freqs_tran_df.csv"
     output:
         touch("{path}/Run_{g}_{r}/desman_done")
     params:"{path}/Run_{g}_{r}"
@@ -208,7 +163,7 @@ rule run_desman:
 
 rule Desman_post_processing:
   input: expand("{{path}}/Run_{g}_{r}/desman_done",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
-  output: touch("{path}/desman_analysis_done")
+  output: touch("{path}/desman_post_processing_done")
   params: lambda w: "profile/scaffolds/"+w.path.split("/")[1]+".fasta"
   shell : """
   if [ -f {wildcards.path}/Run_{DESMAN_HAPLOTYPE_NB}_0/fit.txt ]
@@ -227,6 +182,73 @@ rule Desman_post_processing:
     python {SCRIPTS}/GetVariantsCore.py {params} {wildcards.path}/../Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {wildcards.path}/best_run.txt) {wildcards.path}/coregenes.txt -o {wildcards.path}/haplotype_seqs/
   fi
   """
+
+def do_we_need_to_run_desman(wildcards) :
+  freq_sel_var_file=checkpoints.Filter_Variant.get(path=wildcards.path).output[0]
+  nb_line=len([line for line in open(freq_sel_var_file)])
+  print(wildcards.path,nb_line)
+  if nb_line>1 :
+    return wildcards.path+"/Desman/desman_post_processing_done"
+  else :
+    return freq_sel_var_file
+
+rule Is_Desman_done :
+  input : do_we_need_to_run_desman
+  output: touch("{path}/Desman/desman_analysis_done")
+  shell :"echo Analysis done > /dev/null"
+
+
+# rule extract_counts_sergey:
+#     input:
+#         all_counts = lambda wildcards: expand("{path}/Samples_files/{sample}_sergey.cnt", \
+#                                               sample=SAMPLES,path=wildcards.path)
+#     output:
+#         "{path}/Desman/freqs_sergey.csv"
+#     params:
+#         input_dir = "{path}/Samples_files/"
+#     log:
+#         "{path}/extract_counts_sergey.log"
+#     shell:
+#         "python {SCRIPTS}/extract_counts.py {params.input_dir} {output} 2> {log}"
+
+
+
+# rule varscan:
+#     input:
+#         contigs = "{path}/contigs.fa",
+#         bam =expand("{{path}}/Samples_files/{sample}.bam",sample=SAMPLES)
+#     output:
+#         "{path}/varscan.out"
+#     log:
+#         "{path}/varscan.log"
+#     shell: """
+#   samtools mpileup -A -B -Q 20 -f {input.contigs} {input.bam} | varscan mpileup2snp --min-coverage 5 --min-reads2 2 > {output} 2> {log}
+#     """
+
+# rule select_sites:
+#     input: varscan="{path}/varscan.out"
+#     output: "{path}/selected_sites.tsv"
+#     log: "{path}/select_sites.log"
+#     shell: """
+#         python {SCRIPTS}/filter_SNVs.py {input.varscan} {output} 3000 2> {log}
+#         """
+
+# rule bam_readcount_sergey:
+#     input:
+#         sites_list = "{path}/selected_sites.tsv",
+#         fasta = "{path}/contigs.fa",
+#         fai = "{path}/contigs.fa.fai",       
+#         bam_file = "{path}/Samples_files/{sample}.bam"
+#     output: "{path}/Samples_files/{sample}_sergey.cnt"
+#     log:
+#         "{path}/Samples_files/bam_readcount_{sample}_sergey.log"
+#     shell:"""
+#         samtools index {input.bam_file} {input.bam_file}.bai
+#         bam-readcount -l {input.sites_list} -f {input.fasta} {input.bam_file} 2> {log} > {output}
+#         """
+
+
+
 
 
 # rule plot_posterior_deviance:

@@ -25,9 +25,9 @@ def main(Bin_file,Fasta_file,path,Table):
 		List_SCG=sorted({key for dict in Dico_bins_SCG.values() for key in dict.keys()})
 		Dico_bin_Array={bin_nb:[len(Dico_bins_SCG[bin_nb][SCG]) if Dico_bins_SCG[bin_nb] else 0 for SCG in List_SCG] for bin_nb in Dico_bins_nbcontigs}
 		List_bins=sorted(Dico_bins_nbcontigs.keys(),key=lambda x:int(x))
-		SCG_table=[[Bin,Dico_bins_nbcontigs[Bin]]+Dico_bin_Array[Bin] for Bin in List_bins]
+		SCG_table=[[Bin]+Dico_bin_Array[Bin] for Bin in List_bins]
 		Handle=open(Table,"w")
-		Handle.write(",".join(["Cluster","Num_contigs"]+List_SCG)+"\n")
+		Handle.write(",".join(["Cluster"]+List_SCG)+"\n")
 		Handle.write("\n".join(map(lambda List:','.join(map(str,List)),SCG_table)))
 		Handle.close()
 

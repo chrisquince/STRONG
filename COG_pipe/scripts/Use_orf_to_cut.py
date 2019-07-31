@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 
 import os 
@@ -124,7 +124,7 @@ def Rename_FA(FA_file,Chunk_size,Dico_contigid_Dico_ORfnb_index) :
 	Handle.write(Text_output)	
 	Handle.close()
 
-def main(Fasta_file,Gff_file,Chunk_size,Replace) :
+def main(Fasta_file,Gff_file,output_bed,Chunk_size,Replace) :
 	Dico_contigid_gff,Dico_contigs=get_gff_dico(Chunk_size,Gff_file)
 	Dico_Contigid_Cutlocation=Cut_contigs(Chunk_size,Dico_contigid_gff)	
 	Dico_contigid_Dico_ORfnb_index={Contig:{index_orf:next(index for index,value in enumerate([i[1] for i in Dico_Contigid_Cutlocation[Contig]]) if ORF[1]<=value) for index_orf,ORF in enumerate(List_ORF)} for Contig,List_ORF in Dico_contigid_gff.items() if Contig in Dico_Contigid_Cutlocation}
@@ -139,8 +139,7 @@ def main(Fasta_file,Gff_file,Chunk_size,Replace) :
 		else :
 			print(">"+title+"\n"+sequence)
 	# Output cuts contigs, as feature on intial contigs, in a bed file
-	Contig_bed=delete_ending(".",Gff_file)+"_C"+str(Chunk_size//1000)+"K.bed"
-	Handle=open(Contig_bed,"w")
+	Handle=open(output_bed,"w")
 	List_uncut_contigs=[[contig,"1",str(length),contig] for contig,length in Dico_contigs.items() if contig not in Dico_Contigid_Cutlocation]
 	List_cut_contigs=[[contig,str(start+1),str(end),contig+"."+str(index)] for contig,list_coordinate in Dico_Contigid_Cutlocation.items() for index,(start,end) in enumerate(list_coordinate)]
 	Handle.write("\n".join("\t".join(List) for List in List_uncut_contigs+List_cut_contigs))
@@ -172,6 +171,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument("Fasta_file", help="Fasta file from your assembly that you want to cut in bits")
 	parser.add_argument("GFF", help="Gff file from, for instance prodigal output")
+	parser.add_argument("output_bed", help="where to write the contig bed file")
 	parser.add_argument("-c", help="chunk size",default="10000")
 	parser.add_argument("-r", help="option to replace prodigal output with updated cut up entries",action='store_true',default=False)
 	args = parser.parse_args()
@@ -179,7 +179,7 @@ if __name__ == "__main__":
 	Fasta_file=args.Fasta_file
 	Gff_file=args.GFF
 	Replace=args.r
-	main(Fasta_file,Gff_file,Chunk_size,Replace)
+	main(Fasta_file,Gff_file,output_bed,Chunk_size,Replace)
 
 
 

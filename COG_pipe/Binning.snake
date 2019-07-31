@@ -11,7 +11,7 @@ rule cut_contigs:
             gff="annotation/{group}/{group}.gff"
     output: contig="profile/split_c10k/{group}.fasta",
             Contig_bed="annotation/{group}/{group}_C10K_contig.bed"
-    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} > {output.contig}"
+    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} {output.Contig_bed}> {output.contig}"
 
 
 rule index_samples_bam:

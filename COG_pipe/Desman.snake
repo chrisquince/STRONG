@@ -186,7 +186,6 @@ rule Desman_post_processing:
 def do_we_need_to_run_desman(wildcards) :
   freq_sel_var_file=checkpoints.Filter_Variant.get(path=wildcards.path).output[0]
   nb_line=len([line for line in open(freq_sel_var_file)])
-  print(wildcards.path,nb_line)
   if nb_line>1 :
     return wildcards.path+"/Desman/desman_post_processing_done"
   else :

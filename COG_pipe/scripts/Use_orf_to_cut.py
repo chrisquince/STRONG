@@ -178,6 +178,7 @@ if __name__ == "__main__":
 	Chunk_size=int(args.c)
 	Fasta_file=args.Fasta_file
 	Gff_file=args.GFF
+	output_bed=args.output_bed
 	Replace=args.r
 	main(Fasta_file,Gff_file,output_bed,Chunk_size,Replace)
 

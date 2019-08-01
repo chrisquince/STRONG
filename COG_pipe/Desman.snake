@@ -36,7 +36,6 @@ checkpoint Get_Bins_contigs :
 def bin_contigs_are_extracted(wildcards) :
   meh=checkpoints.Get_Bins_contigs.get(group=wildcards.group)
   output="binning/"+wildcards.group+"/Bin_ini/"+wildcards.bin+"/"+wildcards.bin+".fasta"
-  print(output)
   return output
 
 

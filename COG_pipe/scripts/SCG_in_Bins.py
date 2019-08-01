@@ -16,10 +16,12 @@ def main(Bin_file,Fasta_file,path,Table):
 	Dico_bins_nbcontigs=defaultdict(int)
 	for line in open(Bin_file) :
 		contig,Bin=line.rstrip().split(',')
-		Dico_bins_nbcontigs[Bin]+=1
-		if contig in Dico_contig_SCGSeq :
-			for SCG,list_values in Dico_contig_SCGSeq[contig].items() :
-				Dico_bins_SCG[Bin][SCG]+=list_values
+		if contig!="contig_id" :
+			Dico_bins_nbcontigs[Bin]+=1
+			if contig in Dico_contig_SCGSeq :
+				for SCG,list_values in Dico_contig_SCGSeq[contig].items() :
+					Dico_bins_SCG[Bin][SCG]+=list_values
+
 #--------------- SCG output for concoct refine------------------------------------------------------------
 	if Table : 
 		List_SCG=sorted({key for dict in Dico_bins_SCG.values() for key in dict.keys()})

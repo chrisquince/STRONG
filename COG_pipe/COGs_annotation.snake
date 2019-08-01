@@ -1,6 +1,6 @@
 
-#rule all: 
- #  input:expand("annotation/{group}/{group}_SCG.fna", group=GROUPS)
+
+ANNOTATION_SPLITS=100
 
 #find for ORFs
 rule prodigal:
@@ -20,49 +20,42 @@ rule split_fasta:
     input:
         "annotation/{group}/{group}.faa"
     output:
-        touch("annotation/{group}/temp_splits/folder.done")
+        expand("annotation/{{group}}/temp_splits/{{group}}_{nb}.faa",nb=range(ANNOTATION_SPLITS))
     threads:
         THREADS
     shell:
-        "{SCRIPTS}/Fasta_Batchs.py {input} {threads} -t annotation/{wildcards.group}/temp_splits/" 
+        "{SCRIPTS}/Split_Fasta.py {input} {ANNOTATION_SPLITS} -o annotation/{wildcards.group}/temp_splits/" 
 
 
-#Do rpsblast annotation  
-rule rpsblast_on_folder:
-    input:
-        name="annotation/{group}/{group}.faa",
-        touch="annotation/{group}/temp_splits/folder.done"
-    output:
-        "annotation/{group}/{group}_Rpsblast_cogs.tsv"
-    log:
-        "annotation/{group}/{group}_Rpsblast.log"
-    params: 
-        db=COG_DB
-    threads:
-        THREADS
-    shell:
-        """
-        {SCRIPTS}/Rpsblast_loop.sh annotation/{wildcards.group}/temp_splits {threads} {params.db} &>log
-        mv annotation/{wildcards.group}/temp_splits/Complete_Rpsblast_cogs.tsv {output}
-        """
+rule rpsblast:
+    input:"annotation/{group}/temp_splits/{name}.faa"
+    output: "annotation/{group}/temp_splits/{name}_Rpsblast_cogs.tsv"
+    log: "annotation/{group}/temp_splits/{name}.log"
+    shell: "rpsblast -outfmt '6 qseqid sseqid evalue pident length slen qlen' -evalue 0.00001 -query {input} -db {COG_DB} -out {output}"
+
+rule cat_split_annotation:
+    input: expand("annotation/{{group}}/temp_splits/{{group}}_{nb}_Rpsblast_cogs.tsv",nb=range(ANNOTATION_SPLITS))
+    output: "annotation/{group}/{group}_Rpsblast_cogs.tsv"
+    shell: "cat {input}>{output} "
+
 
 # select best hit and use criterion : min 5% coverage, min 1e-10 evalue
 rule parse_cogs_annotation:
     input:
-        "annotation/{group}/{filename}_Rpsblast_cogs.tsv"    
+        "{filename}_Rpsblast_cogs.tsv"    
     output:
-        "annotation/{group}/{filename}_Cogs_filtered.tsv"
+        "{filename}_Cogs_filtered.tsv"
     shell:
         "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output}"
 
 # extract from the bed file all position of SCG 
 rule extract_SCG_sequences:
     input:
-        annotation="annotation/{group}/{filename}_Cogs_filtered.tsv",
-        gff="annotation/{group}/{filename}.gff",
-        fna="annotation/{group}/{filename}.fna"
+        annotation="{filename}_Cogs_filtered.tsv",
+        gff="{filename}.gff",
+        fna="{filename}.fna"
     output:
-        "annotation/{group}/{filename}_SCG.fna"
+        "{filename}_SCG.fna"
     shell:
         "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {SCG_DATA}/scg_cogs_min0.97_max1.03_unique_genera.txt {input.gff}>{output}"
 

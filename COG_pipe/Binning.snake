@@ -41,40 +41,6 @@ rule coverage:
 
 
 
-# # use mosdepth to compute coverage by feature on a bed file
-# rule depth_local:
-#     input:   sample="profile/{frags}/{group}/{sample}.sorted.bam",
-#              index="profile/{frags}/{group}/{sample}.sorted.bam.bai",
-#              bed_file="annotation/{group}/{group}_C10K_contig.bed"
-#     output:  cov="profile/{frags}/{group}/{sample}.cov",
-#              gz_cov=temp("profile/{frags}/{group}/{sample}.regions.bed.gz")
-#     log:     "profile/{frags}/{group}/{sample}.log"
-#     message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
-#     threads: min(THREADS,4)
-#     shell:   """
-#              mosdepth -t {threads} -n  -b {input.bed_file} profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample} {input.sample}>{log}
-#              zcat {output.gz_cov} | awk '{{print $5}}'>{output.cov}
-#              zcat {output.gz_cov} | awk '{{print $4}}'>profile/{wildcards.frags}/{wildcards.group}/header.txt
-#              rm profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample}.mosdepth.global.dist.txt
-#              rm profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample}.mosdepth.region.dist.txt
-#              rm profile/{wildcards.frags}/{wildcards.group}/{wildcards.sample}.regions.bed.gz.csi
-#              """
-
-# # merge all samples 
-# rule merge:
-#     input:   samples=expand("profile/scaffolds/{{group}}/{sample}.sorted.bam", sample=SAMPLES),
-#              cov=expand("profile/scaffolds/{{group}}/{sample}.cov",sample=SAMPLES)
-#     output:  cov="binning/{group}/C10K_coverage.tsv",
-#              temp=temp("profile/scaffolds/{group}/{group}_temp.txt")
-#     params:  tab='\t'.join(SAMPLES),
-#              space=" ".join(map(lambda x:"profile/scaffolds/{group}/"+x+".cov",SAMPLES))
-#     shell:   """
-#              echo {params.space}
-#              paste {params.space} >{output.temp}
-#              echo -e 'contig\t'"{params.tab}">{output.cov}
-#              paste profile/scaffolds/{wildcards.group}/header.txt {output.temp} >> {output.cov}
-#              """
-
 rule initial_quantity_of_bins:
     # we take a look at all the SCG, take the median over the 36 of them, and multiply that by 10
     input: "annotation/{group}/{group}_SCG.fna"
@@ -107,7 +73,6 @@ rule refine:
     log:    temp("binning/{group}/Bin_ini/clustering.log")
     threads: 1000
     shell:  """ {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
-            sed '1d' {input.bins}  > {output.R}
             cd binning/{wildcards.group}/Bin_ini/
             concoct_refine ../../../{output.R} ../../../{input.Data} ../../../{output.table} -t {threads} &>../../../{log}
             cd ../../../

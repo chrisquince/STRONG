@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 
 from Bio.SeqIO.FastaIO import SimpleFastaParser

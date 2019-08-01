@@ -155,6 +155,26 @@ rule bowtie_index:
     message: "Building bowtie index for {input}"
     shell:   "bowtie2-build {input} {params} --threads {THREADS} &> {log}"
 
+#consider ignoring reads aligned without their pairs
+rule bowtie_align:
+    input:   left=left_reads, right=right_reads,
+             index="{path}/index.done"
+    output:  "{path}/{group,(sample|group)\d+}.bam"
+             #temp("{path}/{group,(sample|group)\d+}.bam")
+    params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
+             left=lambda w: ",".join(expand("{r}", r=left_reads(w))),
+             right=lambda w: ",".join(expand("{r}", r=left_reads(w))),
+             index="{path}/index",
+             align="",#"--no-unal --maxins 1000 --n-ceil 0,0 --np 100500",
+             view=""#"-q 10"
+    threads: THREADS
+    log:     "{path}/{group}.bowtie.log"
+    message: "Aligning reads of {wildcards.group} onto {params.index} with bowtie"
+    #shell:   "bowtie2 -x {params.index} {params.flag} -p {threads} {params.align}"
+    #         " -1 {input.left} -2 {input.right} 2> {log} | samtools view -bh {params.view} - > {output}"
+    shell:
+        'bowtie2 -x {params.index} {params.flag} -p {threads} {params.align} -1 {params.left} -2 {params.right} 2>> {log} | samtools view -bh {params.view} - > {output}'
+
 rule samtools_sort:
     input:
         "{path}/{name}.bam"

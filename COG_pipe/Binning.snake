@@ -73,6 +73,7 @@ rule refine:
     log:    temp("binning/{group}/Bin_ini/clustering.log")
     threads: 1000
     shell:  """ {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
+            sed '1d' {input.bins}  > {output.R}
             cd binning/{wildcards.group}/Bin_ini/
             concoct_refine ../../../{output.R} ../../../{input.Data} ../../../{output.table} -t {threads} &>../../../{log}
             cd ../../../

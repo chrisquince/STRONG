@@ -53,7 +53,7 @@ rule parse_cogs_annotation:
     output:
         "annotation/{group}/{filename}_Cogs_filtered.tsv"
     shell:
-        "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file /home/sebr/seb/Applications/CONCOCT/scgs/cdd_to_cog.tsv  > {output}"
+        "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output}"
 
 # extract from the bed file all position of SCG 
 rule extract_SCG_sequences:

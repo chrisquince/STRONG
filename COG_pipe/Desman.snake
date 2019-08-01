@@ -19,33 +19,34 @@ rule all :
          # expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
 
 
+LIST_BINPATH_BY_GROUPS={group:[path.replace("/SCG.fna","") for path in  glob.glob("binning/"+group+"/Bin_ini/Bin_*/SCG.fna")] for group in GROUPS}
 
-rule Get_Bins_contigs :
+
+checkpoint Get_Bins_contigs :
   input :
     bin="binning/{group}/Bin_ini/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
     fasta="profile/scaffolds/{group}.fasta"
-  output:
-    expand("binning/{{group}}/Bin_ini/{bin}/contigs.fa",bin=[path.split("/")[-1] for path in LIST_BINPATHS])
-  params: " ".join(map(lambda x:x.split("Bin_ini/Bin_")[1],LIST_BINPATHS))
+  output: temp(touch("binning/{group}/Bin_ini/bins_contigs_done"))
+  params:lambda w:" ".join([path.split("Bin_ini/Bin_")[1] for path in LIST_BINPATH_BY_GROUPS[w.group]])
   shell:"""
-  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} binning/{wildcards.group}/Bin_ini -l {params}
-  for file in binning/{wildcards.group}/Bin_ini/Bin_*.fasta
-  do
-  bin_nb=$(basename $file)
-  bin_nb=${{bin_nb#*Bin_}}
-  bin_nb=${{bin_nb%.fasta}}
-  mv $file binning/{wildcards.group}/Bin_ini/Bin_$bin_nb/contigs.fa
-  done
-  """
+  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} binning/{wildcards.group}/Bin_ini -l {params} -d
+  """ 
+
+
+def bin_contigs_are_extracted(wildcards) :
+  meh=checkpoints.Get_Bins_contigs.get(group=wildcards.group)
+  output="binning/"+wildcards.group+"/Bin_ini/"+wildcards.bin+"/"+wildcards.bin+".fasta"
+  print(output)
+  return output
+
 
 rule Get_Bins_contigs_bed :
-  input:
-    "{path}/contigs.fa"
-  output:
-    "{path}/Samples_files/bin.bed"
+  input:  fasta=bin_contigs_are_extracted,
+          touch="binning/{group}/Bin_ini/bins_contigs_done"
+  output: bin_bed="binning/{group}/Bin_ini/{bin}/Samples_files/{bin}.bed"
   run:
-    Handle=open(output[0],"w")
-    for name,seq in SimpleFastaParser(open(input[0])) :
+    Handle=open(output["bin_bed"],"w")
+    for name,seq in SimpleFastaParser(open(input["fasta"])) :
       Handle.write("\t".join([name,"0",str(len(seq))])+"\n")
     Handle.close()
 
@@ -53,31 +54,30 @@ rule Get_Bins_contigs_bed :
 rule bam_by_bin :
     input: 
         global_bam="profile/scaffolds/{group}/{sample}.sorted.bam",
-        bin_bed="binning/{group}/Bin_ini/{bin}/Samples_files/bin.bed"
+        bin_bed="binning/{group}/Bin_ini/{bin}/Samples_files/{bin}.bed"
     output: 
       bin_bam="binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.bam"
     threads: THREADS
     shell :"""
     samtools view -b -L {input.bin_bed} {input.global_bam} -@{threads} > {output.bin_bam}
     """
+
 rule index_fasta_files:
   input:
-    fasta = "{path}.fa"
+    fasta = bin_contigs_are_extracted
   output:
-    fai = "{path}.fa.fai"
+    fai = "binning/{group}/Bin_ini/{bin}/{bin}.fasta.fai"
   shell: "samtools faidx {input.fasta}"
-
-
 
 rule bam_readcount:
     input:
-        fasta = "{path}/contigs.fa",
-        fai = "{path}/contigs.fa.fai",
-        bam_file = "{path}/Samples_files/{sample}.bam",
-        bed_file = "{path}/Samples_files/bin.bed"
-    output: "{path}/Samples_files/{sample}.cnt.gz"
+        fasta = bin_contigs_are_extracted,
+        fai = "binning/{group}/Bin_ini/{bin}/{bin}.fasta.fai",
+        bam_file = "binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.bam",
+        bed_file = "binning/{group}/Bin_ini/{bin}/Samples_files/{bin}.bed"
+    output: "binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.cnt.gz"
     log:
-        "{path}/Samples_files/bam_readcount_{sample}.log"
+        "binning/{group}/Bin_ini/{bin}/Samples_files/bam_readcount_{sample}.log"
     shell:"""
         samtools index {input.bam_file} {input.bam_file}.bai
         bam-readcount -l {input.bed_file} -f {input.fasta} {input.bam_file} 2> {log} | gzip > {output}

@@ -6,11 +6,15 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser
 from collections import defaultdict
 import resource
 
-def  main(fasta_file,bin_composition,set_bins,output):
+
+
+def  main(fasta_file,bin_composition,set_bins,output,folder):
     Dico_contigs_bin={line.rstrip().split(",")[0]:line.rstrip().split(",")[1] for line in open(bin_composition) if line.rstrip().split(",")[1] in set_bins}
     Dico_bin_Handle={}
     for bins in set(Dico_contigs_bin.values()) :
-        Dico_bin_Handle[bins]=open(output+"/Bin_"+bins+"."+fasta_file.split(".")[-1],"w")
+        if folder :
+            os.system("mkdir -p "+output+"/Bin_"+bins)
+        Dico_bin_Handle[bins]=open(output+("/Bin_"+bins+"/")*folder+"/Bin_"+bins+"."+fasta_file.split(".")[-1],"w")
     for contig_id,seq in SimpleFastaParser(open(fasta_file)) :
         contig_id2=contig_id.split()[0]
         if contig_id2 in Dico_contigs_bin :
@@ -24,10 +28,15 @@ if __name__ == "__main__":
     parser.add_argument("bin_composition", help="csv file giving bin composition, output of concoct, first column=contig id, second is bin number")
     parser.add_argument("path_output", help="specify the place you want all these bin folder to be put")
     parser.add_argument("-l", nargs='+',help="restrict to a list of specifics bins ")
+    parser.add_argument("-d",help=" actually create a folder for each bin", action='store_true')
     args = parser.parse_args()
     fasta_file=args.fasta_file
     bin_composition=args.bin_composition
     path_output=args.path_output
+    if args.d :
+        folder=True
+    else :
+        folder=False
     #---------- Batch strategy ----------------
     # there is a hard limit of number of handles which can be opened
     max_nb_handles=resource.getrlimit(resource.RLIMIT_NOFILE)[0]
@@ -41,4 +50,4 @@ if __name__ == "__main__":
             set_bins=set(Batch)&set(args.l)
         else :
             set_bins=set(Batch)
-        main(fasta_file,bin_composition,set_bins,path_output)
+        main(fasta_file,bin_composition,set_bins,path_output,folder)

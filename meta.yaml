@@ -1,0 +1,23 @@
+package:
+  name: strong
+  version: "0.1.0"
+
+source:
+  - git_url: https://github.com/chrisquince/STRONG.git
+  - url: ftp://ftp.ncbi.nih.gov/pub/mmdb/cdd/little_endian/Cog_LE.tar.gz
+    folder: COG_pipe/cog_db/
+
+requirements:
+  run:
+    - snakemake >=5.5.4
+    - python
+    - biopython
+    - bowtie2 
+    - samtools
+    - prodigal
+    - spades
+    - blast
+    - concoct
+    - mafft
+    - trimal
+    - fasttree

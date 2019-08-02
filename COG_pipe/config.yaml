@@ -19,7 +19,6 @@ assembly:
 # ---- Bayespaths parameters ------
 bayespaths:
     nb_strains: 16
-    dir: /mnt/gpfs/Hackathon/BayesAGraphSVA
 # ---- Desman parameters ------
 desman:
     execution: 1

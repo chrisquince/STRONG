@@ -12,6 +12,6 @@ rule all:
            scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
            gfa=expand("binning/{group}/Bin_ini/folder_done", group=GROUPS),
            bin_cov=expand("binning/{group}/Bin_ini/bin_cov.tsv", group=GROUPS),
-           tree=expand("binning/{group}/Bin_ini/MagAnalysis/AlignAll/AlignAllR.tree", group=GROUPS)
+           tree=TREE_TASKS
 
 

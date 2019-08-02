@@ -30,6 +30,7 @@ DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]
 MIN_COV_DESMAN = config["desman"]["min_cov"]
 LIST_COGS=list(map(str.rstrip,open(SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt").readlines()))
+
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented
 SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
@@ -96,8 +97,18 @@ for group in GROUP_SAMPLES:
         group_id += 1
     GROUPS[key] = group
 
-#Helpers for locating input files
 
+# ---------- Conditional execution of the TREE building part of the pipeline --------------
+if config["maganalysis"]["execution"]==1 :
+    TREE_TASKS=["binning/"+group+"/Bin_ini/MagAnalysis/AlignAll/AlignAllR.tree" for group in GROUPS]
+else :
+    TREE_TASKS=["binning/"+group+"/Bin_ini/No_MagAnalysis_in_config" for group in GROUPS]
+
+
+
+
+
+#Helpers for locating input files
 #Returns all filepaths with left/right reads for a sample/group/bin/etc, used as Snakemake input
 def reads_input(dict):
     return (partial(dict, 0), partial(dict, 1))

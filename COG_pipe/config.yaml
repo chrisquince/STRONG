@@ -1,6 +1,12 @@
+# ------ Resssources ------ 
+threads : 8 # single task nb threads
+# ------ Assembly parameters ------ 
 data: /mnt/gpfs/Hackathon/SyntheticCommunity  # path to data folder
-cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog
+# ---- Annotation database -----
+cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database 
+# ---- Spade tools dependency -----
 soft: /home/sergei/cog_tools2
+# ----Binning parameters ------
 concoct_contig_size: 1000
 read_length: 150
 assembly: 
@@ -9,11 +15,16 @@ assembly:
     mem: 2000
     threads: 24
     dir: /home/sergei/cog_tools2/spades/bin
-    groups: ['*']
+    groups: ['*'] # specify a group of sample to coassemble
+# ---- Bayespaths parameters ------
 bayespaths:
     nb_strains: 16
     dir: /mnt/gpfs/Hackathon/BayesAGraphSVA
+# ---- Desman parameters ------
 desman:
     execution: 1
     nb_haplotypes: 10
     nb_repeat: 5
+# ---- Maganalysis ------
+maganalysis: 
+    execution: 1

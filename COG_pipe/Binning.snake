@@ -99,6 +99,9 @@ rule compute_avg_cov:
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 # --------- Start of MagAnalysis -----------------------------------------------------------------
+rule do_nothing:
+    output: "binning/{group}/Bin_ini/No_MagAnalysis_in_config"
+    shell: "touch {output}"
 
 rule aggregate_SCG:
     input: "binning/{group}/Bin_ini/folder_done"

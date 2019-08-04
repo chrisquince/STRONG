@@ -15,6 +15,7 @@ default_values = {
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21,33,55], "mem": 120, "threads": 16, "groups": []},
     "desman":{"execution":0,"nb_haplotypes": 10,"nb_repeat": 5,"min_cov": 1},
+    "bayespaths":{"dir":"unset"},
     "maganalysis":{"execution":1}
 }
 

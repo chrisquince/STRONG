@@ -9,8 +9,8 @@ def get_overlaping_bins(Dico_CogBin_unitigs) :
   Set_bins={key for dico in Dico_CogBin_unitigs.values() for key in dico}
   Dico_bins_common_cogs=defaultdict(list)
   for Cog,dico_bin_unitig in Dico_CogBin_unitigs.items() :
-    for index,(bin1,set1) in enumerate(dico_bin_unitig.items()[:-1]) :
-      for bin2,set2 in dico_bin_unitig.items()[index+1:] :
+    for index,(bin1,set1) in enumerate(list(dico_bin_unitig.items())[:-1]) :
+      for bin2,set2 in list(dico_bin_unitig.items())[index+1:] :
         if set1&set2 :
           if max(len(set1&set2)/float(len(set1)),len(set1&set2)/float(len(set2))) >=0.1 :
             Dico_bins_common_cogs[tuple(sorted([bin1,bin2]))].append(Cog)

@@ -149,7 +149,7 @@ rule BayesAGraphSVA:
              read_len=READ_LENGTH
     shell : """
             #cd {wildcards.path}
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {wildcards.path}/simplif {params.kmer} {wildcards.path}/simplif -g {BAYESPATHS_G} -e /mnt/gpfs/Hackathon/BayesAGraphSVA/runfg_source/ -r {params.read_len} > {wildcards.path}/simplif_bayespaths_stdout.txt 2> {log}
+            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {wildcards.path}/simplif {params.kmer} {wildcards.path}/simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {wildcards.path}/simplif_bayespaths_stdout.txt 2> {log}
             """
 
 def List_bins_selected(wildcards):

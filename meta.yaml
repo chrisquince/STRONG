@@ -21,3 +21,5 @@ requirements:
     - mafft
     - trimal
     - fasttree
+    - gfapy
+    - future

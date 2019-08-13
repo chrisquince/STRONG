@@ -45,8 +45,9 @@ rule parse_cogs_annotation:
         "{filename}_Rpsblast_cogs.tsv"    
     output:
         "{filename}_Cogs_filtered.tsv"
+    log: "{filename}Cogs_filtered.log"
     shell:
-        "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output}"
+        "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output} 2> {log}"
 
 # extract from the bed file all position of SCG 
 rule extract_SCG_sequences:

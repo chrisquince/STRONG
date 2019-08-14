@@ -148,14 +148,13 @@ rule BayesAGraphSVA:
     params : kmer=ASSEMBLY_K,
              read_len=READ_LENGTH
     shell : """
-            #cd {wildcards.path}
             python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {wildcards.path}/simplif {params.kmer} {wildcards.path}/simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {wildcards.path}/simplif_bayespaths_stdout.txt 2> {log}
             """
 
 def List_bins_selected(wildcards):
     checkpoint_output = checkpoints.Select_Bin_to_run.get(group=wildcards.group)
     BIN_PATHS_local=[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/Bin_Selected/Bin_*/SCG.fna")]
-    List_cogs=[binpath+"/StrainAnalysis//simplif_PDiver.csv" for binpath in BIN_PATHS_local]
+    List_cogs=[binpath+"/StrainAnalysis/simplif_PDiver.csv" for binpath in BIN_PATHS_local]
     return List_cogs
 
 
@@ -164,3 +163,4 @@ rule define_results:
           List_bins_selected
   output: touch("binning/{group}/pipeline.done")
 
+rule  :

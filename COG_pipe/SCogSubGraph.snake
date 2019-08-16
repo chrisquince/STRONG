@@ -11,7 +11,6 @@ rule all:
            profs=expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS),
            scgs=expand("annotation/{group}/{group}_SCG.fna", group=GROUPS),
            gfa=expand("binning/{group}/Bin_ini/folder_done", group=GROUPS),
-           bin_cov=expand("binning/{group}/Bin_ini/bin_cov.tsv", group=GROUPS),
-           tree=TREE_TASKS
+           bin_cov=expand("binning/{group}/Bin_ini/bin_cov.tsv", group=GROUPS)
 
 

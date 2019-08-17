@@ -162,7 +162,7 @@ rule Desman_fit:
     input: expand("desman/{{group}}/Bin_ini/{{Bin}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
     output: "desman/{group}/Bin_ini/{Bin}/Deviance.csv"
     shell : """
-        cat $( ls {wildcards.path}/Run_*/fit.txt) | cut -d"," -f2- > {output}
+        cat $( ls desman/{wildcards.group}/Bin_ini/{wildcards.Bin}/Run_*/fit.txt) | cut -d"," -f2- > {output}
         sed -i '1iH,G,LP,Dev' {output}
     """
 

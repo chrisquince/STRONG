@@ -173,25 +173,26 @@ rule Desman_plot:
         {SCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {output} 2> /dev/null
     """
 
+rule Haplo_seqs:
+    input: deviance_file="desman/{group}/Bin_ini/{Bin}/Deviance.pdf",
+    output: "desman/{group}/Bin_ini/{Bin}/best_run.txt"
+    params: "desman/{group}/Bin_ini/{Bin}"
+    shell : """
+        python {SCRIPTS}/resolvenhap.py {wildcards.path}/Run > {wildcards.path}/best_run.txt
+        
+        cut -d"," -f 1 < {wildcards.path}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
+        
+        run_select=$(cut -d"," -f5 {wildcards.path}/best_run.txt)
+        
+        python {SCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $run_select {params}/coregenes.txt -o {params}/haplotype_seqs/
+    """
     
- 
-
-    #choose choose_haplotype_nb
-  #  python {SCRIPTS}/resolvenhap.py {wildcards.path}/Run > {wildcards.path}/best_run.txt
-
-    #extract relevant sequences
-   # cut -d"," -f 1 < {wildcards.path}/freqs_sel_var.csv | sort | uniq | sed '1d' > {wildcards.path}/coregenes.txt
-    #mkdir -p {wildcards.path}/haplotype_seqs
-    #python {SCRIPTS}/GetVariantsCore.py {params} {wildcards.path}/../Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {wildcards.path}/best_run.txt) {wildcards.path}/coregenes.txt -o {wildcards.path}/haplotype_seqs/
-
-
-   
 
 def do_we_need_to_run_desman(wildcards) :
   freq_sel_var_file=checkpoints.Filter_Variant.get(group=wildcards.group,Bin=wildcards.Bin).output[0]
   nb_line=len([line for line in open(freq_sel_var_file)])
   if nb_line>1 :
-    return "desman/" + wildcards.group +"/Bin_ini/" + wildcards.Bin + "/Deviance.pdf"
+    return "desman/" + wildcards.group +"/Bin_ini/" + wildcards.Bin + "/best_run.txt"
   else :
     return freq_sel_var_file
 

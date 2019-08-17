@@ -139,23 +139,28 @@ checkpoint Select_Bin_to_run:
       if len(list(open(coglist).readlines()))>=10 :
         MAG_path=os.path.abspath("/".join(coglist.split('/')[:-2]))
         os.system("ln -s "+MAG_path+" binning/"+wildcards['group']+"/Bin_Selected/")
-      
+
+
 rule BayesAGraphSVA:
-    input:  flag="{path}/simplif.done",
-            Cogs="{path}/List_cogs_selected.tsv"
-    output: "{path}/simplif_PDiver.csv"
-    log:    "{path}/BayesPaths.log"
+    input:  flag="binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/simplif.done",
+            Cogs="binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/List_cogs_selected.tsv"
+    output: "bayespaths/{group}/{Bin_type}/{Bin}/{Bin}_simplif_log1.txt",
+    log:    "bayespaths/{group}/{Bin_type}/Logs/{Bin}_simplif.log"
+    message: "Running BayesPaths on {wildcards.Bin}"
     params : kmer=ASSEMBLY_K,
-             read_len=READ_LENGTH
+             read_len=READ_LENGTH,
+             input_dir="binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/simplif",
+             output_dir="bayespaths/{group}/{Bin_type}/{Bin}"
     shell : """
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {wildcards.path}/simplif {params.kmer} {wildcards.path}/simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {wildcards.path}/simplif_bayespaths_stdout.txt 2> {log}
+            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {params.input_dir} {params.kmer} {params.output_dir} -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
             """
 
 def List_bins_selected(wildcards):
     checkpoint_output = checkpoints.Select_Bin_to_run.get(group=wildcards.group)
     BIN_PATHS_local=[os.path.dirname(path) for path in glob.glob("binning/"+wildcards.group+"/Bin_Selected/Bin_*/SCG.fna")]
-    List_cogs=[binpath+"/StrainAnalysis/simplif_PDiver.csv" for binpath in BIN_PATHS_local]
-    return List_cogs
+    BINS=[x.split('/')[3] for x in BIN_PATHS]
+    List_outputs=["bayespaths/" + wildcards.group + "/Bin_Selected/" + x + "/" + x + "_simplif_log1.txt" for x in BINS]
+    return List_outputs
 
 
 rule define_results:

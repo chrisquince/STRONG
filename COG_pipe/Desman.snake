@@ -170,7 +170,7 @@ rule Desman_plot:
     input: deviance_file="{path}/Deviance.csv",
     output: "{path}/Deviance.pdf"
     shell : """
-        {SCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {wildcards.output} 2> /dev/null
+        {SCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {output} 2> /dev/null
     """
 
     

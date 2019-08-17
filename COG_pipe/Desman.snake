@@ -5,7 +5,7 @@ include: "Binning.snake"
 
 LIST_BINPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna")]
 
-LIST_INI_BINS=[path.split('/')[3] for path in  glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna"]
+LIST_INI_BINS=[path.split('/')[3] for path in  glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna")]
 
 rule all : 
   input: expand("desman/{group}/Bin_ini/{bins}/desman_analysis_done",bins=LIST_INI_BINS,group=GROUPS)
@@ -133,7 +133,7 @@ checkpoint Filter_Variant:
     input:
         "binning/{group}/Bin_ini/{Bin}/Samples_files/count.csv"
     output :
-        expand("desman/{group}/Bin_ini/{Bin}/freqs_{output_file_type}",output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
+        expand("desman/{{group}}/Bin_ini/{{Bin}}/freqs_{output_file_type}",output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
     params : "desman/{group}/Bin_ini/{Bin}/freqs_"
     log:
         "desman/{group}/Bin_ini/Logs/{Bin}_Filter_variant.log"
@@ -159,7 +159,7 @@ rule run_desman:
 # TODO REplace all of that with some checkpoint rules
 
 rule Desman_fit:
-    input: expand("desman/{group}/Bin_ini/{Bin}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
+    input: expand("desman/{{group}}/Bin_ini/{{Bin}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
     output: "desman/{group}/Bin_ini/{Bin}/Deviance.csv"
     shell : """
         cat $( ls {wildcards.path}/Run_*/fit.txt) | cut -d"," -f2- > {output}

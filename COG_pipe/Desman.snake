@@ -178,13 +178,11 @@ rule Haplo_seqs:
     output: "desman/{group}/Bin_ini/{Bin}/best_run.txt"
     params: "desman/{group}/Bin_ini/{Bin}"
     shell : """
-        python {SCRIPTS}/resolvenhap.py {wildcards.path}/Run > {wildcards.path}/best_run.txt
+        python {SCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
         
-        cut -d"," -f 1 < {wildcards.path}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
+        cut -d"," -f 1 < {params}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
         
-        run_select=$(cut -d"," -f5 {wildcards.path}/best_run.txt)
-        
-        python {SCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $run_select {params}/coregenes.txt -o {params}/haplotype_seqs/
+        python {SCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
     """
     
 

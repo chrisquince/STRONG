@@ -181,6 +181,10 @@ rule Haplo_seqs:
         python {SCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
         
         cut -d"," -f 1 < {params}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
+
+        if [ ! -d {params}/haplotype_seqs ]; then 
+            mkdir {params}/haplotype_seqs
+        fi
         
         python {SCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
     """

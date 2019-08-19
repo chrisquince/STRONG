@@ -1,12 +1,16 @@
-# ------ Resssources ------ 
+# ------ Resources ------
 threads : 8 # single task nb threads
+
 # ------ Assembly parameters ------ 
 data: /mnt/gpfs/Hackathon/Test  # path to data folder
-# ---- Annotation database -----
-cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database 
-# ---- Spade tools dependency -----
-soft: /home/sergei/cog_tools2
-# ----Binning parameters ------
+
+# ----- Annotation database -----
+cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database
+
+# ----- SPAdes tools dependency -----
+soft: /home/sergei/cog_tools
+
+# ----- Binning parameters ------
 concoct_contig_size: 1000
 read_length: 150
 assembly: 
@@ -14,17 +18,20 @@ assembly:
     k: [77]
     mem: 2000
     threads: 24
-    dir: /home/sergei/cog_tools2/spades/bin
-    groups: ['*'] # specify a group of sample to coassemble
-# ---- Bayespaths parameters ------
+    dir: /home/sergei/cog_tools/spades/bin
+    groups: ['*'] # specify a group of samples to co-assemble
+
+# ----- BayesPaths parameters ------
 bayespaths:
     nb_strains: 16
-# ---- Desman parameters ------
+
+# ----- DESMAN parameters ------
 desman:
     execution: 1
     nb_haplotypes: 10
     nb_repeat: 5
     min_cov: 1
-# ---- Maganalysis ------
+
+# -----  MAGAnalysis ------
 maganalysis: 
     execution: 0

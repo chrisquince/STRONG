@@ -1,5 +1,3 @@
-
-
 ANNOTATION_SPLITS=100
 
 #find for ORFs
@@ -14,7 +12,6 @@ rule prodigal:
     shell:
         "prodigal -i {input} -a {output.faa} -d {output.fna} -f gff -p meta -o {output.gff} &> {log} "
 
-
 #Cut faa file in chunks, so that we can have faster annotation  
 rule split_fasta:
     input:
@@ -26,7 +23,6 @@ rule split_fasta:
     shell:
         "{SCRIPTS}/Split_Fasta.py {input} {ANNOTATION_SPLITS} -o annotation/{wildcards.group}/temp_splits/" 
 
-
 rule rpsblast:
     input:"annotation/{group}/temp_splits/{name}.faa"
     output: "annotation/{group}/temp_splits/{name}_Rpsblast_cogs.tsv"
@@ -37,7 +33,6 @@ rule cat_split_annotation:
     input: expand("annotation/{{group}}/temp_splits/{{group}}_{nb}_Rpsblast_cogs.tsv",nb=range(ANNOTATION_SPLITS))
     output: "annotation/{group}/{group}_Rpsblast_cogs.tsv"
     shell: "cat {input}>{output} "
-
 
 # select best hit and use criterion : min 5% coverage, min 1e-10 evalue
 rule parse_cogs_annotation:
@@ -59,9 +54,3 @@ rule extract_SCG_sequences:
         "{filename}_SCG.fna"
     shell:
         "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {SCG_DATA}/scg_cogs_min0.97_max1.03_unique_genera.txt {input.gff}>{output}"
-
-
-
-
-
-

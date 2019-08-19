@@ -67,14 +67,16 @@ if args.config:
         shutil.copy(args.config, config_path)
 
 with cd(exec_dir):
+    call_cnt=0
     def call_snake(extra_params=[]):
-        call_snake.nb+=1
+        global call_cnt
+        call_cnt+=1
         if args.dag:
             p1=Popen(base_params + extra_params, stdout=PIPE, stderr=sys.stderr)
-            p2=Popen(["dot","-Tpdf"],stdin=p1.stdout, stdout=PIPE, stderr=sys.stderr)
-            with open(args.dag.replace(".pdf",str(call_snake.nb)+".pdf"),"bw") as f :
+            p2=Popen(["dot","-Tpdf"], stdin=p1.stdout, stdout=PIPE, stderr=sys.stderr)
+            with open(args.dag.replace(".pdf", str(call_cnt)+".pdf"), "bw") as f:
                 f.write(p2.communicate()[0])
-        else :
+        else:
             subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
 
     def reuse_dir(dir_from, dir_name):
@@ -93,22 +95,16 @@ with cd(exec_dir):
         config = yaml.load(config_in)
     fill_default_values(config)
     
-    DESMAN_execution=config["desman"]["execution"]
-    
-    MAG_execution=config["maganalysis"]["execution"]
-    
-    call_snake.nb=0
     print("Step #1 - Assembly / binning / COG calling")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
+
     print("Step #2 - graph processing / strain calling")
     call_snake(["--snakefile", "HeavyLifting.snake"])
-    if DESMAN_execution:
+
+    if config["desman"]["execution"]:
         print("Step #3 - strain calling using Desman") 
         call_snake(["--snakefile", "Desman.snake"])
-    if MAG_execution:
+
+    if config["maganalysis"]["execution"]:
         print("Step #4 - running MAGAnalysis") 
         call_snake(["--snakefile", "MAGAnalysis.snake"])
-
-
-
-    

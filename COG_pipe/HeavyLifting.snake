@@ -151,6 +151,7 @@ rule BayesAGraphSVA:
              read_len=READ_LENGTH,
              input_dir="binning/{group}/{Bin_type}/{Bin}/StrainAnalysis/simplif",
              output_dir="bayespaths/{group}/{Bin_type}/{Bin}"
+    threads:10
     shell : """
             python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.Bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
             """

@@ -14,8 +14,8 @@ default_values = {
     "concoct_contig_size": 500,
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21,33,55], "mem": 120, "threads": 16, "groups": []},
-    "desman":{"execution":0,"nb_haplotypes": 10,"nb_repeat": 5,"min_cov": 1},
-    "bayespaths":{"dir":"unset"},
+    "desman":{"execution":0,"nb_haplotypes": 10,"nb_repeat": 5,"min_cov": 1,"dscripts":None},
+    "bayespaths":{"dir":None},
     "maganalysis":{"execution":1}
 }
 
@@ -35,7 +35,8 @@ def fill_default_values(config):
         default_values["bin"] = os.path.join(local_dir, "build/bin")
         default_values["scripts"] = os.path.join(local_dir, "scripts")
         default_values["scg_data"]= os.path.join(local_dir, "scg_data")
-        default_values["bayespaths"]["dir"]= os.path.join(local_dir,"../BayesAGraphSVA")
+        default_values["bayespaths"]["dir"]= os.path.join(local_dir,"BayesAGraphSVA")
+        default_values["desman"]["dscripts"]= os.path.join(local_dir,"DESMAN/scripts")
     setdefault_recursively(config)
 
 def sample_name(fullname):

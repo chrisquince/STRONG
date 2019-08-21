@@ -35,8 +35,8 @@ def fill_default_values(config):
         default_values["bin"] = os.path.join(local_dir, "build/bin")
         default_values["scripts"] = os.path.join(local_dir, "scripts")
         default_values["scg_data"]= os.path.join(local_dir, "scg_data")
-        default_values["bayespaths"]["dir"]= os.path.join(local_dir,"BayesAGraphSVA")
-        default_values["desman"]["dscripts"]= os.path.join(local_dir,"DESMAN/scripts")
+        default_values["bayespaths"]["dir"]= os.path.join(local_dir,'..',"BayesAGraphSVA")
+        default_values["desman"]["dscripts"]= os.path.join(local_dir,'..',"DESMAN/scripts")
     setdefault_recursively(config)
 
 def sample_name(fullname):

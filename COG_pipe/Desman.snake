@@ -126,7 +126,7 @@ rule extract_counts:
     log:
         "{path}/extract_counts.log"
     shell:"""
-    python {SCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
+    python {DSCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
         """
 
 checkpoint Filter_Variant:
@@ -138,7 +138,7 @@ checkpoint Filter_Variant:
     log:
         "desman/{group}/Bin_ini/Logs/{Bin}_Filter_variant.log"
     shell:"""
-        {SCRIPTS}/Variant_Filter.py {input} -o {params} -p -m {MIN_COV_DESMAN} 2>{log}
+        Variant_Filter.py {input} -o {params} -p -m {MIN_COV_DESMAN} 2>{log}
         """
 
 rule run_desman:
@@ -155,9 +155,6 @@ rule run_desman:
       """
 
 
-
-# TODO REplace all of that with some checkpoint rules
-
 rule Desman_fit:
     input: expand("desman/{{group}}/Bin_ini/{{Bin}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
     output: "desman/{group}/Bin_ini/{Bin}/Deviance.csv"
@@ -170,7 +167,7 @@ rule Desman_plot:
     input: deviance_file="{path}/Deviance.csv",
     output: "{path}/Deviance.pdf"
     shell : """
-        {SCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {output} 2> /dev/null
+        {DSCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {output} 2> /dev/null
     """
 
 rule Haplo_seqs:
@@ -178,7 +175,7 @@ rule Haplo_seqs:
     output: "desman/{group}/Bin_ini/{Bin}/best_run.txt"
     params: "desman/{group}/Bin_ini/{Bin}"
     shell : """
-        python {SCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
+        python {DSCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
         
         cut -d"," -f 1 < {params}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
 
@@ -186,7 +183,7 @@ rule Haplo_seqs:
             mkdir {params}/haplotype_seqs
         fi
         
-        python {SCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
+        python {DSCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
     """
     
 
@@ -203,95 +200,3 @@ rule Is_Desman_done :
   output: touch("desman/{group}/Bin_ini/{Bin}/desman_analysis_done")
   shell :"echo Analysis done > /dev/null"
 
-
-# rule extract_counts_sergey:
-#     input:
-#         all_counts = lambda wildcards: expand("{path}/Samples_files/{sample}_sergey.cnt", \
-#                                               sample=SAMPLES,path=wildcards.path)
-#     output:
-#         "{path}/Desman/freqs_sergey.csv"
-#     params:
-#         input_dir = "{path}/Samples_files/"
-#     log:
-#         "{path}/extract_counts_sergey.log"
-#     shell:
-#         "python {SCRIPTS}/extract_counts.py {params.input_dir} {output} 2> {log}"
-
-
-
-# rule varscan:
-#     input:
-#         contigs = "{path}/contigs.fa",
-#         bam =expand("{{path}}/Samples_files/{sample}.bam",sample=SAMPLES)
-#     output:
-#         "{path}/varscan.out"
-#     log:
-#         "{path}/varscan.log"
-#     shell: """
-#   samtools mpileup -A -B -Q 20 -f {input.contigs} {input.bam} | varscan mpileup2snp --min-coverage 5 --min-reads2 2 > {output} 2> {log}
-#     """
-
-# rule select_sites:
-#     input: varscan="{path}/varscan.out"
-#     output: "{path}/selected_sites.tsv"
-#     log: "{path}/select_sites.log"
-#     shell: """
-#         python {SCRIPTS}/filter_SNVs.py {input.varscan} {output} 3000 2> {log}
-#         """
-
-# rule bam_readcount_sergey:
-#     input:
-#         sites_list = "{path}/selected_sites.tsv",
-#         fasta = "{path}/contigs.fa",
-#         fai = "{path}/contigs.fa.fai",       
-#         bam_file = "{path}/Samples_files/{sample}.bam"
-#     output: "{path}/Samples_files/{sample}_sergey.cnt"
-#     log:
-#         "{path}/Samples_files/bam_readcount_{sample}_sergey.log"
-#     shell:"""
-#         samtools index {input.bam_file} {input.bam_file}.bai
-#         bam-readcount -l {input.sites_list} -f {input.fasta} {input.bam_file} 2> {log} > {output}
-#         """
-
-
-
-
-
-# rule plot_posterior_deviance:
-#   input:
-#       Fits=expand("{{path}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
-#   output:
-#       dev="{path}/Deviance.csv",
-#       plot="{path}/Deviance.pdf"
-#   shell:"""
-#   cat {input.Fits} | cut -d"," -f2- > {output.dev}
-#   sed -i '1iH,G,LP,Dev' {output.dev}
-#   {SCRIPTS}/PlotDev.R -l {output.dev} -o {output.plot} 2> /dev/null
-#   """
-
-# rule choose_haplotype_nb:
-#   input:
-#       Fits=expand("{{path}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
-#   output:
-#       "{path}/best_run.txt"
-#   params:"{path}/Run"
-#   shell: "python {SCRIPTS}/resolvenhap.py {params} > {output} "
-
-# rule get_variants_cores:
-#   input: 
-#     contigs=lambda w:"profile/scaffolds/"+w.path.split("/")[1]+".fasta",
-#     SCG="{path}/Samples_files/SCG_bed_like.tsv",
-#     variants="{path}/Desman/freqs_sel_var.csv",
-#     best_run="{path}/Desman/best_run.txt"
-#   output:
-#     seq=touch("{path}/Desman/desman_analysis_done"),
-#     coregenes="{path}/Desman/coregenes.txt"
-#   params:
-#     output_dir=lambda wildcards:wildcards.path+"/Desman/haplotype_seqs/"
-#   shell:"""
-#     cut -d"," -f 1 < {input.variants} | sort | uniq | sed '1d' > {output.coregenes}
-#     python {SCRIPTS}/GetVariantsCore.py {input.contigs} {input.SCG} $(cut -d"," -f5 "" "{wildcards.path}/Desman/best_run.txt") {output.coregenes} -o {params.output_dir}
-#     """
-
-
-# python $DESMAN/scripts/GetVariantsCore.py profile/scaffolds/group1.fasta binning/group1/Bin_0/Samples_files/SCG_bed_like.tsv binning/group1/Bin_0/Desman/Run_3_0/Filtered_Tau_star.csv binning/group1/Bin_0/Desman/coregenes.txt -o test

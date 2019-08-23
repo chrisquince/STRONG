@@ -18,8 +18,6 @@ rule split_fasta:
         "annotation/{group}/{group}.faa"
     output:
         expand("annotation/{{group}}/temp_splits/{{group}}_{nb}.faa",nb=range(ANNOTATION_SPLITS))
-    threads:
-        THREADS
     shell:
         "{SCRIPTS}/Split_Fasta.py {input} {ANNOTATION_SPLITS} -o annotation/{wildcards.group}/temp_splits/" 
 

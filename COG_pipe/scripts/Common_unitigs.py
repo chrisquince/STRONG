@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+#FIXME this one needs refactoring and factoring out the hardcoded paths
+#FIXME normalize names and spaces
 
 import re
 import glob
@@ -26,6 +28,7 @@ def get_overlaping_bins(Dico_CogBin_unitigs) :
   Dico_to_flag={}
   for bins in Set_bins : 
     list_cog=Dico_bin_COGs[bins]
+    #TODO add parameter?
     if len(list_cog)<10 :
       Dico_to_flag[bins]=list_cog
     if len(list_cog)>=10 :

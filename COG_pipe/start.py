@@ -98,13 +98,13 @@ with cd(exec_dir):
     print("Step #1 - Assembly / binning / COG calling")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
 
-    print("Step #2 - graph processing / strain calling")
-    call_snake(["--snakefile", "HeavyLifting.snake"])
+    #print("Step #2 - graph processing / strain calling")
+    #call_snake(["--snakefile", "HeavyLifting.snake"])
 
-    if config["desman"]["execution"]:
-        print("Step #3 - strain calling using Desman") 
-        call_snake(["--snakefile", "Desman.snake"])
+    #if config["desman"]["execution"]:
+    #    print("Step #3 - strain calling using Desman") 
+    #    call_snake(["--snakefile", "Desman.snake"])
 
-    if config["maganalysis"]["execution"]:
-        print("Step #4 - running MAGAnalysis") 
-        call_snake(["--snakefile", "MAGAnalysis.snake"])
+    #if config["maganalysis"]["execution"]:
+    #    print("Step #4 - running MAGAnalysis") 
+    #    call_snake(["--snakefile", "MAGAnalysis.snake"])

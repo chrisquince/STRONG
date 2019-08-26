@@ -4,50 +4,44 @@ configfile: "config.yaml"
 
 import os.path
 
-#rule all:
- #   input:  expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS),
-  #          expand("profile/scaffolds/{group}.cov", group=GROUPS),
-   #         expand("assembly/high_res/{group}/simplified.mult_prof", group=GROUPS)
-    #message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
-
 # ---- Assembly ----------------------------------------------------------------
 
 # Assemble with MegaHIT
 #TODO limit memory
 rule megahit:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/megahit/{group}/final.contigs.fa"
+    output:  "assembly/megahit/final.contigs.fa"
     params:  left=lambda w: ",".join(expand("{r}", r=left_reads(w))),
              right=lambda w: ",".join(expand("{r}", r=right_reads(w))),
-             dir="assembly/megahit/{group}"
+             dir="assembly/megahit/"
     threads: 16
-    log:     "assembly/megahit/{group}.log"
-    message: "Assembling {wildcards.group} with MegaHIT"
+    log:     "assembly/megahit.log"
+    message: "Assembling with MegaHIT"
     shell:   "rm -rf {params.dir} && "
              "{SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
              " -t {threads} -o {params.dir} &> {log}"
 
 rule megahit_convert:
-    input:   "assembly/megahit/{group}/final.contigs.fa"
-    output:  "assembly/megahit/{group}.fasta"
-    message: "Converting megahit contig names from {wildcards.group} into our format"
+    input:   "assembly/megahit/final.contigs.fa"
+    output:  "assembly/megahit/assembly.fasta"
+    message: "Converting megahit contig names into our format"
     shell:   "sed -r 's/>(k[0-9]+)_([0-9]+) flag=. multi=([0-9]+|[0-9]+\.[0-9]+) len=([0-9]+)/>NODE_\\2_length_\\4_cov_\\3/' {input} > {output}"
 
 # Assemble with SPAdes
 rule spades:
     input:   left=left_reads, right=right_reads
     output:
-        assembly="assembly/spades/{group}.fasta",
-        high_res="assembly/high_res/{group}/graph_pack.gfa"
+        assembly="assembly/spades/assembly.fasta",
+        high_res="assembly/high_res/graph_pack.gfa"
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
              mem=config["assembly"]["mem"],
              ks=','.join(map(str, config["assembly"]["k"])),
-             dir="assembly/spades/{group}"
+             dir="assembly/spades/"
              #bh=lambda w: "" if is_fastq(w) else "--only-assembler"
     threads: config["assembly"]["threads"]
-    log:     "assembly/spades/{group}.log"
-    message: "Assembling {wildcards.group} with metaSPAdes"
+    log:     "assembly/spades.log"
+    message: "Assembling with metaSPAdes"
     shell: 
         """
         {ASSEMBLER_DIR}/spades.py --meta --only-assembler --save-gp -t {threads} -k {params.ks} -m {params.mem} {params.left} {params.right} -o {params.dir} &> {log}
@@ -76,6 +70,7 @@ rule simplify:
         '{SOFT}/spades-gsimplifier {params.gp} {params.out} --gfa -k {ASSEMBLY_K} '
         '-read-length {READ_LENGTH} -t {threads} -tmpdir {params.tmp} &> {log}'
 
+#TODO move downstream + change paths
 rule unitig_profiles:
     input:
         graph="{path}.gfa",
@@ -92,25 +87,17 @@ rule unitig_profiles:
         "{SOFT}/spades-edge-profiles {input.reads_desc} {params.gp} {output} "
         "-k {ASSEMBLY_K} -t {threads} -tmpdir $(dirname {output})/tmp &> {log}"
 
-rule copy_group_fasta:
-    input:   "assembly/%s/{group}.fasta" % ASSEMBLER
-    output:  "profile/scaffolds/{group}.fasta"
+#TODO move downstream
+rule copy_fasta:
+    input:   "assembly/%s/assembly.fasta" % ASSEMBLER
+    output:  "profile/assembly.fasta"
     shell: "cp {input} {output}"
 
 #rule depth:
- #   input:   expand("profile/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
-  #  output:  "profile/{frags}/{group}.cov"
-   # log:     "profile/{frags}/{group}.log"
-    #message: "Calculating depths for {wildcards.frags} from {wildcards.group} across samples"
-    #threads: THREADS
-    #shell:   """
-     #        touch {output}
-      #       """
-#rule depth:
-#    input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
-#    output:  "profile/jgi/{frags}/{group}.{type,mpl|var}"
+#    input:   expand("profile/jgi/{{frags}}/{sample}.sorted.bam", sample=SAMPLES)
+#    output:  "profile/jgi/{frags}/assembly.{type,mpl|var}"
 #    params:  lambda w: "" if w.type == "var" else "--noIntraDepthVariance"
-#    log:     "profile/jgi/{frags}/{group}.{type}.log"
+#    log:     "profile/jgi/{frags}/{type}.log"
 #    message: "Calculating depths for {wildcards.frags} contigs from {wildcards.group}"
 #    threads: THREADS
 #    shell:   """

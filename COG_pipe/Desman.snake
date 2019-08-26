@@ -3,107 +3,100 @@ import glob,os
 include: "Common.snake"
 include: "Binning.snake"
 
-LIST_BINPATHS=[path.replace("/SCG.fna","") for path in  glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna")]
+#TODO normalize the indentation
 
-LIST_INI_BINS=[path.split('/')[3] for path in  glob.glob("binning/*/Bin_ini/Bin_*/SCG.fna")]
+#TODO do we want to use initial bins here?
+BIN_IDS, = glob_wildcards("binning/Bin_ini/Bin_{id}/SCG.fna")
 
-rule all : 
-  input: expand("desman/{group}/Bin_ini/{bins}/desman_analysis_done",bins=LIST_INI_BINS,group=GROUPS)
-  # input: expand("{bin_path}/contigs.fa",bin_path=LIST_BINPATHS)
-  # input: expand("annotation/{group}/{group}_SCG.bed",group=GROUPS)
-  # input: expand("{bin_path}/selected_sites.tsv",bin_path=LIST_BINPATHS)
-  # input: expand("{bin_path}/{sample}.bam",bin_path=LIST_BINPATHS,sample=SAMPLES)
-  # input: expand("{bin_path}/{sample}.cnt",bin_path=LIST_BINPATHS,sample=SAMPLES)
-  # input: expand("{bin_path}/Desman/freqs_{pipeline}.csv",bin_path=LIST_BINPATHS,pipeline=["sel_var","sergey"])
-  # input: expand("{bin_path}/Samples_files/SCG_bed_like.tsv",bin_path=LIST_BINPATHS)
-  # input: expand("{bin}/contigs.fa",bin=LIST_BINPATHS)
-         # expand("{bin_path}/Desman/Deviance.pdf",bin_path=LIST_BINPATHS),
-         # expand("{bin_path}/Desman/haplotype_seqs/done",bin_path=LIST_BINPATHS)
+rule prepare: 
+  input: "desman/contig_bins.done"
 
+rule all: 
+  input: expand("desman/Bin_{id}/desman_analysis_done", id=BIN_IDS)
 
-LIST_BINPATH_BY_GROUPS={group:[path.replace("/SCG.fna","") for path in  glob.glob("binning/"+group+"/Bin_ini/Bin_*/SCG.fna")] for group in GROUPS}
-
-
-checkpoint Get_Bins_contigs :
-  input :
-    bin="binning/{group}/Bin_ini/clustering_gt"+str(MIN_CONTIG_SIZE)+"_merged.csv",
-    fasta="profile/scaffolds/{group}.fasta"
-  output: temp(touch("binning/{group}/Bin_ini/bins_contigs_done"))
-  params:lambda w:" ".join([path.split("Bin_ini/Bin_")[1] for path in LIST_BINPATH_BY_GROUPS[w.group]])
-  shell:"""
-  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} binning/{wildcards.group}/Bin_ini -l {params} -d
+#FIXME why is it a checkpoint?
+rule bin_contigs:
+  input:
+  #TODO try using the {MIN_CONTIG_SIZE{
+    bin="binning/Bin_ini/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+    fasta="profile/assembly.fasta"
+  #FIXME why was it temp?  
+  output: touch("desman/contig_bins.done")
+  params: " ".join(BIN_IDS)
+  shell: """
+  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} $(dirname {output}) -l {params} -d
   """ 
+  
+rule contigs_bed:
+  input: "desman/{bin}/{bin}.fasta"
+  output: "desman/{bin}/{bin}.bed"
+  shell: "{SCRIPTS}/WriteBed.py {input} > {output}"
 
-
-def bin_contigs_are_extracted(wildcards) :
-  meh=checkpoints.Get_Bins_contigs.get(group=wildcards.group)
-  output="binning/"+wildcards.group+"/Bin_ini/"+wildcards.bin+"/"+wildcards.bin+".fasta"
-  return output
-
-
-rule Get_Bins_contigs_bed :
-  input:  fasta=bin_contigs_are_extracted,
-          touch="binning/{group}/Bin_ini/bins_contigs_done"
-  output: bin_bed="binning/{group}/Bin_ini/{bin}/Samples_files/{bin}.bed"
-  shell: "{SCRIPTS}/WriteBed.py {input.fasta} > {output.bin_bed}"
-
-rule bam_by_bin :
+rule bam_by_bin:
     input: 
-        global_bam="profile/scaffolds/{group}/{sample}.sorted.bam",
-        bin_bed="binning/{group}/Bin_ini/{bin}/Samples_files/{bin}.bed"
+        global_bam="profile/assembly/{sample}.sorted.bam",
+        bin_bed="desman/{bin}/{bin}.bed"
     output: 
-      bin_bam="binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.bam"
+        bin_bam="desman/{bin}/{sample}.{bin}.bam"
+    #TODO probably unnecessary
     threads: THREADS
-    shell :"""
+    shell: """
     samtools view -b -L {input.bin_bed} {input.global_bam} -@{threads} > {output.bin_bam}
     """
 
-rule index_fasta_files:
-  input:
-    fasta = bin_contigs_are_extracted
-  output:
-    fai = "binning/{group}/Bin_ini/{bin}/{bin}.fasta.fai"
-  shell: "samtools faidx {input.fasta}"
+#TODO use rule from common
+rule index_fasta:
+  input: "{path}.fasta"
+  output: "{path}.fasta.fai"
+  shell: "samtools faidx {input}"
 
 rule bam_readcount:
     input:
-        fasta = bin_contigs_are_extracted,
-        fai = "binning/{group}/Bin_ini/{bin}/{bin}.fasta.fai",
-        bam_file = "binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.bam",
-        bed_file = "binning/{group}/Bin_ini/{bin}/Samples_files/{bin}.bed"
-    output: "binning/{group}/Bin_ini/{bin}/Samples_files/{sample}.cnt.gz"
+        fasta = "desman/{bin}/{bin}.fasta",
+        fai = "desman/{bin}/{bin}.fasta.fai",
+        bam = "desman/{bin}/{sample}.{bin}.bam",
+        bed = "desman/{bin}/{bin}.bed"
+    output: "desman/{bin}/{sample}.cnt.gz"
     log:
-        "binning/{group}/Bin_ini/{bin}/Samples_files/bam_readcount_{sample}.log"
+        "desman/{bin}/bam_readcount_{sample}.log"
     shell:"""
-        samtools index {input.bam_file} {input.bam_file}.bai
-        bam-readcount -l {input.bed_file} -f {input.fasta} {input.bam_file} 2> {log} | gzip > {output}
+        samtools index {input.bam} {input.bam}.bai
+        bam-readcount -l {input.bed} -f {input.fasta} {input.bam} 2> {log} | gzip > {output}
         """
 
-rule get_SCG_bed :
+rule assembly_bed:
   input:
-      gff="annotation/{file}.gff",
-      SCG_file="annotation/{file}_SCG.fna"
-  output: 
-      all_bed="annotation/{file}.bed",
-      SCG_bed="annotation/{file}_SCG.bed"
-  run:
-      os.system(SCRIPTS+"/Gff_to_bed.py "+input.gff)
-      Set_seq={name.split()[0] for name,seq in SimpleFastaParser(open(input.SCG_file))}
-      Handle_w=open(output.SCG_bed,'w')
-      for line in open(output.all_bed) :
-          if line.split()[3] in Set_seq :
-              Handle_w.write(line)
-      Handle_w.close()
+      "annotation/assembly.gff",
+  output:
+      "desman/assembly.bed"
+  shell:"""
+      {SCRIPTS}/Gff_to_bed.py {input} {output}
+      """
 
-rule get_bed_like_file_for_ExtractCountFreqGenes :
+rule SCG_bed:
   input:
-      SCG_bed="annotation/{group}/{group}_SCG.bed",
-      Bin_SCG="binning/{group}/Bin_ini/{path}/SCG.fna"
+      all_bed="desman/assembly.bed",
+      SCG_file="annotation/SCG.fna"
   output: 
-      bedlike="binning/{group}/Bin_ini/{path}/Samples_files/SCG_bed_like.tsv"
+      SCG_bed="desman/SCG.bed"
+  run:
+      seq_names={name.split()[0] for name,seq in SimpleFastaParser(open(input.SCG_file))}
+      with open(output.SCG_bed, 'w') as scg_bed:
+          for line in open(input.all_bed):
+              if line.split()[3] in seq_names:
+                  scg_bed.write(line)
+
+rule bed_like_file_for_ExtractCountFreqGenes:
+  input:
+      SCG_bed="desman/SCG.bed",
+      Bin_SCG="binning/Bin_ini/{bin}/SCG.fna"
+  output: 
+  #TODO weird naming...
+      bedlike="desman/{bin}/SCG_bed_like.tsv"
   run:
     Dico_SCG={header.split()[0]:header.split() for header,seq in SimpleFastaParser(open(input.Bin_SCG))}
   # NODE_11_length_160076_cov_189.092050_50 COG0552 strand=+
+  #FIXME use the with ... as ... syntax
     Handle=open(output.bedlike,"w")
     for line in open(input.SCG_bed) :
       contig,start,end,orf=line.rstrip().split("\t")
@@ -117,7 +110,7 @@ rule get_bed_like_file_for_ExtractCountFreqGenes :
 
 rule extract_counts:
     input:
-        all_counts = lambda wildcards: expand("{path}/{sample}.cnt.gz",sample=SAMPLES,path=wildcards.path),
+        all_counts = lambda wildcards: expand("{{path}}/{sample}.cnt.gz", sample=SAMPLES),
         SCG_bedlike="{path}/SCG_bed_like.tsv"
     output:
         "{path}/count.csv"
@@ -125,78 +118,85 @@ rule extract_counts:
         input_dir = "{path}"
     log:
         "{path}/extract_counts.log"
+    #TODO Why explicity python call?
     shell:"""
     python {DSCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
         """
 
-checkpoint Filter_Variant:
+checkpoint filter_variant:
     input:
-        "binning/{group}/Bin_ini/{Bin}/Samples_files/count.csv"
+        "desman/{bin}/count.csv"
     output :
-        expand("desman/{{group}}/Bin_ini/{{Bin}}/freqs_{output_file_type}",output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
-    params : "desman/{group}/Bin_ini/{Bin}/freqs_"
+        expand("desman/{{bin}}/freqs_{output_file_type}", 
+                output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
+    params : "desman/{bin}/freqs_"
     log:
-        "desman/{group}/Bin_ini/Logs/{Bin}_Filter_variant.log"
+        "desman/Logs/{bin}_Filter_variant.log"
     shell:"""
         Variant_Filter.py {input} -o {params} -p -m {MIN_COV_DESMAN} 2>{log}
         """
 
 rule run_desman:
     input:
-        sel_var="desman/{group}/Bin_ini/{Bin}/freqs_sel_var.csv",
-        err="desman/{group}/Bin_ini/{Bin}/freqs_tran_df.csv"
+        sel_var="desman/{bin}/freqs_sel_var.csv",
+        err="desman/{bin}/freqs_tran_df.csv"
     output:
-        "desman/{group}/Bin_ini/{Bin}/Run_{g}_{r}/fit.txt"
-    params:"desman/{group}/Bin_ini/{Bin}/Run_{g}_{r}"
+        "desman/{bin}/Run_{g}_{r}/fit.txt"
     log:
-        "desman/{group}/Bin_ini/Logs/Run_{g}_{r}/{Bin}_{g}_{r}.log"
+        "desman/Logs/Run_{g}_{r}/{bin}_{g}_{r}.log"
     shell:"""
-      desman {input.sel_var} -e {input.err} -o {params} -m {MIN_COV_DESMAN} -i 100 -g {wildcards.g} -s {wildcards.r} &> {log}
+      desman {input.sel_var} -e {input.err} -o $(dirname {output}) -m {MIN_COV_DESMAN} -i 100 -g {wildcards.g} -s {wildcards.r} &> {log}
       """
 
 
-rule Desman_fit:
-    input: expand("desman/{{group}}/Bin_ini/{{Bin}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
-    output: "desman/{group}/Bin_ini/{Bin}/Deviance.csv"
+rule desman_fit:
+    input: expand("desman/{{bin}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
+    output: "desman/{bin}/Deviance.csv"
+    #TODO use {input}!
     shell : """
-        cat $( ls desman/{wildcards.group}/Bin_ini/{wildcards.Bin}/Run_*/fit.txt) | cut -d"," -f2- > {output}
+        cat $( ls desman/{wildcards.bin}/Run_*/fit.txt) | cut -d"," -f2- > {output}
         sed -i '1iH,G,LP,Dev' {output}
     """
 
-rule Desman_plot:
-    input: deviance_file="{path}/Deviance.csv",
+rule desman_plot:
+    input: "{path}/Deviance.csv",
     output: "{path}/Deviance.pdf"
-    shell : """
-        {DSCRIPTS}/PlotDev.R -l {wildcards.path}/Deviance.csv -o {output} 2> /dev/null
+    #TODO why not redirecting to log file?
+    shell: """
+        {DSCRIPTS}/PlotDev.R -l {input} -o {output} 2> /dev/null
     """
 
-rule Haplo_seqs:
-    input: deviance_file="desman/{group}/Bin_ini/{Bin}/Deviance.pdf",
-    output: "desman/{group}/Bin_ini/{Bin}/best_run.txt"
-    params: "desman/{group}/Bin_ini/{Bin}"
-    shell : """
+rule haplo_seqs:
+    input: 
+       fasta="profile/assembly.fasta",
+       deviance_file="{path}/Deviance.pdf",
+       SCG_bedlike="{path}/SCG_bed_like.tsv"
+    output: "{path}/best_run.txt"
+    params: "{path}"
+    #TODO why explicit call to python
+    shell: """
         python {DSCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
         
         cut -d"," -f 1 < {params}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
 
-        if [ ! -d {params}/haplotype_seqs ]; then 
-            mkdir {params}/haplotype_seqs
-        fi
-        
-        python {DSCRIPTS}/GetVariantsCore.py profile/scaffolds/{wildcards.group}.fasta binning/{wildcards.group}/Bin_ini/{wildcards.Bin}/Samples_files/SCG_bed_like.tsv $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
-    """
-    
+        mkdir -p {params}/haplotype_seqs
+        python {DSCRIPTS}/GetVariantsCore.py {input.fasta} {input.SCG_bedlike} $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
+    """ 
 
-def do_we_need_to_run_desman(wildcards) :
-  freq_sel_var_file=checkpoints.Filter_Variant.get(group=wildcards.group,Bin=wildcards.Bin).output[0]
+#TODO check the logic with Seb
+#Why do we need checkpoint here? 
+def do_we_need_to_run_desman(wildcards):
+  freq_sel_var_file=checkpoints.filter_variant.get(bin=wildcards.bin).output[0] 
+  # "binning/{bin}/count.csv"
   nb_line=len([line for line in open(freq_sel_var_file)])
-  if nb_line>1 :
-    return "desman/" + wildcards.group +"/Bin_ini/" + wildcards.Bin + "/best_run.txt"
-  else :
+  if nb_line>1:
+    return "desman/" + wildcards.bin + "/best_run.txt"
+  else:
     return freq_sel_var_file
 
-rule Is_Desman_done :
-  input : do_we_need_to_run_desman
-  output: touch("desman/{group}/Bin_ini/{Bin}/desman_analysis_done")
-  shell :"echo Analysis done > /dev/null"
+rule is_desman_done :
+  input: do_we_need_to_run_desman
+  output: touch("desman/{bin}/desman_analysis_done")
+  #TODO echo to /dev/null?
+  shell: "echo 'Analysis done' > /dev/null"
 

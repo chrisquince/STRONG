@@ -101,9 +101,10 @@ with cd(exec_dir):
     print("Step #2 - graph processing / strain calling")
     call_snake(["--snakefile", "HeavyLifting.snake"])
 
-    #if config["desman"]["execution"]:
-    #    print("Step #3 - strain calling using Desman") 
-    #    call_snake(["--snakefile", "Desman.snake"])
+    if config["desman"]["execution"]:
+        print("Step #3 - strain calling using Desman") 
+        call_snake(["--snakefile", "Desman.snake", "prepare"])
+        call_snake(["--snakefile", "Desman.snake", "all"])
 
     #if config["maganalysis"]["execution"]:
     #    print("Step #4 - running MAGAnalysis") 

@@ -30,7 +30,9 @@ MIN_CONTIG_SIZE = config["concoct_contig_size"]
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]
 MIN_COV_DESMAN = config["desman"]["min_cov"]
-LIST_COGS=list(map(str.rstrip,open(SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt").readlines()))
+COG_FILE=SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt"
+#TODO rename + maybe simplify
+LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented

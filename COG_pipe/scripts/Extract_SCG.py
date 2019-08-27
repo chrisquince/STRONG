@@ -36,6 +36,7 @@ def prodigal_gff_parser(Handle) :
     return  # StopIteration
 
 
+#FIXME unreadable code
 def main(gff_file,Annotation_file,SCG_file,faa_file,bed_file) :
   get_orf_name=lambda ORF:ORF.split('\t')[0]+"_"+ORF.split('\t')[8].split(';')[0].split("_")[1]
   Set_scg={line.rstrip() for line in open(SCG_file)}
@@ -68,66 +69,4 @@ if __name__ == "__main__":
   faa_file=args.faa 
   bed_file=args.b
   main(gff_file,Annotation_file,SCG_file,faa_file,bed_file)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

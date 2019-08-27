@@ -61,4 +61,5 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    #TODO consider parsing arguments here
     main(sys.argv[1:])

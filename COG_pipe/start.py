@@ -106,6 +106,6 @@ with cd(exec_dir):
         call_snake(["--snakefile", "Desman.snake", "prepare"])
         call_snake(["--snakefile", "Desman.snake", "all"])
 
-    #if config["maganalysis"]["execution"]:
-    #    print("Step #4 - running MAGAnalysis") 
-    #    call_snake(["--snakefile", "MAGAnalysis.snake"])
+    if config["maganalysis"]["execution"]:
+        print("Step #4 - running MAGAnalysis") 
+        call_snake(["--snakefile", "MAGAnalysis.snake"])

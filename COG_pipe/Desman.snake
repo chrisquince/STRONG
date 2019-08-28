@@ -14,13 +14,10 @@ rule prepare:
 rule all: 
   input: expand("desman/Bin_{id}/desman_analysis_done", id=BIN_IDS)
 
-#FIXME why is it a checkpoint?
 rule bin_contigs:
   input:
-  #TODO try using the {MIN_CONTIG_SIZE{
     bin="binning/Bin_ini/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
     fasta="profile/assembly.fasta"
-  #FIXME why was it temp?  
   output: touch("desman/contig_bins.done")
   params: " ".join(BIN_IDS)
   shell: """

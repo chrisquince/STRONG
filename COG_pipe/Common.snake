@@ -127,9 +127,8 @@ rule bowtie_align:
     output:  "{path}/{sample,sample\d+}.bam"
              #temp("{path}/{group,(sample|group)\d+}.bam")
     params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
-             left=lambda w: ",".join(expand("{r}", r=left_reads(w))),
-             #FIXME fix to right_reads(w) after checking
-             right=lambda w: ",".join(expand("{r}", r=left_reads(w))),
+             left=lambda w: ",".join(expand("{l}", l=left_reads(w))),
+             right=lambda w: ",".join(expand("{r}", r=right_reads(w))),
              index="{path}/index",
              align="",#"--no-unal --maxins 1000 --n-ceil 0,0 --np 100500",
              view=""#"-q 10"

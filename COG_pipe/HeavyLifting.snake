@@ -63,7 +63,7 @@ rule simplify_subgraphs:
 
 #TODO ask Seb why we need these methods and checkpoint_output variables
 def get_list_subgraph_done(wildcards):
-  checkpoint_output = checkpoints.fuse.get(bin_type=wildcards["bin_type"])
+  checkpoints.fuse.get(bin_type=wildcards["bin_type"])
   return expand("{path}/StrainAnalysis/simplif.done", path = bin_paths_by_type(wildcards["bin_type"]))
  
 #TODO why 'fuse'? :)
@@ -133,7 +133,7 @@ rule flag_bad_cogs:
 
 #TODO review logic
 def selected_cogs(wildcards):
-    checkpoint_output = checkpoints.Merge_Bins.get(path="binning")
+    checkpoints.Merge_Bins.get(path="binning")
     bin_paths=INIT_BIN_PATHS + bin_paths_by_type("Merged_Bin")
     List_cogs=[binpath+"/StrainAnalysis/List_cogs_selected.tsv" for binpath in bin_paths]
     return List_cogs
@@ -172,10 +172,9 @@ rule BayesAGraphSVA:
             """
 
 def List_bins_selected(wildcards):
-    checkpoint_output = checkpoints.Select_Bin_to_run.get()
-    #FIXME shouldn't we use those instead of INIT_BIN_PATHS?
+    checkpoints.Select_Bin_to_run.get()
     bin_paths=bin_paths_by_type("Bin_selected")
-    return expand("bayespaths/Bin_Selected/{bin}/{bin}_simplif_log1.txt", bin=[os.path.basename(b_p) for b_p in INIT_BIN_PATHS])
+    return expand("bayespaths/Bin_Selected/{bin}/{bin}_simplif_log1.txt", bin=[os.path.basename(b_p) for b_p in bin_paths])
 
 rule define_results:
   input:  "binning/Bin_Selected/bin_selected.done",

@@ -37,85 +37,49 @@ LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented
 SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
-SAMPLE_COUNT = config.get("count", len(SAMPLE_DIRS))
-SAMPLES = list()
-for i in range(1, SAMPLE_COUNT + 1):
+ALL_SAMPLES = list()
+for i in range(1, len(SAMPLE_DIRS) + 1):
     sample_name = "sample" + str(i)
     if sample_name not in SAMPLE_DIRS:
         raise WorkflowError("Samples must be consecutive; missing " + sample_name)
-    SAMPLES.append(sample_name)
+    ALL_SAMPLES.append(sample_name)
 
-SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
+SAMPLE_READS = { s : detect_reads(os.path.join(IN, s)) for s in ALL_SAMPLES}
 
-#Group samples
-GROUP_SAMPLES = config["assembly"]["groups"]
-#Form /N groups
-#FIXME weird behavior if not a multiple
-if type(GROUP_SAMPLES) == str:
-    if not GROUP_SAMPLES[0] == "/":
-        raise WorkflowException("Wrong format of assembly groups")
-    group_cnt = int(GROUP_SAMPLES[1:])
-    group_size = SAMPLE_COUNT // group_cnt
-    GROUP_SAMPLES = [["sample"+str(j) for j in range(i, min(i + group_size, SAMPLE_COUNT + 1))]
-                     for i in range(1, SAMPLE_COUNT, group_size)]
-else:
-    USED_SAMPLES = set()
-
-    def process_sample(i):
-        if type(i) == int:
-            res = "sample" + str(i)
-        elif type(i) == str and i.startswith("sample"):
-            res = i
-        else:
-            raise WorkflowException("Samples in groups must be named either sampleXX or XX, but got " + str(i))
-        return res
-
-    def process_group(g):
-        if type(g) == list:
-            res = list(map(process_sample, g))
-        elif type(g) == str and g == "*": #Replace the wildcard group with unused samples
-            res = [sample for sample in SAMPLES if sample not in USED_SAMPLES]
-        else:
-            raise WorkflowException("Groups must be either list of samples or a wildcard *, but got " + str(g))
-        USED_SAMPLES.update(res)
-        return res
-
-    GROUP_SAMPLES = list(map(process_group, GROUP_SAMPLES))
-
-    #Add a single-sample group from the rest of the samples
-    for sample in SAMPLES:
-        if sample not in USED_SAMPLES:
-            GROUP_SAMPLES.append([sample])
-
-assert len(GROUP_SAMPLES) == 1
-
-#Dictionary: {group name: [samples of the group]}
-#Can be iterated to retrieve all group names
-GROUPS = dict()
-group_id = 1
-for group in GROUP_SAMPLES:
-    if len(group) == 1:
-        key = group[0] #Groups of a single sample are simply called sampleXX
+def process_sample(i):
+    if type(i) == int:
+        res = "sample" + str(i)
+    elif type(i) == str and i.startswith("sample"):
+        res = i
     else:
-        key = "group" + str(group_id)
-        SAMPLE_READS[key] = ([SAMPLE_READS[s][0] for s in group], [SAMPLE_READS[s][1] for s in group])
-        group_id += 1
-    GROUPS[key] = group
+        raise WorkflowException("Samples in groups must be named either sampleXX or XX, but got " + str(i))
+    return res
 
+def process_samples(g):
+    if type(g) == list:
+        res = list(map(process_sample, g))
+    elif type(g) == str and g == "*": #Replace the wildcard group with unused samples
+        res = ALL_SAMPLES
+    else:
+        raise WorkflowException("Groups must be either list of samples or a wildcard *, but got " + str(g))
+    return res
+
+#Samples to use
+SAMPLES=process_samples(config["samples"])
 
 #Helpers for locating input files
-#Returns all filepaths with left/right reads for a sample/group/bin/etc, used as Snakemake input
-def reads_input(dict):
-    return (partial(dict, 0), partial(dict, 1))
+#Returns all filepaths with left/right reads for a sample/bin/etc, used as Snakemake input
+    
 
-def sample_reads(dir, wildcards):
-    return SAMPLE_READS[wildcards["sample"]][dir]
+def get_reads(read_type, wildcards):
+    return SAMPLE_READS[wildcards["sample"]][read_type] 
 
-left_sample_reads, right_sample_reads = reads_input(sample_reads)
+left_reads = partial(get_reads, 0)
+right_reads = partial(get_reads, 1)
 
-def samples_yaml():
+def samples_yaml(samples):
     libs = []
-    for s in SAMPLES:
+    for s in samples:
         info = {}
         info["left reads"] = [SAMPLE_READS[s][0]]
         info["right reads"] = [SAMPLE_READS[s][1]]
@@ -124,13 +88,6 @@ def samples_yaml():
         libs.append(info)
 
     return yaml.dump(libs, default_style='"', default_flow_style=False)
-
-def group_reads(dir, wildcards):
-    #return SAMPLE_READS[wildcards["group"]][dir]
-    #TODO simplify
-    return SAMPLE_READS["group1"][dir]
-
-left_reads, right_reads = reads_input(group_reads)
 
 def is_fastq(wildcards):
     name = getattr(wildcards, "sample", None)
@@ -167,21 +124,21 @@ rule bowtie_index:
 rule bowtie_align:
     input:   left=left_reads, right=right_reads,
              index="{path}/index.done"
-    output:  "{path}/{group,(sample|group)\d+}.bam"
+    output:  "{path}/{sample,sample\d+}.bam"
              #temp("{path}/{group,(sample|group)\d+}.bam")
     params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
              left=lambda w: ",".join(expand("{r}", r=left_reads(w))),
+             #FIXME fix to right_reads(w) after checking
              right=lambda w: ",".join(expand("{r}", r=left_reads(w))),
              index="{path}/index",
              align="",#"--no-unal --maxins 1000 --n-ceil 0,0 --np 100500",
              view=""#"-q 10"
     threads: THREADS
-    log:     "{path}/{group}.bowtie.log"
-    message: "Aligning reads of {wildcards.group} onto {params.index} with bowtie"
-    #shell:   "bowtie2 -x {params.index} {params.flag} -p {threads} {params.align}"
-    #         " -1 {input.left} -2 {input.right} 2> {log} | samtools view -bh {params.view} - > {output}"
+    log:     "{path}/{sample}.bowtie.log"
+    message: "Aligning reads of {wildcards.sample} onto {params.index} with bowtie"
     shell:
-        'bowtie2 -x {params.index} {params.flag} -p {threads} {params.align} -1 {params.left} -2 {params.right} 2>> {log} | samtools view -bh {params.view} - > {output}'
+        "bowtie2 -x {params.index} {params.flag} -p {threads} {params.align} -1 {params.left} -2 {params.right} 2> {log}"
+        " | samtools view -bh {params.view} - > {output}"
 
 rule samtools_sort:
     input:

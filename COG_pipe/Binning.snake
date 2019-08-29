@@ -34,9 +34,8 @@ rule bedtools_split_cov:
     shell:   "bedtools coverage -a {input.bed} -b {input.sample} -mean > {output} 2>{log} "
 
 # ---- use a awk onliner to regroup all coverages into a unique file -----------------------
-# TODO think of a proper way to get GROUP_SAMPLES[0] in our setting (since it's the only group)
 rule coverage:
-    input:   expand("profile/split_10K/{sample}.cov", sample = GROUP_SAMPLES[0])
+    input:   expand("profile/split_10K/{sample}.cov", sample = SAMPLES)
     output:  "profile/split_10K/coverage.tsv"
     shell : """
             echo -e "contig\t""$(ls {input} | cut -f1 -d "." | rev | cut -f1 -d "/" |rev | tr "\n" "\t" | sed 's/\t$//')"> {output}

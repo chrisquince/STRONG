@@ -139,16 +139,16 @@ def selected_cogs(wildcards):
     return List_cogs
 
 checkpoint Select_Bin_to_run:
-  input :  selected_cogs
-  output : touch("binning/Bin_Selected/bin_selected.done")
-  run :
+  input:  selected_cogs
+  output: touch("binning/Bin_Selected/bin_selected.done")
+  run:
     #FIXME rename confusing path variable
     #TODO try to get rid of the split("/")[x] pattern
-    Dict_Bin_ini={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in input if "Bin_ini" in path}
-    Dict_Merged_bin={path.split("/")[-3]:"/".join(path.split("/")[:-1]+["List_cogs_selected.tsv"]) for path in input if "Merged_Bin" in path if path.split("/")[-3] not in Dict_Bin_ini}
-    Dict_Bin_cogslist={key:value for key,value in list(Dict_Bin_ini.items())+list(Dict_Merged_bin.items())}
-    for Bin,coglist in Dict_Bin_cogslist.items() :
-      if len(list(open(coglist).readlines()))>=10 :
+    Dict_Bin_ini = {path.split("/")[-3] : "/".join(path.split("/")[:-1] + ["List_cogs_selected.tsv"]) for path in input if "Bin_ini" in path}
+    Dict_Merged_bin = {path.split("/")[-3] : "/".join(path.split("/")[:-1] + ["List_cogs_selected.tsv"]) for path in input if "Merged_Bin" in path if path.split("/")[-3] not in Dict_Bin_ini}
+    Dict_Bin_cogslist = {key:value for key,value in list(Dict_Bin_ini.items()) + list(Dict_Merged_bin.items())}
+    for Bin, coglist in Dict_Bin_cogslist.items():
+      if len(list(open(coglist).readlines())) >= 10:
         #TODO use os.path.join instead of "/".join
         MAG_path=os.path.abspath("/".join(coglist.split('/')[:-2]))
         #TODO check whether links work correctly in the new snakemake
@@ -161,13 +161,13 @@ rule BayesAGraphSVA:
     output: "bayespaths/{bin_type}/{bin}/{bin}_simplif_log1.txt",
     log:    "bayespaths/{bin_type}/Logs/{bin}_simplif.log"
     message: "Running BayesPaths on {wildcards.bin}"
-    params : kmer=ASSEMBLY_K,
+    params: kmer=ASSEMBLY_K,
              read_len=READ_LENGTH,
              input_dir="binning/{bin_type}/{bin}/StrainAnalysis/simplif",
              output_dir="bayespaths/{bin_type}/{bin}"
-    threads:10
+    threads: 10
     #TODO why do we explicitly ask for python interpreter here?
-    shell : """
+    shell: """
             python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
             """
 

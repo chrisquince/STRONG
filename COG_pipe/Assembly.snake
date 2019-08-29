@@ -5,14 +5,16 @@ configfile: "config.yaml"
 import os.path
 
 # ---- Assembly ----------------------------------------------------------------
+LEFT_READS = [SAMPLE_READS[s][0] for s in SAMPLES]
+RIGHT_READS = [SAMPLE_READS[s][1] for s in SAMPLES]
 
 # Assemble with MegaHIT
 #TODO limit memory
 rule megahit:
-    input:   left=left_reads, right=right_reads
+    input:   LEFT_READS, RIGHT_READS
     output:  "assembly/megahit/final.contigs.fa"
-    params:  left=lambda w: ",".join(expand("{r}", r=left_reads(w))),
-             right=lambda w: ",".join(expand("{r}", r=right_reads(w))),
+    params:  left=",".join(expand("{l}", l=LEFT_READS)),
+             right=",".join(expand("{r}", r=RIGHT_READS)),
              dir="assembly/megahit/"
     threads: 16
     log:     "assembly/megahit.log"
@@ -29,12 +31,11 @@ rule megahit_convert:
 
 # Assemble with SPAdes
 rule spades:
-    input:   left=left_reads, right=right_reads
-    output:
-        assembly="assembly/spades/assembly.fasta",
-        high_res="assembly/high_res/graph_pack.gfa"
-    params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
-             right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
+    input:   LEFT_READS, RIGHT_READS
+    output:  assembly="assembly/spades/assembly.fasta", 
+             high_res="assembly/high_res/graph_pack.gfa"
+    params:  left=" ".join(expand("-1 {l}", l=LEFT_READS)),
+             right=" ".join(expand("-2 {r}", r=RIGHT_READS)),
              mem=config["assembly"]["mem"],
              ks=','.join(map(str, config["assembly"]["k"])),
              dir="assembly/spades/"
@@ -52,7 +53,7 @@ rule spades:
 rule reads_yaml:
     output: "samples.yaml"
     run:
-        print(samples_yaml(), file=open(output[0], 'w'))
+        print(samples_yaml(SAMPLES), file=open(output[0], 'w'))
 
 rule simplify:
     input:
@@ -71,6 +72,7 @@ rule simplify:
         '-read-length {READ_LENGTH} -t {threads} -tmpdir {params.tmp} &> {log}'
 
 #TODO move downstream + change paths
+#TODO check that works correctly with subset of samples
 rule unitig_profiles:
     input:
         graph="{path}.gfa",

@@ -1,3 +1,6 @@
+# ------ Samples ------
+samples: '*' # specify a list samples to use or '*' to use all samples
+
 # ------ Resources ------
 threads : 8 # single task nb threads
 
@@ -19,7 +22,6 @@ assembly:
     mem: 2000
     threads: 24
     dir: /home/sergei/cog_tools/spades/bin
-    groups: ['*'] # specify a group of samples to co-assemble
 
 # ----- BayesPaths parameters ------
 bayespaths:

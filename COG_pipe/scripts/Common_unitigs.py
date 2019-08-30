@@ -2,12 +2,12 @@
 # FIXME this one needs refactoring and factoring out the hardcoded paths
 # FIXME normalize names and spaces
 
+from __future__ import print_function
 import re
 import sys
 import glob
 import argparse
 from collections import defaultdict
-
 
 def get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold):
     Set_bins = {key for dico in Dico_CogBin_unitigs.values() for key in dico}
@@ -62,7 +62,7 @@ def main(gfa_regex,cog_threshold, output):
     Dico_CogBin_unitigs = defaultdict(lambda: defaultdict(set))
     for file in List_gfa_files:
         COG = file.split("/")[-1].split(".gfa")[0]
-        Bin = re.findall("/(Bin.+?)/",file)[0] # more robust but still inherently not robust to naming changes
+        Bin = re.findall(".*?Bin.*?(Bin.+?)/",file)[0] # more robust but still inherently not robust to naming changes
         Dico_CogBin_unitigs[COG][Bin] = {line.split(
             "\t")[2] for line in open(file) if line[0] == "S"}
 
@@ -83,7 +83,6 @@ def main(gfa_regex,cog_threshold, output):
         exit(1)
     # output cog to be ignored
     with open(output+"/List_bin_cogs_to_ignore.tsv", "w") as Handle :
-      print(Dico_to_flag2)
       Handle.write("\n".join(["\t".join([key]+list(List))
                             for key, List in Dico_to_flag2.items()]))
     # output bins to be merged

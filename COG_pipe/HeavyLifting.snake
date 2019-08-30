@@ -191,5 +191,5 @@ rule define_results:
   output: touch("pipeline.done"),
           "bayespaths/List_selected_bins.txt"
   run:
-    with open(output[1]) as handle
+    with open(output[1]) as handle :
       handle.write("\n".join(input[1]))

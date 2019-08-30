@@ -184,4 +184,8 @@ def List_bins_selected(wildcards):
 rule define_results:
   input:  "subgraphs/Bin_Selected/bin_selected.done",
           List_bins_selected
-  output: touch("pipeline.done")
+  output: touch("pipeline.done"),
+          "bayespaths/List_selected_bins.txt"
+  run:
+    with open(output[1]) as Handle
+      handle.write("\n".join([os.path.dirname(file).split("/")[-1] for file in input[1]]))

@@ -53,15 +53,15 @@ rule concoct:
     input:   cov="profile/split_10K/coverage.tsv",
              fasta="profile/split_10K.fasta",
              bin_cnt="binning/ini_bins.cnt"
-    output:  bins="binning/Bin_ini/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
-             data="binning/Bin_ini/original_data_gt%d.csv" % MIN_CONTIG_SIZE
-    log :   "binning/Bin_ini/concoct.logs"
+    output:  bins="binning/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
+             data="binning/original_data_gt%d.csv" % MIN_CONTIG_SIZE
+    log :   "binning/concoct.logs"
     threads: 1000
     shell:   """
              concoct --coverage_file {input.cov} --composition_file {input.fasta} -b $(dirname {output.bins}) -c $(<{input.bin_cnt}) -l {MIN_CONTIG_SIZE} -t {threads} &>{log} 
              """
 
-# path=binning/Bin_ini
+# path=binning
 rule refine:
     input:  bins="{path}/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
             SCG="annotation/SCG.fna",
@@ -71,14 +71,13 @@ rule refine:
             bins_R="{path}/clustering_refine.csv",
             table_R="{path}/clustering_gt%d_SCG_table_R.csv" % MIN_CONTIG_SIZE
     log:    "{path}/refine.log"
-    #FIXME what?!
     threads: 1000
-    #TODO does concoct_refine support output folder now?
+    #TODO does concoct_refine support output folder now? 
     shell:  """ 
             {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
             sed '1d' {input.bins}  > {output.R}
-            cd binning/Bin_ini/
-            concoct_refine ../../{output.R} ../../{input.data} ../../{output.table} -t {threads} &> ../../{log}
+            cd binning
+            concoct_refine ../{output.R} ../{input.data} ../{output.table} -t {threads} &> ../{log}
             cd -
             {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
             """
@@ -93,13 +92,13 @@ rule merge_contigs:
 
 #TODO rename the rule? looks like it deals with SCGs
 rule create_bin_folders:
-    input:   bin="binning/Bin_ini/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+    input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
              fasta="annotation/SCG.fna"
-    output:  touch("binning/Bin_ini/folder_done")
-    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f binning/Bin_ini/"
+    output:  touch("subgraphs/Bin_ini/folder_done")
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f $(dirname {output})/"
 
 rule compute_avg_cov:
-    input:   "binning/Bin_ini/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
-    output:  "binning/Bin_ini/bin_cov.tsv"
+    input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    output:  "subgraphs/Bin_ini/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 

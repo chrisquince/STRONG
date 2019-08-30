@@ -7,9 +7,9 @@ import os.path
 
 rule all: 
     input: "profile/split_10K/coverage.tsv",
-           "binning/Bin_ini/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
+           "binning/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
            "assembly/high_res/simplified.mult_prof",
            "annotation/SCG.fna",
-           "binning/Bin_ini/folder_done",
-           "binning/Bin_ini/bin_cov.tsv"
+           "subgraphs/Bin_ini/folder_done",
+           "subgraphs/Bin_ini/bin_cov.tsv"
 

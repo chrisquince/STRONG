@@ -4,7 +4,7 @@ rule all:
   input: "mag_analysis/AlignAll/AlignAllR.tree"
 
 rule aggregate_SCG:
-    input: "binning/Bin_ini/folder_done"
+    input: "binning/folder_done"
     output: expand("mag_analysis/SCGs/{cog}.fna", cog=LIST_COGS) 
     #TODO why weird filename?
     shell: """

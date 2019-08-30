@@ -6,7 +6,7 @@ include: "Binning.snake"
 #TODO normalize the indentation
 
 #TODO do we want to use initial bins here?
-BIN_IDS, = glob_wildcards("binning/Bin_ini/Bin_{id}/SCG.fna")
+BIN_IDS, = glob_wildcards("subgraphs/Bin_ini/Bin_{id}/SCG.fna")
 
 rule prepare: 
   input: "desman/contig_bins.done"
@@ -16,7 +16,7 @@ rule all:
 
 rule bin_contigs:
   input:
-    bin="binning/Bin_ini/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+    bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
     fasta="profile/assembly.fasta"
   output: touch("desman/contig_bins.done")
   params: " ".join(BIN_IDS)
@@ -86,7 +86,7 @@ rule SCG_bed:
 rule bed_like_file_for_ExtractCountFreqGenes:
   input:
       SCG_bed="desman/SCG.bed",
-      Bin_SCG="binning/Bin_ini/{bin}/SCG.fna"
+      Bin_SCG="subgraphs/Bin_ini/{bin}/SCG.fna"
   output: 
   #TODO weird naming...
       bedlike="desman/{bin}/SCG_bed_like.tsv"

@@ -177,9 +177,13 @@ rule BayesAGraphSVA:
 
 def List_bins_selected(wildcards):
     checkpoints.Select_Bin_to_run.get()
-    bin_paths=bin_paths_by_type("Bin_Selected")
-    test=expand("bayespaths/{bin}/{bin}_simplif_log1.txt", bin=[os.path.basename(b_p) for b_p in bin_paths])
-    return test
+    if os.path.exists("bayespaths/List_selected_bins.txt") :
+      with open("bayespaths/List_selected_bins.txt") as handle :
+        BayesAGraphSVA_output=[line.rstrip() for line in handle]
+    else :
+      bin_paths=bin_paths_by_type("Bin_Selected")
+      BayesAGraphSVA_output=expand("bayespaths/{bin}/{bin}_simplif_log1.txt", bin=[os.path.basename(b_p) for b_p in bin_paths])
+    return BayesAGraphSVA_output
 
 rule define_results:
   input:  "subgraphs/Bin_Selected/bin_selected.done",
@@ -187,5 +191,5 @@ rule define_results:
   output: touch("pipeline.done"),
           "bayespaths/List_selected_bins.txt"
   run:
-    with open(output[1]) as Handle
-      handle.write("\n".join([os.path.dirname(file).split("/")[-1] for file in input[1]]))
+    with open(output[1]) as handle
+      handle.write("\n".join(input[1]))

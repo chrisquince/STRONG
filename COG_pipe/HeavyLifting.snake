@@ -97,7 +97,7 @@ checkpoint Merge_Bins :
         Set_merged_bin|=set(List_bins_to_merge)
         New_bin_path=os.path.join(os.path.dirname(output[0]),name_new_bin)
         os.system('mkdir -p '+New_bin_path)
-        All_bins_element=lambda text:" ".join([os.path.join([os.path.dirname(input[0]),bin,text]) for bin in List_bins_to_merge])
+        All_bins_element=lambda text:" ".join([os.path.join(os.path.dirname(input[0]),bin,text) for bin in List_bins_to_merge])
         os.system('cat '+All_bins_element("contigs.fa")+" > "+New_bin_path+"/contigs.fa")
         os.system('cat '+All_bins_element("SCG.fna")+" > "+New_bin_path+"/SCG.fna")
       # link all non merged bin in the merged bin folder
@@ -128,15 +128,12 @@ rule flag_bad_cogs:
         for line in cogs_to_ignore:
           Split_line = line.rstrip().split("\t")
           bin_name = Split_line[0]
-          print(bin_name==wildcards.bin)
           if bin_name == wildcards.bin:
             Set_cogs_to_flags = set()
             if len(Split_line) != 1:
               Set_cogs_to_flags = {cog for cog in Split_line[1:]}
             Cog_path = "/".join(["subgraphs", wildcards.bin_type, bin_name,""])
-            print(Cog_path)
             List_cogs = [pathcog.split('/')[-1].split(".")[0] for pathcog in glob.glob(Cog_path + "COG*.gfa") if pathcog.split('/')[-1].split(".")[0] not in Set_cogs_to_flags]
-            print(Cog_path)
             with open(Cog_path+"List_cogs_selected.tsv","w") as Handle :
               Handle.write("\n".join(sorted(List_cogs)))
   
@@ -155,7 +152,6 @@ checkpoint Select_Bin_to_run:
     for file in input:
       if len(list(open(file).readlines())) >= 10:
         Bin=os.path.dirname(file).split("/")[-1] # select bin_name only, not full path
-        print("ln -s ../Merged_Bin/"+Bin+" "+os.path.dirname(output[0])+"/")
         os.system("ln -s ../Merged_Bin/"+Bin+" "+ os.path.dirname(output[0])+"/")
 
 
@@ -175,6 +171,7 @@ rule BayesAGraphSVA:
             python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
             """
 
+
 def List_bins_selected(wildcards):
     checkpoints.Select_Bin_to_run.get()
     if os.path.exists("bayespaths/List_selected_bins.txt") :
@@ -191,5 +188,5 @@ rule define_results:
   output: touch("pipeline.done"),
           "bayespaths/List_selected_bins.txt"
   run:
-    with open(output[1]) as handle :
+    with open(output[1],"w") as handle :
       handle.write("\n".join(input[1]))

@@ -13,7 +13,7 @@ INIT_BIN_PATHS=bin_paths_by_type("Bin_ini")
 
 #TODO think of a better flag name
 rule all:
-    input: "pipeline.done"
+    input: "heavylifting.done"
 
 rule extract_subgraphs:
     input:   cogs="subgraphs/{bin_type}/{bin}/SCG.fna",

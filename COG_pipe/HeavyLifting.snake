@@ -185,7 +185,7 @@ def List_bins_selected(wildcards):
 rule define_results:
   input:  "subgraphs/Bin_Selected/bin_selected.done",
           List_bins_selected
-  output: touch("pipeline.done"),
+  output: touch("heavylifting.done"),
           "bayespaths/List_selected_bins.txt"
   run:
     with open(output[1],"w") as handle :

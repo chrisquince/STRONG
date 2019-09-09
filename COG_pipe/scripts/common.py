@@ -13,36 +13,45 @@ import re
 default_values = {
     "concoct_contig_size": 500,
     "threads":     8,
-    "assembly":    {"assembler": "spades", "k": [21,33,55], "mem": 120, "threads": 16, "groups": []},
-    "desman":{"execution":0,"nb_haplotypes": 10,"nb_repeat": 5,"min_cov": 1,"dscripts":None},
-    "bayespaths":{"dir":None},
-    "maganalysis":{"execution":1}
+    "assembly":    {"assembler": "spades", "k": [21, 33, 55],
+                    "mem": 120, "threads": 16, "groups": []},
+    "desman": {"execution": 0, "nb_haplotypes": 10, "nb_repeat": 5,
+               "min_cov": 1, "dscripts": None},
+    "maganalysis": {"execution": 0}
 }
 
 # Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python
-def setdefault_recursively(tgt, default = default_values):
+
+
+def setdefault_recursively(tgt, default=default_values):
     for k in default:
-        if isinstance(default[k], dict): # if the current item is a dict,
+        if isinstance(default[k], dict):  # if the current item is a dict,
             # expand it recursively
             setdefault_recursively(tgt.setdefault(k, {}), default[k])
         else:
             # ... otherwise simply set a default value if it's not set before
             tgt.setdefault(k, default[k])
 
+
 def fill_default_values(config):
     local_dir = config.get("LOCAL_DIR")
-    if local_dir:
-        default_values["bin"] = os.path.join(local_dir, "build/bin")
-        default_values["scripts"] = os.path.join(local_dir, "scripts")
-        default_values["scg_data"]= os.path.join(local_dir, "scg_data")
-        default_values["bayespaths"]["dir"]= os.path.join(local_dir,'..',"BayesAGraphSVA")
-        default_values["desman"]["dscripts"]= os.path.join(local_dir,'..',"DESMAN/scripts")
+    default_values["scripts"] = os.path.join(local_dir, "scripts")
+    default_values["scg_data"] = os.path.join(local_dir, "scg_data")
+    default_values["bayespaths"]["dir"] = os.path.join(
+        local_dir, '..', "BayesAGraphSVA")
+    default_values["desman"]["dscripts"] = os.path.join(
+        local_dir, '..', "DESMAN/scripts")
     setdefault_recursively(config)
+
 
 def sample_name(fullname):
     return os.path.splitext(os.path.basename(fullname))[0]
 
-FASTA_EXTS = {".fasta", ".fasta.gz", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
+
+FASTA_EXTS = {".fasta", ".fasta.gz", ".fa", ".fna", ".fsa",
+              ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
+
+
 def gather_paths(path, basename=False):
     for filename in os.listdir(path):
         name = os.path.basename(filename)
@@ -55,10 +64,14 @@ def gather_paths(path, basename=False):
             else:
                 yield filepath
 
+
 def detect_reads(dir):
     return sorted(list(gather_paths(dir)))[:2]
 
-#Autodetect references
+
+# FIXME all of the code further down is not used, let's just delete that
+
+# Autodetect references
 def gather_refs(data):
     if type(data) is list:
         for path in data:
@@ -75,12 +88,15 @@ def gather_refs(data):
         else:
             yield (sample_name(data), data)
 
+
 def get_id(internal_id, sample):
     res = internal_id.split("_", 2)[1]
     return sample + "-" + res
 
+
 id_re = re.compile("\\d+")
 split_format = re.compile("^([\w.-]+)_\(\d+_\d+\)$")
+
 
 def extract_id(name):
     bin_id = None
@@ -93,6 +109,7 @@ def extract_id(name):
         return contig_id
     else:
         return (bin_id, contig_id)
+
 
 def load_annotation(file, normalize=True):
     res = dict()
@@ -108,12 +125,12 @@ def load_annotation(file, normalize=True):
                 res[id] = set(bins)
     return res
 
+
 def contig_length(name):
     # Length of contig split
     split = re.search("\((\d+)_(\d+)\)", name)
     if split:
         return int(split.group(2)) - int(split.group(1))
-    #Default format
+    # Default format
     else:
         return int(name.split("_")[3])
-

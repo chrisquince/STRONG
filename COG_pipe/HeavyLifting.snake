@@ -2,7 +2,6 @@ include: "Common.snake"
 
 import glob
 import os
-import re
 
 #FIXME move StrainAnalysis out of binning folder
 
@@ -13,7 +12,7 @@ INIT_BIN_PATHS=bin_paths_by_type("Bin_ini")
 
 #TODO think of a better flag name
 rule all:
-    input: "heavylifting.done"
+    input "subgraphs/Merged_Bin/selected_bins.txt"
 
 rule extract_subgraphs:
     input:   cogs="subgraphs/{bin_type}/{bin}/SCG.fna",
@@ -48,8 +47,8 @@ rule simplify_subgraphs:
       BIN_AVG_COV=dict()
       Path="/".join(["subgraphs",wildcards["bin_type"],"bin_cov.tsv"])
       for l in open(Path):
-          bin, cov = l.strip().split()
-          BIN_AVG_COV["Bin_" + bin] = cov
+        bin, cov = l.strip().split()
+        BIN_AVG_COV["Bin_" + bin] = cov
       avg_cov = BIN_AVG_COV[wildcards["bin"]]
       shell("""
             out=$(dirname {output})/simplif
@@ -86,34 +85,37 @@ checkpoint merge_bins:
     output:  "subgraphs/Merged_Bin/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE,
               #TODO why do we need this flag?
               touch("subgraphs/Merged_Bin/folder_done")
+    params: "subgraphs/Merged_Bin/"
     run:
-      # merge and remove old bins
-      List_all_bins=[re.search("Bin_\d+",bin).group() for bin in INIT_BIN_PATHS]
-      Set_merged_bin=set()
-      for line in open(input[0]) :
-        Split_line=line.rstrip().split("\t")
-        name_new_bin=Split_line[0]
-        List_bins_to_merge=Split_line[1:]
-        Set_merged_bin|=set(List_bins_to_merge)
-        New_bin_path=os.path.join(os.path.dirname(output[0]),name_new_bin)
-        os.system('mkdir -p '+New_bin_path)
-        All_bins_element=lambda text:" ".join([os.path.join(os.path.dirname(input[0]),bin,text) for bin in List_bins_to_merge])
-        os.system('cat '+All_bins_element("contigs.fa")+" > "+New_bin_path+"/contigs.fa")
-        os.system('cat '+All_bins_element("SCG.fna")+" > "+New_bin_path+"/SCG.fna")
-      # link all non merged bin in the merged bin folder
-      for bins in set(List_all_bins)-Set_merged_bin :
-        os.system("ln -s ../Bin_ini/"+bins+" "+os.path.dirname(output[0])+"/")
-      # create a new contig assignation file 
-      Dico_bin_new_name={element.replace("Bin_",""):line.rstrip().split()[0].replace("Bin_","") for line in open(input[0]) for element in  line.rstrip().split()[1:]}
-      #TODO add to inputs
-      Handle=open(output[1],"w")
-      for line in open(input[1]) :
-        contig,bins=line.rstrip().split(",")
-        if bins in Dico_bin_new_name :
-          Handle.write(",".join([contig,Dico_bin_new_name[bins]])+"\n")
-        else :
-          Handle.write(line)
-      Handle.close()
+        # merge and remove old bins
+        all_bins = [os.path.basename(b) for b in INIT_BIN_PATHS]
+        merged_bins = set()
+        for line in open(input[0]) :
+            split_line=line.rstrip().split("\t")
+            name_new_bin = split_line[0]
+            to_merge = split_line[1:]
+            merged_bins |= set(to_merge)
+            new_bin_path=os.path.join(params[0]), name_new_bin)
+            os.system('mkdir -p ' + new_bin_path)
+            All_bins_element=lambda text:" ".join([os.path.join(os.path.dirname(input[0]),bin,text) for bin in to_merge])
+            os.system('cat '+All_bins_element("contigs.fa")+" > "+new_bin_path+"/contigs.fa")
+            os.system('cat '+All_bins_element("SCG.fna")+" > "+new_bin_path+"/SCG.fna")
+  
+        # link all non merged bin in the merged bin folder
+        for b in set(all_bins) - merged_bins:
+            os.system("ln -s ../Bin_ini/"+b+" "+params[0]+"/")
+  
+        #TODO improve readability
+        # create a new contig attribution file 
+        Dico_bin_new_name={element.replace("Bin_",""):line.rstrip().split()[0].replace("Bin_","") for line in open(input[0]) for element in  line.rstrip().split()[1:]}
+        #TODO add to inputs
+        with open(output[0],"w") as out:
+            for line in open(input[1]):
+                contig,bins=line.rstrip().split(",")
+                if bins in Dico_bin_new_name :
+                    out.write(",".join([contig,Dico_bin_new_name[bins]])+"\n")
+                else :
+                    out.write(line)
 
 #TODO remove by reusing another snakefile (as discussed with Seb)
 rule compute_avg_cov_merged:
@@ -122,77 +124,41 @@ rule compute_avg_cov_merged:
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 rule flag_bad_cogs:
+		#TODO remove List from file names
     input:  "{path}/List_bin_cogs_to_ignore.tsv",
             "{path}/{bin}/simplif.done"
     output:  touch("{path}/{bin}/List_cogs_selected.tsv")
     run:
-      with open(input[0]) as cogs_to_ignore:
-        for line in cogs_to_ignore:
-          Split_line = line.rstrip().split("\t")
-          bin_name = Split_line[0]
-          if bin_name == wildcards.bin:
-            Set_cogs_to_flags = set()
-            if len(Split_line) != 1:
-              Set_cogs_to_flags = {cog for cog in Split_line[1:]}
-            
-            cogs, = glob_wildcards(os.dirname(output[0]) + "/{cog}.gfa")
-            #FIXME shouldn't it be append? or does cogs_to_ignore have a single line?!!! 
-            #Then there should be no for cycle here at all
-            with open(output[0], "w") as out:
-              out.write("\n".join(sorted([cog for cog in cogs if cog not in Set_cogs_to_flags])))
+         with open(input[0]) as cogs_to_ignore:
+             for line in cogs_to_ignore:
+                 split_line = line.rstrip().split("\t")
+                 bin_name = split_line[0]
+                 if bin_name == wildcards.bin:
+                     bad_cogs = set()
+                     if len(split_line) != 1:
+                         bad_cogs = {cog for cog in split_line[1:]}
+                 
+                     cogs, = glob_wildcards(os.dirname(output[0]) + "/{cog}.gfa")
+			     			     cogs = [cog for cog in cogs if cog not in bad_cogs]
+                     with open(output[0], "w") as out:
+                         out.write("\n".join(sorted(cogs)))
+
+			   		 break
 
 #TODO review logic
-def All_selected_cogs_files_from_merged_bin(wildcards):
+def merged_bin_cogs(wildcards):
     checkpoints.merge_bins.get(path="subgraphs")
     # since we linked non merged bins in the merged bin folder, bins in that folder are, at that point in time, the correct set of bin to consider. 
     return [binpath+"/List_cogs_selected.tsv" for binpath in bin_paths_by_type("Merged_Bin")]
 
-checkpoint Select_Bin_to_run:
-  input:  All_selected_cogs_files_from_merged_bin
-  output: touch("subgraphs/Bin_Selected/bin_selected.done")
-  message : "Select which bins possess sufficient number of COGs"
-  run:
-    # example of element for All_selected_cogs_files_from_merged_bin : subgraphs/Merged_Bin/Bin_11/List_cogs_selected.tsv
-    for selected_cogs_fn in input:
+rule select_bins_for_strain_analysis:
+    input:  merged_bin_cogs
+    output: "subgraphs/Merged_Bin/selected_bins.txt"
+    message : "Select bins containing sufficient number of COGs"
+    run:
       #FIXME magic constant
-      if len(list(open(selected_cogs_fn).readlines())) >= 10:
-        Bin=os.path.basename(os.path.dirname(selected_cogs_fn)) # select bin_name only, not full path
-        os.system("ln -s ../Merged_Bin/"+Bin+" "+ os.path.dirname(output[0])+"/")
-
-
-rule BayesAGraphSVA:
-    input:  flag="subgraphs/Bin_Selected/{bin}/simplif.done",
-            cogs="subgraphs/Bin_Selected/{bin}/List_cogs_selected.tsv"
-    output: "bayespaths/{bin}/{bin}_simplif_log1.txt"
-    log:    "bayespaths/Logs/{bin}_simplif.log"
-    message: "Running BayesPaths on {wildcards.bin}"
-    params: kmer=ASSEMBLY_K,
-            read_len=READ_LENGTH,
-            input_dir="subgraphs/Bin_Selected/{bin}/simplif",
-            output_dir="bayespaths/{bin}"
-    threads: 10
-    #TODO why do we explicitly ask for python interpreter here?
-    shell: """
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
-            """
-
-#FIXME log file definitely can not be an output
-def List_bins_selected(wildcards):
-    checkpoints.Select_Bin_to_run.get()
-    if os.path.exists("bayespaths/List_selected_bins.txt") :
-      #TODO use getlines
-      with open("bayespaths/List_selected_bins.txt") as handle :
-        BayesAGraphSVA_output=[line.rstrip() for line in handle]
-    else :
-      bin_paths=bin_paths_by_type("Bin_Selected")
-      BayesAGraphSVA_output=expand("bayespaths/{bin}/{bin}_simplif_log1.txt", bin=[os.path.basename(b_p) for b_p in bin_paths])
-    return BayesAGraphSVA_output
-
-rule define_results:
-  input:  "subgraphs/Bin_Selected/bin_selected.done",
-          List_bins_selected
-  output: touch("heavylifting.done"),
-          "bayespaths/List_selected_bins.txt"
-  run:
-    with open(output[1],"w") as handle :
-      handle.write("\n".join(input[1]))
+      # select bin_name only, not full path 
+      bins = [os.path.basename(os.path.dirname(cogs_fn)) for cogs_fn in input \
+              if len(list(open(selected_cogs_fn).readlines())) >= 10]
+      with open(output[0], 'w') as out:
+          out.write("\n".join(bins))

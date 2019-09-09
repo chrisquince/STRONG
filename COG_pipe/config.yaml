@@ -37,3 +37,10 @@ desman:
 # -----  MAGAnalysis ------
 maganalysis: 
     execution: 0
+
+# -----  Evaluation ------
+eval:
+    execution: 1
+    genomes: "/mnt/gpfs/chris/Projects/NewSimulation/Select4/Test" # path to refferences genomes 
+
+

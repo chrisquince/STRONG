@@ -62,8 +62,8 @@ rule simplify_subgraphs:
             done
             """)
 
-#TODO ask Seb why we need these methods and checkpoint_output variables
-def get_list_subgraph_done(wildcards):
+#TODO check that simplification is not restarted for non-merged subgraphs!
+def subgraphs_simplification_done(wildcards):
   checkpoints.fuse.get(bin_type=wildcards["bin_type"])
   return expand("{path}/simplif.done", path = bin_paths_by_type(wildcards["bin_type"]))
  
@@ -72,7 +72,7 @@ checkpoint fuse:
     input : "subgraphs/{bin_type}/folder_done"
     output: touch("subgraphs/{bin_type}/fuse.done")
 
-rule Check_out_which_bins_need_dereplication :
+rule collect_bins_need_dereplication :
     input:   flag=get_list_subgraph_done
     output:  ignore="subgraphs/{bin_type}/List_bin_cogs_to_ignore.tsv",
              merge="subgraphs/{bin_type}/List_bin_to_merge.tsv"
@@ -80,11 +80,11 @@ rule Check_out_which_bins_need_dereplication :
 
 #TODO review logic and maybe move to scripts / separate into multiple rules
 #FIXME normalize variable names and spacing
-checkpoint Merge_Bins :
+checkpoint merge_bins:
     input:   "subgraphs/Bin_ini/List_bin_to_merge.tsv",
-             "binning/clustering_gt%s_merged.csv"%MIN_CONTIG_SIZE
-    output:  "subgraphs/Merged_Bin/bin_cov.tsv",
-             "subgraphs/Merged_Bin/clustering_gt%s_merged.csv"%MIN_CONTIG_SIZE,
+             "binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
+    output:  "subgraphs/Merged_Bin/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE,
+              #TODO why do we need this flag?
               touch("subgraphs/Merged_Bin/folder_done")
     run:
       # merge and remove old bins
@@ -114,17 +114,19 @@ checkpoint Merge_Bins :
         else :
           Handle.write(line)
       Handle.close()
-      # redo the bin_cov.tsv file
-      os.system(SCRIPTS+"/bin_cov.py " +output[1]+" "+output[0]+" "+str(ASSEMBLY_K))
 
+#TODO remove by reusing another snakefile (as discussed with Seb)
+rule compute_avg_cov_merged:
+    input:   "subgraphs/Merged_Bin/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
+    output:  "subgraphs/Merged_Bin/bin_cov.tsv"
+    shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 rule flag_bad_cogs:
-    input:  "subgraphs/{bin_type}/List_bin_cogs_to_ignore.tsv",
-            "subgraphs/{bin_type}/{bin}/simplif.done"
-    output:  "subgraphs/{bin_type}/{bin}/List_cogs_selected.tsv"
+    input:  "{path}/List_bin_cogs_to_ignore.tsv",
+            "{path}/{bin}/simplif.done"
+    output:  touch("{path}/{bin}/List_cogs_selected.tsv")
     run:
-      os.system("touch "+output[0])
-      with open(input[0]) as cogs_to_ignore :
+      with open(input[0]) as cogs_to_ignore:
         for line in cogs_to_ignore:
           Split_line = line.rstrip().split("\t")
           bin_name = Split_line[0]
@@ -132,14 +134,16 @@ rule flag_bad_cogs:
             Set_cogs_to_flags = set()
             if len(Split_line) != 1:
               Set_cogs_to_flags = {cog for cog in Split_line[1:]}
-            Cog_path = "/".join(["subgraphs", wildcards.bin_type, bin_name,""])
-            List_cogs = [pathcog.split('/')[-1].split(".")[0] for pathcog in glob.glob(Cog_path + "COG*.gfa") if pathcog.split('/')[-1].split(".")[0] not in Set_cogs_to_flags]
-            with open(Cog_path+"List_cogs_selected.tsv","w") as Handle :
-              Handle.write("\n".join(sorted(List_cogs)))
-  
+            
+            cogs, = glob_wildcards(os.dirname(output[0]) + "/{cog}.gfa")
+            #FIXME shouldn't it be append? or does cogs_to_ignore have a single line?!!! 
+            #Then there should be no for cycle here at all
+            with open(output[0], "w") as out:
+              out.write("\n".join(sorted([cog for cog in cogs if cog not in Set_cogs_to_flags])))
+
 #TODO review logic
 def All_selected_cogs_files_from_merged_bin(wildcards):
-    checkpoints.Merge_Bins.get(path="subgraphs")
+    checkpoints.merge_bins.get(path="subgraphs")
     # since we linked non merged bins in the merged bin folder, bins in that folder are, at that point in time, the correct set of bin to consider. 
     return [binpath+"/List_cogs_selected.tsv" for binpath in bin_paths_by_type("Merged_Bin")]
 
@@ -149,32 +153,34 @@ checkpoint Select_Bin_to_run:
   message : "Select which bins possess sufficient number of COGs"
   run:
     # example of element for All_selected_cogs_files_from_merged_bin : subgraphs/Merged_Bin/Bin_11/List_cogs_selected.tsv
-    for file in input:
-      if len(list(open(file).readlines())) >= 10:
-        Bin=os.path.dirname(file).split("/")[-1] # select bin_name only, not full path
+    for selected_cogs_fn in input:
+      #FIXME magic constant
+      if len(list(open(selected_cogs_fn).readlines())) >= 10:
+        Bin=os.path.basename(os.path.dirname(selected_cogs_fn)) # select bin_name only, not full path
         os.system("ln -s ../Merged_Bin/"+Bin+" "+ os.path.dirname(output[0])+"/")
 
 
 rule BayesAGraphSVA:
     input:  flag="subgraphs/Bin_Selected/{bin}/simplif.done",
-            Cogs="subgraphs/Bin_Selected/{bin}/List_cogs_selected.tsv"
-    output: "bayespaths/{bin}/{bin}_simplif_log1.txt",
+            cogs="subgraphs/Bin_Selected/{bin}/List_cogs_selected.tsv"
+    output: "bayespaths/{bin}/{bin}_simplif_log1.txt"
     log:    "bayespaths/Logs/{bin}_simplif.log"
     message: "Running BayesPaths on {wildcards.bin}"
     params: kmer=ASSEMBLY_K,
-             read_len=READ_LENGTH,
-             input_dir="subgraphs/Bin_Selected/{bin}/simplif",
-             output_dir="bayespaths/{bin}"
+            read_len=READ_LENGTH,
+            input_dir="subgraphs/Bin_Selected/{bin}/simplif",
+            output_dir="bayespaths/{bin}"
     threads: 10
     #TODO why do we explicitly ask for python interpreter here?
     shell: """
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.Cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
+            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
             """
 
-
+#FIXME log file definitely can not be an output
 def List_bins_selected(wildcards):
     checkpoints.Select_Bin_to_run.get()
     if os.path.exists("bayespaths/List_selected_bins.txt") :
+      #TODO use getlines
       with open("bayespaths/List_selected_bins.txt") as handle :
         BayesAGraphSVA_output=[line.rstrip() for line in handle]
     else :

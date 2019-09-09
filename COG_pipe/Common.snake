@@ -38,6 +38,8 @@ MIN_CONTIG_SIZE = config["concoct_contig_size"]
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]
 MIN_COV_DESMAN = config["desman"]["min_cov"]
+# -------- Evaluation -----------------
+REFDATA=config["evaluation"]["genomes"]
 
 
 #TODO rename + maybe simplify
@@ -151,6 +153,11 @@ rule samtools_sort:
     message: "Sorting {input}"
     run:
         shell("samtools sort --threads %d -T {wildcards.path}/{wildcards.name}.tmp -O bam -o {output} {input} &> {log}" % (threads - 1))
+
+
+
+
+
 
 
 

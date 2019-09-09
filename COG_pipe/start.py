@@ -108,4 +108,7 @@ with cd(exec_dir):
 
     if config["maganalysis"]["execution"]:
         print("Step #4 - running MAGAnalysis") 
-        call_snake(["--snakefile", "MAGAnalysis.snake"])
+        
+    if config["evaluation"]["execution"]:
+        print("Step #5 - running evaluation") 
+        call_snake(["--snakefile", "eval.snake"])

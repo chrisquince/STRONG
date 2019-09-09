@@ -18,6 +18,7 @@ default_values = {
     "desman": {"execution": 0, "nb_haplotypes": 10, "nb_repeat": 5,
                "min_cov": 1, "dscripts": None},
     "maganalysis": {"execution": 0}
+    "evaluation": {"execution": 0}
 }
 
 # Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python
@@ -41,6 +42,7 @@ def fill_default_values(config):
         local_dir, '..', "BayesAGraphSVA")
     default_values["desman"]["dscripts"] = os.path.join(
         local_dir, '..', "DESMAN/scripts")
+    default_values["evaluation"]['scripts'] = os.path.join(local_dir, "EvalScripts")
     setdefault_recursively(config)
 
 
@@ -67,6 +69,38 @@ def gather_paths(path, basename=False):
 
 def detect_reads(dir):
     return sorted(list(gather_paths(dir)))[:2]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # FIXME all of the code further down is not used, let's just delete that

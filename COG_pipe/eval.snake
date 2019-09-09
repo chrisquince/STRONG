@@ -1,0 +1,23 @@
+include: "Common.snake"
+
+export EVAL_SCRIPTS=/mnt/gpfs/Hackathon/Test/STRONG_bkup/COG_pipe/EvalScripts
+export CONCOCT=/mnt/gpfs/chris/repos/CONCOCT
+export REFDATA=/mnt/gpfs/Hackathon/Test/Eval
+export BASE=/mnt/gpfs/Hackathon/TestRuns/CoAssembly77F/
+
+
+
+rule index_bam :
+	input : "{file}.sorted.bam"
+	output: "{file}.sorted.bam.bai"
+	shell : "samtools index {input}"
+
+rule assign_contig_to_ref :
+	input  : assembly="profile/assembly.fasta",
+			 ref_genomes=REFDATA+"/AllGenomes.fa",
+			 list_samples=expand("profile/assembly/{sample}.sorted.bam", sample=SAMPLES)
+	output : "evaluation/contig_assignation/final_contigs_counts.tsv"
+	threads: THREADS
+	output : ""
+	shell : "{EVAL_SCRIPTS}/contig_read_count_per_genomeM.py {input.assembly} {input.ref_genomes} {input.list_samples} -m {threads} >{output}"
+

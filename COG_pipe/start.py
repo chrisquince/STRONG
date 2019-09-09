@@ -95,17 +95,22 @@ with cd(exec_dir):
         config = yaml.load(config_in)
     fill_default_values(config)
     
-    print("Step #1 - Assembly / binning / COG calling")
+    print("Step #1 - Assembly / Binning / COG Annotation")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
 
-    print("Step #2 - graph processing / strain calling")
+    print("Step #2 - Subgraph Processing / Bin merging")
     call_snake(["--snakefile", "HeavyLifting.snake"])
 
+    print("Step #3 - Strain Decomposition")
+    call_snake(["--snakefile", "BayesAGraph.snake"])
+
     if config["desman"]["execution"]:
-        print("Step #3 - strain calling using Desman") 
+        print("Step #3 - Strain Analysis with Desman") 
+        #TODO (for Sergey) return the previously removed checkpoint and remove two calls 
         call_snake(["--snakefile", "Desman.snake", "prepare"])
         call_snake(["--snakefile", "Desman.snake", "all"])
 
+    #TODO rename to give a better idea of what is happening
     if config["maganalysis"]["execution"]:
-        print("Step #4 - running MAGAnalysis") 
+        print("Step #4 - MAGAnalysis") 
         call_snake(["--snakefile", "MAGAnalysis.snake"])

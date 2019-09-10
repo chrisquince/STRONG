@@ -7,6 +7,7 @@ args = commandArgs(trailingOnly=TRUE)
 # test if there is at least one argument: if not, return an error
 if (length(args)==0) {
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
 input=args[1] # Conf.csv
 output=args[2] # MaxSpecies.R
 

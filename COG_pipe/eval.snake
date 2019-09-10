@@ -8,7 +8,7 @@ print(THREADS)
 
 rule results :
 	input : expand("evaluation/{bin}_blastbest.tsv",bin=BIN),
-			"evaluation/Conf.csv"
+			"evaluation/SpeciesMaxCov.csv"
 
 rule index_bam :
 	input : "{file}.sorted.bam"
@@ -56,7 +56,7 @@ rule MaxSpecies :
 rule Strain_coverage :
 	input : "{path}/SpeciesMax.csv"
 	output :"{path}/SpeciesMaxCov.csv"
-	shell : "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {input} > {output}"
+	shell : "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {REFDATA}/coverage.tsv {input} > {output}"
 
 rule blastn :
 	input : "{file}.fa"

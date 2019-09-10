@@ -3,8 +3,7 @@ include: "Common.snake"
 import glob
 import os
 
-#FIXME move StrainAnalysis out of binning folder
-
+#FIXME shouldn't we start subgraphs folder here?
 def bin_paths_by_type(bin_type):
   return [os.path.dirname(path) for path in glob.glob("subgraphs/%s/Bin_*/SCG.fna" % bin_type)]
 
@@ -12,7 +11,7 @@ INIT_BIN_PATHS=bin_paths_by_type("Bin_ini")
 
 #TODO think of a better flag name
 rule all:
-    input "subgraphs/Merged_Bin/selected_bins.txt"
+    input: "subgraphs/Merged_Bin/selected_bins.txt"
 
 rule extract_subgraphs:
     input:   cogs="subgraphs/{bin_type}/{bin}/SCG.fna",
@@ -53,7 +52,6 @@ rule simplify_subgraphs:
     input: bin_cov="subgraphs/{bin_type}/bin_cov.tsv",
            profiles_flag="subgraphs/{bin_type}/{bin}/profile.done"
     output: touch("subgraphs/{bin_type}/{bin}/simplif.done")
-    params:
     threads: THREADS
     run:
       avg_cov = bin_avg_cov(input[0], wildcards["bin"])
@@ -61,69 +59,39 @@ rule simplify_subgraphs:
             out=$(dirname {output})/simplif
             rm -rf $out
             mkdir -p $out/tmp
-            in=$(dirname {input})
+            in=$(dirname {input.profiles_flag})
+            echo "HERE " $in
             for g in $in/*gfa; do
                 name=$(basename $g .gfa)
-                {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv \
-                    -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
+                {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
             done
             """)
 
 rule identify_bins_to_merge:
     input:   expand("{path}/simplif.done", path = INIT_BIN_PATHS)
     #TODO should we put cogs to ignore files within the bin subfolders?
-    output:  "subgraphs/Bin_ini/bin_cogs_to_ignore.tsv",
-             "subgraphs/Bin_ini/List_bin_to_merge.tsv"
+    output:  cogs_to_ignore = "subgraphs/Bin_ini/bin_cogs_to_ignore.tsv",
+             bins_to_merge = "subgraphs/Bin_ini/bins_to_merge.tsv"
     params:  folder="subgraphs/Bin_ini"
     #TODO use the input somehow? 
-    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' 10 {params.folder}/"
+    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' 10 {output.bins_to_merge} {output.cogs_to_ignore}"
 
 #TODO review logic and maybe move to scripts / separate into multiple rules
 #FIXME normalize variable names and spacing
 checkpoint merge_bins:
-    input:   "subgraphs/Bin_ini/List_bin_to_merge.tsv",
-             "binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
-    output:  "subgraphs/Merged_Bin/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
-    params: "subgraphs/Merged_Bin/"
-    run:
-        # merge and remove old bins
-        all_bins = [os.path.basename(b) for b in INIT_BIN_PATHS]
-        merged_bins = set()
-        for line in open(input[0]) :
-            split_line=line.rstrip().split("\t")
-            name_new_bin = split_line[0]
-            to_merge = split_line[1:]
-            merged_bins |= set(to_merge)
-            new_bin_path=os.path.join(params[0]), name_new_bin)
-            os.system('mkdir -p ' + new_bin_path)
-            All_bins_element=lambda text:" ".join([os.path.join(os.path.dirname(input[0]),bin,text) for bin in to_merge])
-            os.system('cat '+All_bins_element("contigs.fa")+" > "+new_bin_path+"/contigs.fa")
-            os.system('cat '+All_bins_element("SCG.fna")+" > "+new_bin_path+"/SCG.fna")
-  
-        # link all non merged bin in the merged bin folder
-        for b in set(all_bins) - merged_bins:
-            os.system("ln -s ../Bin_ini/"+b+" "+params[0]+"/")
-  
-        #TODO improve readability
-        # create a new contig attribution file 
-        Dico_bin_new_name={element.replace("Bin_",""):line.rstrip().split()[0].replace("Bin_","") for line in open(input[0]) for element in  line.rstrip().split()[1:]}
-        #TODO add to inputs
-        with open(output[0],"w") as out:
-            for line in open(input[1]):
-                contig,bins=line.rstrip().split(",")
-                if bins in Dico_bin_new_name:
-                    out.write(",".join([contig,Dico_bin_new_name[bins]])+"\n")
-                else:
-                    out.write(line)
+    input:  merge_plan="subgraphs/Bin_ini/bins_to_merge.tsv",
+            contig_assign="binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
+    output: "subgraphs/Merged_Bin/clustering.csv"
+    shell:  "{SCRIPTS}/merge_bins.py {input.merge_plan} $(dirname {input.merge_plan}) "
+            "{input.contig_assign} $(dirname {output})"
 
 #TODO remove by reusing another snakefile (as discussed with Seb)
 rule compute_avg_cov_merged:
-    input:   "subgraphs/Merged_Bin/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
+    input:   "subgraphs/Merged_Bin/clustering.csv"
     output:  "subgraphs/Merged_Bin/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 rule flag_bad_cogs:
-    #TODO remove List from file names
     input:  "{path}/bin_cogs_to_ignore.tsv",
             "{path}/{bin}/simplif.done"
     output:  touch("{path}/{bin}/selected_cogs.tsv")

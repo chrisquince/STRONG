@@ -36,8 +36,10 @@ def get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold):
             Dico_to_merge[bins] = list_cog
 
     # list bins to merge
+    #FIXME don't split lines on brackets!
     List_sets_tomerge = [set([bin1, bin2]) for (bin1, bin2) in Dico_bins_common_cogs.keys(
     ) if (bin1 in Dico_to_merge) and (bin2 in Dico_to_merge)]
+    #TODO is it to emulate do .. while?
     Len = 0
     while len(List_sets_tomerge) != Len:
         New_List_sets_tomerge = []
@@ -56,7 +58,7 @@ def get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold):
     return Dico_to_flag, Dico_merge_bins
 
 
-def main(gfa_regex,cog_threshold, output):
+def main(gfa_regex, cog_threshold, bins_to_merge, cogs_to_ignore):
     # dangerous but needed
     List_gfa_files = [files for files in glob.glob(gfa_regex)]
     Dico_CogBin_unitigs = defaultdict(lambda: defaultdict(set))
@@ -68,6 +70,7 @@ def main(gfa_regex,cog_threshold, output):
 
     Dico_to_flag, Dico_merge_bins = get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold)
 
+    #TODO improve naming
     # check for each of the merge list if any cog need to be deleted :
     Dico_CogBin_unitigs_merged = {COG: {Bin: unitigs for Bin, unitigs in dico_bin_unitig.items() if Bin not in {
         bin for Tuple in Dico_merge_bins.values() for bin in Tuple}} for COG, dico_bin_unitig in Dico_CogBin_unitigs.items()}
@@ -76,19 +79,20 @@ def main(gfa_regex,cog_threshold, output):
             Dico_CogBin_unitigs_merged[COG][name] = set().union(
                 *[Dico_CogBin_unitigs[COG][bins] for bins in list_bins])
 
-    Dico_to_flag2, Dico_merge_bins2 = get_overlaping_bins(
-        Dico_CogBin_unitigs_merged,cog_threshold)
+    Dico_to_flag2, Dico_merge_bins2 = get_overlaping_bins(Dico_CogBin_unitigs_merged, cog_threshold)
     if Dico_merge_bins2:
-        print("code contains errors : first pass merging was not enough to merge all bins which should be merged ", file=sys.stderr)
+        print("code contains errors: first pass merging was not enough to merge all bins which should be merged", file=sys.stderr)
         exit(1)
-    # output cog to be ignored
-    with open(output+"/List_bin_cogs_to_ignore.tsv", "w") as Handle :
-      Handle.write("\n".join(["\t".join([key]+list(List))
-                            for key, List in Dico_to_flag2.items()]))
+
     # output bins to be merged
-    with open(output+"/List_bin_to_merge.tsv", "w") as Handle :
-      Handle.write("\n".join(["\t".join([key]+list(List))
-                            for key, List in Dico_merge_bins.items()]))
+    with open(bins_to_merge, "w") as out:
+      #TODO list(List) looks very weird!
+      out.write("\n".join(["\t".join([key]+list(List)) for key, List in Dico_merge_bins.items()]))
+
+    # output cog to be ignored
+    with open(cogs_to_ignore, "w") as out:
+      #TODO list(List) looks very weird!
+      out.write("\n".join(["\t".join([key]+list(List)) for key, List in Dico_to_flag2.items()]))
 
 
 if __name__ == "__main__":
@@ -96,9 +100,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "gfa_regex", help='expect a regular expression matching all cog simplified subgraphs of all bins, be advised that bins folders must explicitely start by "Bin".  example : subgraphs/Merged_Bin/Bin*/simplif/COG*.gfa')
     parser.add_argument("cog_threshold", help="number of cogs in common between bins to require merging",default="10")
-    parser.add_argument("output", help="output file")
+    parser.add_argument("bins_to_merge", help="Output merge plan (.tsv)")
+    parser.add_argument("cogs_to_ignore", help="Output bin cogs to ignore (.tsv)")
     args = parser.parse_args()
-    gfa_regex = args.gfa_regex
-    cog_threshold = int(args.cog_threshold)
-    output = args.output
-    main(gfa_regex,cog_threshold, output)
+    
+    main(args.gfa_regex, int(args.cog_threshold), args.bins_to_merge, args.cogs_to_ignore)

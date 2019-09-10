@@ -1,3 +1,5 @@
+include: "Common.snake"
+
 import os
 
 def read_selected_bins(fn):

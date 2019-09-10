@@ -40,7 +40,7 @@ DESMAN_REPEAT = config["desman"]["nb_repeat"]
 MIN_COV_DESMAN = config["desman"]["min_cov"]
 # -------- Evaluation -----------------
 REFDATA=config["evaluation"]["genomes"]
-
+EVAL_SCRIPTS=config["evaluation"]["scripts"]
 
 #TODO rename + maybe simplify
 LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
@@ -154,23 +154,3 @@ rule samtools_sort:
     run:
         shell("samtools sort --threads %d -T {wildcards.path}/{wildcards.name}.tmp -O bam -o {output} {input} &> {log}" % (threads - 1))
 
-
-
-
-
-
-
-
-
-#FIXME all of the code further down is not used, let's just delete that
-TMP_DIR_ROOT = "/localscratch"
-BIN = config["bin"]
-
-def check_scratch_avail(root):
-    if os.path.isdir(root):
-        try:
-            with tempfile.TemporaryDirectory(dir=root) as temp_dir:
-                return True
-        except:
-            print("Launch with tmpdir failed")
-    return False

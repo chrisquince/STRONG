@@ -39,8 +39,8 @@ maganalysis:
     execution: 0
 
 # -----  Evaluation ------
-eval:
+evaluation:
     execution: 1
-    genomes: "/mnt/gpfs/chris/Projects/NewSimulation/Select4/Test" # path to refferences genomes 
+    genomes: "/mnt/gpfs/Hackathon/Test/Eval" # path to refferences genomes 
 
 

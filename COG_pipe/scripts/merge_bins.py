@@ -35,7 +35,7 @@ if __name__ == "__main__":
   
     # link all non merged bin in the merged bin folder
     for b in set(all_bins) - merged_bins:
-        os.system("ln -s %s/Bin_ini/%s %s/" % (args.bins_dir, b, args.out_dir))
+        os.system("ln -s %s/%s %s/" % (args.bins_dir, b, args.out_dir))
 
     # create a new contig assignment file 
     with open(args.out_dir + "/clustering.csv", "w") as out:

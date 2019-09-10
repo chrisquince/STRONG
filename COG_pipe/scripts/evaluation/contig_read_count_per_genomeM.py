@@ -2,6 +2,7 @@
 """
 @author: inodb
 """
+from __future__ import print_function
 import os
 import argparse
 
@@ -10,6 +11,7 @@ import multiprocessing
 
 UNAMB_PREFIX = "unamb_read_count_"
 AMB_PREFIX = "amb_read_count_"
+
 
 def get_fasta_accs(fastafile):
     out_list = []
@@ -23,14 +25,15 @@ def get_fasta_accs(fastafile):
 
 def init_count_dict(contigfa, reffa):
     caccs = get_fasta_accs(contigfa)
-    raccs = get_fasta_accs(reffa) 
+    raccs = get_fasta_accs(reffa)
 
     column_header = [UNAMB_PREFIX + r for r in raccs] + \
-                 [AMB_PREFIX + r for r in raccs]
+        [AMB_PREFIX + r for r in raccs]
 
     # create table like dict, key is contig, ambiguous and unambiguous counters
     # for each genome are keys from inner dict
-    count_dict = dict((c, dict((ch, 0) for ch in column_header)) for c in caccs) 
+    count_dict = dict((c, dict((ch, 0) for ch in column_header))
+                      for c in caccs)
 
     return count_dict, column_header
 
@@ -43,19 +46,20 @@ def is_ambiguous_align(tags, multi_align_tag):
             return True
     return False
 
+
 def extract_read_ref_origin(readname):
     """Extracts the name of the reference the read originated from.
-    
+
     Read names are expected to look like this:
     >@NC_012803.1-4276933/2
     >gi|29611500|ref|NC_004703.1|_Bacteroides_thetaiotaomicron_VPI-5482_nr0_+_R1
-    
+
     The first part of the read contains the sequence name (as found in the
     database) from which it originates. The second part identifies the read
     number (e.g. nr0). The + or - identifies the strand from which it was
     sequenced and the last bit tells if it was an R1 or R2 read."""
     return readname.split("-")[0]
-    
+
 
 def count_contigs_per_genome(bamfile, count_dict, multi_align_tag='XA'):
     bamh = pysam.Samfile(bamfile)
@@ -77,19 +81,20 @@ def count_contigs_per_genome(bamfile, count_dict, multi_align_tag='XA'):
             contigrow[UNAMB_PREFIX + ref_origin] += 1
 
     return count_dict
-        
-    
+
+
 def print_count_dict(count_dict, column_header):
-    print ("contig" + "\t%s" * len(column_header)) % tuple(column_header)
+    print("contig\t" + "\t".join(column_header))
 
-    for contig in count_dict:
-        print ("%s" + "\t%i" * len(column_header)) % tuple([contig] + \
-            [count_dict[contig][ch] for ch in column_header])
+    for contig,counts in count_dict.items():
+        print("\t".join([contig]+[str(counts[ch])
+                                  for ch in column_header]))
 
- 
+
 def parallel_count_contigs_per_genome(args):
     bamfile, count_dict = args
     return count_contigs_per_genome(bamfile, count_dict)
+
 
 def sum_count_dicts(cd1, cd2, column_header):
     assert(len(cd1) > 0 and len(cd2) > 0)
@@ -110,7 +115,7 @@ def main(contigfa, reffa, bamfiles, max_n_processors):
     count_args = [(bf, count_dict) for bf in bamfiles]
     n_processes = min(multiprocessing.cpu_count(), max_n_processors)
     #import ipdb; ipdb.set_trace()
-    
+
     for bamfile in bamfiles:
         count_contigs_per_genome(bamfile, count_dict)
 
@@ -118,25 +123,27 @@ def main(contigfa, reffa, bamfiles, max_n_processors):
     #poolrv = pool.map(parallel_count_contigs_per_genome, count_args)
 
     # Sum results
-    #for rv in poolrv:
+    # for rv in poolrv:
      #   count_dict = sum_count_dicts(count_dict, rv, column_header)
 
     # print results
     print_count_dict(count_dict, column_header)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("contigfa", help="Contigs fasta file")
     parser.add_argument("reffa", help="Reference fasta file")
-    parser.add_argument("bamfiles", nargs='+', help="BAM files with mappings to contigs")
-    parser.add_argument('-m','--max_n_processors',type=int, default=1,
-        help="Specify the maximum number of processors to use, if absent, all present processors will be used.") 
+    parser.add_argument("bamfiles", nargs='+',
+                        help="BAM files with mappings to contigs")
+    parser.add_argument('-m', '--max_n_processors', type=int, default=1,
+                        help="Specify the maximum number of processors to use, if absent, all present processors will be used.")
 
     args = parser.parse_args()
 
     for bf in args.bamfiles:
         if not os.path.isfile(bf + ".bai"):
             raise(Exception("No index for %s file found, run samtools index "
-            "first on bam file." % bf))
+                            "first on bam file." % bf))
 
     main(args.contigfa, args.reffa, args.bamfiles, args.max_n_processors)

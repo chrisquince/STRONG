@@ -56,7 +56,7 @@ def main(argv):
                     total_covs.append(np.sum(strain_covs[strain][0:32]))
                 nameString = ",".join(strains)
                 covString = ",".join([str(x) for x in total_covs])
-                print(re.sub("^D","Bin_",cluster) + "," + species + "," + prob + "," +
+                print(re.sub("^D", "Bin_", cluster) + "," + species + "," + prob + "," +
                       str(nStrains) + "," + nameString + "," + covString)
 
 

@@ -50,7 +50,7 @@ if args.unlock:
 if not os.path.exists(args.dir):
     os.makedirs(args.dir)
 if args.dag:
-    base_params.extend(["--dag"])
+    base_params.extend(["--rulegraph"])
 if args.s :
     base_params.extend(args.s)
 
@@ -73,8 +73,8 @@ with cd(exec_dir):
         call_cnt+=1
         if args.dag:
             p1=Popen(base_params + extra_params, stdout=PIPE, stderr=sys.stderr)
-            p2=Popen(["dot","-Tpdf"], stdin=p1.stdout, stdout=PIPE, stderr=sys.stderr)
-            with open(args.dag.replace(".pdf", str(call_cnt)+".pdf"), "bw") as f:
+            p2=Popen(["dot","-Tpng"], stdin=p1.stdout, stdout=PIPE, stderr=sys.stderr)
+            with open(args.dag.replace(".png", str(call_cnt)+".png"), "bw") as f:
                 f.write(p2.communicate()[0])
         else:
             subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
@@ -108,6 +108,7 @@ with cd(exec_dir):
 
     if config["maganalysis"]["execution"]:
         print("Step #4 - running MAGAnalysis") 
+        call_snake(["--snakefile", "MAGAnalysis.snake"])
         
     if config["evaluation"]["execution"]:
         print("Step #5 - running evaluation") 

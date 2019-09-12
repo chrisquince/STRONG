@@ -4,7 +4,7 @@ import glob
 LIST_HAPLO = glob.glob("bayespaths/*/*_simplif_PHaplo_*.fa")
 BIN_TO_BLAST={file.split("/")[1]:file.replace(".fa",".blast") for file in LIST_HAPLO}
 BIN=glob_wildcards("bayespaths/{bin}/{also_bins}_simplif_PHaplo_{nb}.fa")[0]
-print(THREADS)
+
 
 rule results :
 	input : expand("evaluation/{bin}_blastbest.tsv",bin=BIN),

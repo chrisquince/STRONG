@@ -6,6 +6,12 @@ STRONG resolves strain on assembly graphs by resolving variants on core COGs usi
 
 ## Installation
 
+The full list of requirement is listed in the file conda_env.yaml and can be installed through conda with the following command :
+
+```
+conda env create -f conda_env.yaml
+```
+
 Requires recursive cloning:
 
 ```
@@ -31,15 +37,22 @@ Optionally pass snakemake parameters e.g. '--dryrun'
 ## Config file
 
 ```
-# ------ Resssources ------ 
+# ------ Samples ------
+samples: '*' # specify a list samples to use or '*' to use all samples
+
+# ------ Resources ------
 threads : 8 # single task nb threads
+
 # ------ Assembly parameters ------ 
 data: /mnt/gpfs/Hackathon/Test  # path to data folder
-# ---- Annotation database -----
-cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database 
-# ---- Spade tools dependency -----
-soft: /home/sergei/cog_tools2
-# ----Binning parameters ------
+
+# ----- Annotation database -----
+cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database
+
+# ----- SPAdes tools dependency -----
+soft: /home/sergei/cog_tools
+
+# ----- Binning parameters ------
 concoct_contig_size: 1000
 read_length: 150
 assembly: 
@@ -47,24 +60,37 @@ assembly:
     k: [77]
     mem: 2000
     threads: 24
-    dir: /home/sergei/cog_tools2/spades/bin
-    groups: ['*'] # specify a group of sample to coassemble
-# ---- Bayespaths parameters ------
+    dir: /home/sergei/cog_tools/spades/bin
+
+# ----- BayesPaths parameters ------
 bayespaths:
     nb_strains: 16
-# ---- Desman parameters ------
+
+# ----- DESMAN parameters ------
 desman:
     execution: 1
     nb_haplotypes: 10
     nb_repeat: 5
     min_cov: 1
-# ---- Maganalysis ------
+
+# -----  MAGAnalysis ------
 maganalysis: 
     execution: 0
+
+# -----  Evaluation ------
+evaluation:
+    execution: 1
+    genomes: "/mnt/gpfs/Hackathon/Test/Eval" # path to refferences genomes 
 ```
 
 ## Pipeline
-
-![alt tag](./Figures/Dag1.png)
-
-![alt tag](./Figures/Dag2.pdf)
+# Assembly and binning 
+![alt tag](./Figures/Dag_rules1.png)
+# BayesAGraohsSVA
+![alt tag](./Figures/Dag_rules2.png)
+# Desman 
+to be uploaded
+# MAGanalysis
+![alt tag](./Figures/Dag_rules5.png)
+# Evaluation
+![alt tag](./Figures/Dag_rules6.png)

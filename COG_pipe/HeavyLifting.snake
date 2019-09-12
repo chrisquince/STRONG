@@ -60,7 +60,6 @@ rule simplify_subgraphs:
             rm -rf $out
             mkdir -p $out/tmp
             in=$(dirname {input.profiles_flag})
-            echo "HERE " $in
             for g in $in/*gfa; do
                 name=$(basename $g .gfa)
                 {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
@@ -68,12 +67,14 @@ rule simplify_subgraphs:
             """)
 
 rule identify_bins_to_merge:
-    input:   expand("{path}/simplif.done", path = INIT_BIN_PATHS)
+    input:   lambda w: expand("{path}/simplif.done", path = bin_paths_by_type(w["bin_type"]))
     #TODO should we put cogs to ignore files within the bin subfolders?
-    output:  cogs_to_ignore = "subgraphs/Bin_ini/bin_cogs_to_ignore.tsv",
-             bins_to_merge = "subgraphs/Bin_ini/bins_to_merge.tsv"
-    params:  folder="subgraphs/Bin_ini"
+    output:  cogs_to_ignore = "subgraphs/{bin_type}/bin_cogs_to_ignore.tsv",
+             bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
+    params:  folder="subgraphs/{bin_type}"
     #TODO use the input somehow? 
+    #TODO remove '
+    #TODO parameterize
     shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' 10 {output.bins_to_merge} {output.cogs_to_ignore}"
 
 #TODO review logic and maybe move to scripts / separate into multiple rules
@@ -82,8 +83,9 @@ checkpoint merge_bins:
     input:  merge_plan="subgraphs/Bin_ini/bins_to_merge.tsv",
             contig_assign="binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
     output: "subgraphs/Merged_Bin/clustering.csv"
+    log:    "subgraphs/Merged_Bin/merge.log"
     shell:  "{SCRIPTS}/merge_bins.py {input.merge_plan} $(dirname {input.merge_plan}) "
-            "{input.contig_assign} $(dirname {output})"
+            "{input.contig_assign} $(dirname {output}) &> {log}"
 
 #TODO remove by reusing another snakefile (as discussed with Seb)
 rule compute_avg_cov_merged:
@@ -96,7 +98,7 @@ rule flag_bad_cogs:
             "{path}/{bin}/simplif.done"
     output:  touch("{path}/{bin}/selected_cogs.tsv")
     run:
-        all_cogs, = glob_wildcards(os.dirname(output[0]) + "/{cog}.gfa")
+        all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/{cog}.gfa")
         #TODO introduce helper function?
         with open(input[0]) as cogs_to_ignore:
             for line in cogs_to_ignore:
@@ -126,6 +128,6 @@ rule select_bins_for_strain_analysis:
       #FIXME magic constant
       # select bin_name only, not full path 
       bins = [os.path.basename(os.path.dirname(cogs_fn)) for cogs_fn in input \
-              if len(list(open(selected_cogs_fn).readlines())) >= 10]
+              if len(list(open(cogs_fn).readlines())) >= 10]
       with open(output[0], 'w') as out:
           out.write("\n".join(bins))

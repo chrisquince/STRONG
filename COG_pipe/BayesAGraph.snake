@@ -5,13 +5,13 @@ import os
 def read_selected_bins(fn):
     assert os.path.exists(fn)
     print("Reading selected bins from %s" % fn)
-    return [l.strip() for line in open(fn).readlines()]
+    return [line.strip() for line in open(fn).readlines()]
 
 BINS = read_selected_bins("bayespaths/selected_bins.txt") if os.path.exists("bayespaths/selected_bins.txt") \
                 else read_selected_bins("subgraphs/Merged_Bin/selected_bins.txt")
 
 rule all:
-    input: expand("bayespaths/{bin}/{bin}_simplif_log1.txt", bin=BINS),
+    input: expand("bayespaths/{bin}/PGamma.csv", bin=BINS),
            "bayespaths/selected_bins.txt"
 
 #Create the file with selected bin ids for editing on subsequent restarts
@@ -22,17 +22,15 @@ rule copy_list:
         "cp {input} {output}"
 
 rule bayespaths:
-    input:  flag="subgraphs/Merged_Bin/{bin}/simplif.done",
-            cogs="subgraphs/Merged_Bin/{bin}/List_cogs_selected.tsv"
-    output: "bayespaths/{bin}/{bin}_simplif_log1.txt"
-    log:    "bayespaths/Logs/{bin}_simplif.log"
+    input:  "subgraphs/Merged_Bin/{bin}/selected_cogs.tsv"
+    output: "bayespaths/{bin}/PGamma.csv"
+    log:    "bayespaths/Logs/{bin}.log"
     message: "Running BayesPaths on {wildcards.bin}"
     params: kmer=ASSEMBLY_K,
             read_len=READ_LENGTH,
-            input_dir="subgraphs/Bin_Selected/{bin}/simplif",
-            output_dir="bayespaths/{bin}"
+            subgraph_dir="subgraphs/Merged_Bin/{bin}/simplif"
     threads: 10
     #TODO why do we explicitly ask for python interpreter here?
     shell: """
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input.cogs} {params.input_dir} {params.kmer} {params.output_dir}/{wildcards.bin}_simplif -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} > {params.output_dir}/simplif_bayespaths_stdout.txt 2> {log}
+            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input} {params.subgraph_dir} {params.kmer} $(dirname {output}) -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} &> {log}
             """

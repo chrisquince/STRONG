@@ -86,7 +86,7 @@ def count_contigs_per_genome(bamfile, count_dict, multi_align_tag='XA'):
 def print_count_dict(count_dict, column_header):
     print("contig\t" + "\t".join(column_header))
 
-    for contig,counts in count_dict.items():
+    for contig, counts in count_dict.items():
         print("\t".join([contig]+[str(counts[ch])
                                   for ch in column_header]))
 

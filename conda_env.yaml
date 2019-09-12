@@ -1,6 +1,6 @@
 name: STRONG
 channels:
-    - https://metachannel.conda-forge.org/bioconda,conda-forge/--max-build-no
+    - https://metachannel.conda-forge.org/bioconda,anaconda,conda-forge/--max-build-no
 dependencies:
     - snakemake >=5.5.4
     - python
@@ -16,3 +16,8 @@ dependencies:
     - fasttree
     - gfapy
     - future
+    - pysam
+    - pygam
+    - statsmodels
+    - pathos
+

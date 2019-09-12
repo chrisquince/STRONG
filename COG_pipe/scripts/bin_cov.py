@@ -5,10 +5,12 @@ from __future__ import division
 import sys
 import re
 
+
 def parse_len_cov(ctg_name):
     m = re.search("_length_(\d+)_cov_([\d\.]+)", ctg_name)
     assert m
     return int(m.group(1)), float(m.group(2))
+
 
 if len(sys.argv) < 4:
     print("Usage: %s <binning.csv> <output> <K>" % sys.argv[0])

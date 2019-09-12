@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 from Bio import SeqIO
-import sys, getopt
+import sys
+import getopt
 import os
 import argparse
+
 
 def main(argv):
     parser = argparse.ArgumentParser()
@@ -15,8 +17,9 @@ def main(argv):
     handle = open(args.fasta_file, "rU")
     for record in SeqIO.parse(handle, "fasta"):
         seq = record.seq
-    
+
         print(record.id + '\t0\t' + str(len(seq)))
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

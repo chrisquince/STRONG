@@ -9,7 +9,8 @@ import glob
 import argparse
 from collections import defaultdict
 
-def get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold):
+
+def get_overlaping_bins(Dico_CogBin_unitigs, cog_threshold):
     Set_bins = {key for dico in Dico_CogBin_unitigs.values() for key in dico}
     Dico_bins_common_cogs = defaultdict(list)
     for Cog, dico_bin_unitig in Dico_CogBin_unitigs.items():
@@ -56,17 +57,19 @@ def get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold):
     return Dico_to_flag, Dico_merge_bins
 
 
-def main(gfa_regex,cog_threshold, output):
+def main(gfa_regex, cog_threshold, output):
     # dangerous but needed
     List_gfa_files = [files for files in glob.glob(gfa_regex)]
     Dico_CogBin_unitigs = defaultdict(lambda: defaultdict(set))
     for file in List_gfa_files:
         COG = file.split("/")[-1].split(".gfa")[0]
-        Bin = re.findall(".*?Bin.*?(Bin.+?)/",file)[0] # more robust but still inherently not robust to naming changes
+        # more robust but still inherently not robust to naming changes
+        Bin = re.findall(".*?Bin.*?(Bin.+?)/", file)[0]
         Dico_CogBin_unitigs[COG][Bin] = {line.split(
             "\t")[2] for line in open(file) if line[0] == "S"}
 
-    Dico_to_flag, Dico_merge_bins = get_overlaping_bins(Dico_CogBin_unitigs,cog_threshold)
+    Dico_to_flag, Dico_merge_bins = get_overlaping_bins(
+        Dico_CogBin_unitigs, cog_threshold)
 
     # check for each of the merge list if any cog need to be deleted :
     Dico_CogBin_unitigs_merged = {COG: {Bin: unitigs for Bin, unitigs in dico_bin_unitig.items() if Bin not in {
@@ -77,28 +80,29 @@ def main(gfa_regex,cog_threshold, output):
                 *[Dico_CogBin_unitigs[COG][bins] for bins in list_bins])
 
     Dico_to_flag2, Dico_merge_bins2 = get_overlaping_bins(
-        Dico_CogBin_unitigs_merged,cog_threshold)
+        Dico_CogBin_unitigs_merged, cog_threshold)
     if Dico_merge_bins2:
         print("code contains errors : first pass merging was not enough to merge all bins which should be merged ", file=sys.stderr)
         exit(1)
     # output cog to be ignored
-    with open(output+"/List_bin_cogs_to_ignore.tsv", "w") as Handle :
-      Handle.write("\n".join(["\t".join([key]+list(List))
-                            for key, List in Dico_to_flag2.items()]))
+    with open(output+"/List_bin_cogs_to_ignore.tsv", "w") as Handle:
+        Handle.write("\n".join(["\t".join([key]+list(List))
+                                for key, List in Dico_to_flag2.items()]))
     # output bins to be merged
-    with open(output+"/List_bin_to_merge.tsv", "w") as Handle :
-      Handle.write("\n".join(["\t".join([key]+list(List))
-                            for key, List in Dico_merge_bins.items()]))
+    with open(output+"/List_bin_to_merge.tsv", "w") as Handle:
+        Handle.write("\n".join(["\t".join([key]+list(List))
+                                for key, List in Dico_merge_bins.items()]))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "gfa_regex", help='expect a regular expression matching all cog simplified subgraphs of all bins, be advised that bins folders must explicitely start by "Bin".  example : subgraphs/Merged_Bin/Bin*/simplif/COG*.gfa')
-    parser.add_argument("cog_threshold", help="number of cogs in common between bins to require merging",default="10")
+    parser.add_argument(
+        "cog_threshold", help="number of cogs in common between bins to require merging", default="10")
     parser.add_argument("output", help="output file")
     args = parser.parse_args()
     gfa_regex = args.gfa_regex
     cog_threshold = int(args.cog_threshold)
     output = args.output
-    main(gfa_regex,cog_threshold, output)
+    main(gfa_regex, cog_threshold, output)

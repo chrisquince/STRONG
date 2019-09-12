@@ -18,7 +18,8 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description='Simulate a metagenomic data set')
 
-    parser.add_argument("genomes_dir", help="directory with genomes. Warning : all file in this folder should be genomes fasta files")
+    parser.add_argument(
+        "genomes_dir", help="directory with genomes. Warning : all file in this folder should be genomes fasta files")
 
     parser.add_argument("select_file", help="mapping strains to species")
 
@@ -88,8 +89,8 @@ def main(argv):
             contig = counts.pop(0)
             idx = 0
             total = 0
-            counts=map(int,counts)
-            
+            counts = map(int, counts)
+
             countSpecies = Counter()
             countStrain = Counter()
             for count in counts:

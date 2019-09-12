@@ -121,10 +121,11 @@ def main(argv):
                 np.asarray(haplo_gene_unc[gene][haplo]))
         mean_unc = np.mean(np.asarray(list(mean_gene_unc.values())))
 
-        print(haplo + "\t" + bestMatch + "\t" + str(nHits) + 
-            "\t" + "{:10.4f}".format(pid) + "\t" + "{:10.4e}".format(
+        print(haplo + "\t" + bestMatch + "\t" + str(nHits) +
+              "\t" + "{:10.4f}".format(pid) + "\t" + "{:10.4e}".format(
             mean_unc) + "\t" + str(diff) + "\t" +
-             str(haplo_match_length[haplo][bestMatch]))
+            str(haplo_match_length[haplo][bestMatch]))
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

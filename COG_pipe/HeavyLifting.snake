@@ -139,7 +139,7 @@ rule flag_bad_cogs:
   
 #TODO review logic
 def All_selected_cogs_files_from_merged_bin(wildcards):
-    checkpoints.Merge_Bins.get()
+    checkpoints.Merge_Bins.get(path="subgraphs")
     # since we linked non merged bins in the merged bin folder, bins in that folder are, at that point in time, the correct set of bin to consider. 
     return [binpath+"/List_cogs_selected.tsv" for binpath in bin_paths_by_type("Merged_Bin")]
 
@@ -189,4 +189,5 @@ rule define_results:
           "bayespaths/List_selected_bins.txt"
   run:
     with open(output[1],"w") as handle :
-      handle.write("\n".join(input[1]))
+      for line in input[1] :
+        handle.write("\n".join(line))

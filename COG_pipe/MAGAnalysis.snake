@@ -1,10 +1,10 @@
 include: "Common.snake"
 
 rule all: 
-  input: "mag_analysis/AlignAll/AlignAllR.tree"
+  input: "mag_analysis/AlignAll/AlignAllR_assign.tsv"
 
 rule aggregate_SCG:
-    input: "binning/folder_done"
+    input: "subgraphs/Bin_ini/folder_done"
     output: expand("mag_analysis/SCGs/{cog}.fna", cog=LIST_COGS) 
     #TODO why weird filename?
     shell: """
@@ -51,4 +51,20 @@ rule fasttree:
     log: "{path}/SelectR.out"
     shell:"""
     FastTreeMP -nt -gtr < {input} 2> {log} > {output}
+    """
+
+
+rule fasttree:
+    input: "{path}/AlignAllR.gfa"
+    output: "{path}/AlignAllR.tree"
+    log: "{path}/SelectR.out"
+    shell:"""
+    FastTreeMP -nt -gtr < {input} 2> {log} > {output}
+    """
+
+rule  Assign_tree:
+    input: "{path}/AlignAllR.tree"
+    output: "{path}/AlignAllR_assign.tsv"
+    shell :"""
+    {SCRIPTS}/AssignTree.py {input} {SCG_DATA}/TaxaSpeciesR.txt {SCG_DATA}/all_taxa_lineage.tsv > {output}
     """

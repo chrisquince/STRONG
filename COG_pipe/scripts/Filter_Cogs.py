@@ -34,10 +34,10 @@ def main(Rpsblast_ouptut,Database_file,min_Evalue,min_Pid,min_Subject_Pid,min_co
 
     refid = Full_Subject.split("|")[2]
     if refid in Dico_Ref_annotation:
-        Subject=Dico_Ref_annotation[refid]
+      Subject=Dico_Ref_annotation[refid]
     else:
-        sys.stderr.write("Possible incompatibilities in COG RPSBlast database and " + str(Database_file) + "\n")
-        continue
+      sys.stderr.write("Possible incompatibilities in COG RPSBlast database and " + str(Database_file) + "\n")
+      continue
     Subject=Dico_Ref_annotation[Full_Subject.split("|")[2]]
     # sometimes for really low evalue, float conversion and/or comparison does not work, lets just take the -log10 of the evalue
     if 'e-' in Splitline[2] :

@@ -2,7 +2,6 @@ import os
 import glob
 include: "Common.snake"
 
-
 BIN_TO_BLAST = {os.path.split(file)[1]: file.replace(
     ".fa", ".blast") for file in glob.glob("bayespaths/*/*_simplif_PHaplo_*.fa")}
 BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_simplif_PHaplo_{nb}.fa")[0]

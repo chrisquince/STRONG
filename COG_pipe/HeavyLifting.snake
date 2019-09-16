@@ -188,6 +188,6 @@ rule define_results:
   output: touch("heavylifting.done"),
           "bayespaths/List_selected_bins.txt"
   run:
-    with open(output[1],"w") as handle :
+    with open(output[1],"w") as handle:
       for line in input[1] :
         handle.write("\n".join(line))

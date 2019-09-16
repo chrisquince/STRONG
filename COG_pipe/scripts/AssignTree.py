@@ -7,7 +7,7 @@ from collections import defaultdict, Counter
 from operator import itemgetter
 
 MIN_SUPPORT = 0.0
-
+NB_RANKS = 7
 
 def read_lineage_file(lineage_file):
     mapping = {}
@@ -63,16 +63,16 @@ def main(argv):
         assigns = Counter()
         matches = ancestor.get_leaves()
         collate_hits = list()
-        for depth in range(7):
+        for depth in range(NB_RANKS):
             collate_hits.append(Counter())
         for match in matches:
             if match.name in mapping:
                 taxa_id = mapping[match.name]
                 if taxa_id in lineages:
                     line_match = lineages[taxa_id]
-                    for depth in range(7):
+                    for depth in range(NB_RANKS):
                         collate_hits[depth][line_match[depth]] += 1.0
-        for depth in range(7):
+        for depth in range(NB_RANKS):
             collate = collate_hits[depth]
             d_weight = sum(collate.values())
             sort_collate = sorted(
@@ -89,13 +89,13 @@ def main(argv):
         (assign, p, W) = cluster_assign[cluster][0]
         sys.stdout.write('%s' % cluster)
         if W >= MIN_SUPPORT:
-            for depth in range(7):
+            for depth in range(NB_RANKS):
                 (assign, p, W) = cluster_assign[cluster][depth]
                 sys.stdout.write('\t%d,%s,%f,%f' % (depth, assign, p, W))
             sys.stdout.write('\n')
             sys.stdout.flush()
         else:
-            for depth in range(7):
+            for depth in range(NB_RANKS):
                 (assign, p, W) = cluster_assign[cluster][depth]
                 sys.stdout.write('\t%d,NA,0.0,0.0' % (depth))
             sys.stdout.write('\n')

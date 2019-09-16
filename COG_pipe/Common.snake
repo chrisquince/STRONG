@@ -24,7 +24,7 @@ SOFT = config["soft"]
 # -------- COGs -----------------
 COG_DB= config["cog_database"]
 SCG_DATA = config["scg_data"]
-COG_FILE=SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt"
+COG_FILE=SCG_DATA+"/scg_cogs_to_run.txt"
 # -------- Assembly -----------------
 ASSEMBLER = config["assembly"]["assembler"]
 ASSEMBLER_DIR = config["assembly"]["dir"]

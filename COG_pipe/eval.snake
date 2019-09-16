@@ -23,7 +23,7 @@ rule contig_to_ref_counts:
     output: "evaluation/final_contigs_counts.tsv"
     threads: THREADS
     log: "test.log"
-    shell: "{EVAL_SCRIPTS}/contig_read_count_per_genomeM.py {input.assembly} {REFDATA}/AllGenomes.fa {input.list_samples} -m {threads} >{output}"
+    shell: "{EVAL_SCRIPTS}/contig_read_count_per_genome.py {input.assembly} {REFDATA}/AllGenomes.fa {input.list_samples} -m {threads} >{output}"
 
 rule map_counts:
     input: "{path}/final_contigs_counts.tsv"

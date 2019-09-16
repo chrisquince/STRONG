@@ -2,6 +2,7 @@
 
 # ----------------- deal with argument -------------------
 # argument parsing for R, adapted from 
+# https://www.r-bloggers.com/passing-arguments-to-an-r-script-from-command-lines/
 args = commandArgs(trailingOnly=TRUE)
 
 # test if there is at least one argument: if not, return an error

@@ -17,9 +17,9 @@ default_values = {
                     "mem": 120, "threads": 16, "groups": []},
     "desman": {"execution": 0, "nb_haplotypes": 10, "nb_repeat": 5,
                "min_cov": 1, "dscripts": None},
-    "bayespaths":{},
+    "bayespaths": {},
     "maganalysis": {"execution": 0},
-    "evaluation": {"execution": 0,"genomes":""},
+    "evaluation": {"execution": 0, "genomes": ""},
 }
 
 # Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python
@@ -44,7 +44,8 @@ def fill_default_values(config):
             local_dir, '..', "BayesAGraphSVA")
         default_values["desman"]["dscripts"] = os.path.join(
             local_dir, '..', "DESMAN/scripts")
-        default_values["evaluation"]['scripts'] = os.path.join(local_dir, "scripts/evaluation")
+        default_values["evaluation"]['scripts'] = os.path.join(
+            local_dir, "scripts/evaluation")
     setdefault_recursively(config)
 
 
@@ -71,102 +72,3 @@ def gather_paths(path, basename=False):
 
 def detect_reads(dir):
     return sorted(list(gather_paths(dir)))[:2]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# FIXME all of the code further down is not used, let's just delete that
-
-# Autodetect references
-def gather_refs(data):
-    if type(data) is list:
-        for path in data:
-            for ref in gather_refs(path):
-                yield ref
-    else:
-        if data.startswith("@"):
-            with open(data[1:]) as input:
-                for ref in load_dict(input).items():
-                    yield ref
-        elif os.path.isdir(data):
-            for ref in gather_paths(data, True):
-                yield ref
-        else:
-            yield (sample_name(data), data)
-
-
-def get_id(internal_id, sample):
-    res = internal_id.split("_", 2)[1]
-    return sample + "-" + res
-
-
-id_re = re.compile("\\d+")
-split_format = re.compile("^([\w.-]+)_\(\d+_\d+\)$")
-
-
-def extract_id(name):
-    bin_id = None
-    params = name.split("-", 1)
-    if len(params) > 1:
-        bin_id = int(id_re.findall(params[0])[0])
-        name = params[1]
-    contig_id = int(id_re.findall(name)[0])
-    if bin_id is None:
-        return contig_id
-    else:
-        return (bin_id, contig_id)
-
-
-def load_annotation(file, normalize=True):
-    res = dict()
-    sample, _ = os.path.splitext(os.path.basename(file))
-    with open(file) as input:
-        for line in input:
-            info = line.split("\t")
-            id = get_id(info[0], sample) if normalize else info[0]
-            bins = info[1].split()
-            if id in res:
-                res[id].update(bins)
-            else:
-                res[id] = set(bins)
-    return res
-
-
-def contig_length(name):
-    # Length of contig split
-    split = re.search("\((\d+)_(\d+)\)", name)
-    if split:
-        return int(split.group(2)) - int(split.group(1))
-    # Default format
-    else:
-        return int(name.split("_")[3])

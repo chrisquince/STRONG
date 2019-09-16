@@ -53,15 +53,6 @@ rule fasttree:
     FastTreeMP -nt -gtr < {input} 2> {log} > {output}
     """
 
-
-rule fasttree:
-    input: "{path}/AlignAllR.gfa"
-    output: "{path}/AlignAllR.tree"
-    log: "{path}/SelectR.out"
-    shell:"""
-    FastTreeMP -nt -gtr < {input} 2> {log} > {output}
-    """
-
 rule  Assign_tree:
     input: "{path}/AlignAllR.tree"
     output: "{path}/AlignAllR_assign.tsv"

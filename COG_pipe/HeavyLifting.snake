@@ -110,6 +110,8 @@ rule flag_bad_cogs:
                         #TODO will using sets simplify the code?
                         out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
 
+                    return
+
 #TODO review logic
 def merged_bins_cogs(wildcards):
     checkpoints.merge_bins.get()

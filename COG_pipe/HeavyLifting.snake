@@ -105,13 +105,12 @@ rule flag_bad_cogs:
                 split_line = line.rstrip().split("\t")
                 if split_line[0] == wildcards.bin:
                     bad_cogs = {cog for cog in split_line[1:]}
+
                     with open(output[0], "w") as out:
                         #TODO will using sets simplify the code?
                         out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
-#FIXME removed because it causes rule to fail on Test    
-            #     return
-            # #line for the bin was not found in bin_cog_to_ignore.tsv
-            # assert False
+
+                    return
 
 #TODO review logic
 def merged_bins_cogs(wildcards):

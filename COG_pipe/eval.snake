@@ -1,0 +1,96 @@
+import os
+import glob
+from os.path import basename,dirname
+from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
+include: "Common.snake"
+
+# Bayespath
+BIN_TO_BLAST = {basename(dirname(file)): file.replace(".fa", ".blast") for file in glob.glob("bayespaths/*/*_simplif_PHaplo_*.fa")}
+BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_simplif_PHaplo_{nb}.fa")[0]
+# Desman
+DESMAN_BINS = set(glob_wildcards("desman/{bin}/haplotype_seqs/{name}.fa")[0])
+BINS_TO_HAPS = {bin_:glob.glob("desman/"+bin_+"/haplotype_seqs/*.fa") for bin_ in DESMAN_BINS}
+print(DESMAN_BINS)
+rule results:
+    input: expand("evaluation/bayespaths/{bin}_blastbest.tsv", bin=BIN),
+           expand("evaluation/desman/{bin}_blastbest.tsv", bin=DESMAN_BINS),
+           "evaluation/bayespaths/SpeciesMaxCov.csv",
+
+rule index_bam:
+    input: "{file}.sorted.bam"
+    output: "{file}.sorted.bam.bai"
+    shell: "samtools index {input}"
+
+rule contig_to_ref_counts:
+    input: assembly = "profile/assembly.fasta",
+           list_samples = expand("profile/assembly/{sample}.sorted.bam", sample=SAMPLES),
+           list_samples_indexed = expand("profile/assembly/{sample}.sorted.bam.bai", sample=SAMPLES)
+    output: "evaluation/bayespaths/final_contigs_counts.tsv"
+    threads: THREADS
+    log: "test.log"
+    shell: "{EVAL_SCRIPTS}/contig_read_count_per_genome.py {input.assembly} {REFDATA}/AllGenomes.fa {input.list_samples} -m {threads} >{output}"
+
+rule map_counts:
+    input: "{path}/final_contigs_counts.tsv"
+    output: strain = "{path}/Strain.csv",
+            species = "{path}/Species.csv"
+    shell: "{EVAL_SCRIPTS}/MapCounts.py {REFDATA}/Genomes {REFDATA}/select.tsv {input} {output.strain} {output.species}"
+
+rule filtering:
+    input: "{path}/Species.csv"
+    output: "{path}/Contig_Species.csv"
+    shell: "{EVAL_SCRIPTS}/Filter.pl < {input} > {output}"
+
+rule sed_cluster:
+    input: "{path}/clustering_gt1000_merged.csv"
+    output: "{path}/clustering_gt1000_mergedR.csv"
+    shell: "sed '1d' {input} > {output}"
+
+rule validate:
+    input: cluster = "binning/clustering_gt1000_mergedR.csv",
+           species = "{path}/Contig_Species.csv",
+           assembly = "profile/assembly.fasta"
+    output: "{path}/Conf.csv"
+    log: "{path}/validate.log"
+    shell: "{EVAL_SCRIPTS}/Validate.pl --cfile={input.cluster} --sfile={input.species} --ffile={input.assembly} --ofile {output} >{log}"
+
+rule max_species:
+    input: "{path}/Conf.csv"
+    output: "{path}/SpeciesMax.csv"
+    shell: "Rscript --vanilla {EVAL_SCRIPTS}/MaxSpecies.R {input} {output}"
+
+rule strain_coverage:
+    input: "{path}/SpeciesMax.csv"
+    output: "{path}/SpeciesMaxCov.csv"
+    shell: "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {REFDATA}/coverage.tsv {input} > {output}"
+
+rule blastn:
+    input: "{file}.fa"
+    output: "{file}.blast"
+    threads: THREADS
+    shell: "blastn -db {REFDATA}/AllGenomes.fa -query {input} -outfmt 6 -num_threads {threads} > {output}"
+
+rule blast_best:
+    input: blast = lambda w: BIN_TO_BLAST[w.bin],
+           margfile = "bayespaths/{bin}/{bin}_simplifmargFile.csv"
+    output: "evaluation/bayespaths/{bin}_blastbest.tsv"
+    shell: "{EVAL_SCRIPTS}/BlastBest.py {input.blast} {input.margfile} {REFDATA}/MapSeq.csv > {output}"
+
+# Desman part
+
+rule desman_cat:
+    input: lambda w: BINS_TO_HAPS[w.bin]
+    output: "evaluation/desman/{bin}.fa"
+    run:
+        results = []
+        for file in list(input):
+            for header, seq in sfp(open(file)):
+                new_name = os.path.basename(file).replace(".fa", "")+"_"+header
+                results.append(">"+new_name+"\n"+seq)
+        with open(output[0],"w") as handle:
+            handle.write("\n".join(results))
+
+rule desman_blast_best:
+    input: "evaluation/desman/{bin}.blast"
+    output: "evaluation/desman/{bin}_blastbest.tsv"
+    shell: "{EVAL_SCRIPTS}/DesmanBlastBest.py {input} {REFDATA}/MapSeq.csv > {output}"

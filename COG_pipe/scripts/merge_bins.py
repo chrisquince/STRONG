@@ -26,16 +26,17 @@ if __name__ == "__main__":
         for line in merge_plan:
             #TODO just split()?
             split_line=line.rstrip().split("\t")
-            merged_name = split_line[0]
-            to_merge = split_line[1:]
-            merged_bins |= set(to_merge)
-            merged_path = os.path.join(args.out_dir, merged_name)
-            os.makedirs(merged_path)
-            for b in to_merge:
-                bin_dir = os.path.join(args.bins_dir, b)
-                #os.system("cat %s/contigs.fa >> %s/contigs.fa" % (bin_dir, merged_path))
-                os.system("cat %s/SCG.fna >> %s/SCG.fna" % (bin_dir, merged_path))
-                name_map[b.replace("Bin_","")] = merged_name.replace("Bin_","")
+            if len(split_line)>1 : # so that no empty folder is created, making os.symlink fail
+                merged_name = split_line[0]
+                to_merge = split_line[1:]
+                merged_bins |= set(to_merge)
+                merged_path = os.path.join(args.out_dir, merged_name)
+                os.makedirs(merged_path)
+                for b in to_merge:
+                    bin_dir = os.path.join(args.bins_dir, b)
+                    #os.system("cat %s/contigs.fa >> %s/contigs.fa" % (bin_dir, merged_path))
+                    os.system("cat %s/SCG.fna >> %s/SCG.fna" % (bin_dir, merged_path))
+                    name_map[b.replace("Bin_","")] = merged_name.replace("Bin_","")
   
     # link all non merged bin in the merged bin folder
     for b in set(all_bins) - merged_bins:

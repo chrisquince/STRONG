@@ -3,11 +3,11 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser
 import argparse
 
 
-def prodigal_gff_parser(Handle) :
+def prodigal_gff_parser(handle) :
   # specific to prodigal output, does not seem to be universal gff  
   # directly adapted from  SimpleFastaParser in Bio.SeqIO.FastaIO
   while True: 
-    line = Handle.readline() 
+    line = handle.readline() 
     if line == "": 
       return 
     if line[:16] == "# Sequence Data:" : 
@@ -19,19 +19,19 @@ def prodigal_gff_parser(Handle) :
       print (line)
       raise ValueError("GFF Output from prodigal should start with '# Sequence Data:'") 
     seq_data = line.rstrip() 
-    Model_data = Handle.readline().rstrip() 
-    line=Handle.readline().rstrip()
-    ORF_list=[]
+    model_data = handle.readline().rstrip() 
+    line=handle.readline().rstrip()
+    orf_list=[]
     if not line: 
       break 
     while line[0]!='#' :
       if not line :
         break
-      ORF_list.append(line)
-      line=Handle.readline().rstrip()
+      orf_list.append(line)
+      line=handle.readline().rstrip()
       if not line: 
         break 
-    yield seq_data,Model_data,ORF_list 
+    yield seq_data,model_data,orf_list 
   if not line: 
     return  # StopIteration
 
@@ -40,17 +40,16 @@ def prodigal_gff_parser(Handle) :
 def main(gff_file,Annotation_file,SCG_file,faa_file,bed_file) :
   get_orf_name=lambda ORF:ORF.split('\t')[0]+"_"+ORF.split('\t')[8].split(';')[0].split("_")[1]
   Set_scg={line.rstrip() for line in open(SCG_file)}
-  Dico_orfs_cogs={"_".join(line.split("\t")[0].split("_")[:-1])+"_"+line.split("\t")[0].split("_")[-1]:line.split("\t")[1] for line in open(Annotation_file) if line.split("\t")[1] in Set_scg}
-  Bed_like=[[get_orf_name(ORF),ORF.split('\t')[3],ORF.split('\t')[4],Dico_orfs_cogs[get_orf_name(ORF)],ORF.split('\t')[6]] for _,_,ORF_list in prodigal_gff_parser(open(gff_file)) for ORF in ORF_list if get_orf_name(ORF) in Dico_orfs_cogs]
-  Dico_orf_strand={line[0]:[line[3],line[-1]] for line in Bed_like}
+  dict_orfs_cogs={"_".join(line.split("\t")[0].split("_")[:-1])+"_"+line.split("\t")[0].split("_")[-1]:line.split("\t")[1] for line in open(Annotation_file) if line.split("\t")[1] in Set_scg}
+  Bed_like=[[get_orf_name(ORF),ORF.split('\t')[3],ORF.split('\t')[4],dict_orfs_cogs[get_orf_name(ORF)],ORF.split('\t')[6]] for _,_,orf_list in prodigal_gff_parser(open(gff_file)) for ORF in orf_list if get_orf_name(ORF) in dict_orfs_cogs]
+  dict_orf_strand={line[0]:[line[3],line[-1]] for line in Bed_like}
   if bed_file :
-    Handle=open(bed_file,"w")
-    Handle.write('\n'.join(["\t".join(["_".join(line[0].split("_")[:-1])]+line[1:]) for line in Bed_like]))
-    Handle.close()
+    with open(bed_file,"w") as handle:
+      handle.write('\n'.join(["\t".join(["_".join(line[0].split("_")[:-1])]+line[1:]) for line in Bed_like]))
   for header,seq in SimpleFastaParser(open(faa_file)) :
     header=header.split(" ")[0]
-    if header in Dico_orfs_cogs :
-      print(">"+header+" "+Dico_orf_strand[header][0]+" strand="+Dico_orf_strand[header][1]+"\n"+seq)
+    if header in dict_orfs_cogs :
+      print(">"+header+" "+dict_orf_strand[header][0]+" strand="+dict_orf_strand[header][1]+"\n"+seq)
 
 
 

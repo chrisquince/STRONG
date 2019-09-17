@@ -37,3 +37,10 @@ desman:
 # -----  MAGAnalysis ------
 maganalysis: 
     execution: 0
+
+# -----  Evaluation ------
+evaluation:
+    execution: 1
+    genomes: "/mnt/gpfs/Hackathon/Test/Eval" # path to refferences genomes 
+
+

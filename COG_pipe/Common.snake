@@ -11,26 +11,37 @@ from scripts.common import detect_reads, fill_default_values
 #Config parameters
 fill_default_values(config)
 
-TMP_DIR_ROOT = "/localscratch"
+
+# -------- Ressources ----------------
+THREADS = config["threads"]
+# -------- Data -----------------
 IN = config["data"]
 READ_LENGTH = config["read_length"]
-ASSEMBLER = config["assembly"]["assembler"]
-ASSEMBLER_DIR = config["assembly"]["dir"]
-BAYESPATHS_DIR = config["bayespaths"]["dir"]
-BAYESPATHS_G = config["bayespaths"]["nb_strains"]
-BIN = config["bin"]
+# -------- Sources -----------------
 SCRIPTS = config["scripts"]
 DSCRIPTS = config["desman"]["dscripts"]
 SOFT = config["soft"]
+# -------- COGs -----------------
 COG_DB= config["cog_database"]
-ASSEMBLY_K = config["assembly"]["k"][-1]
-THREADS = config["threads"]
 SCG_DATA = config["scg_data"]
+COG_FILE=SCG_DATA+"/scg_cogs_to_run.txt"
+# -------- Assembly -----------------
+ASSEMBLER = config["assembly"]["assembler"]
+ASSEMBLER_DIR = config["assembly"]["dir"]
+ASSEMBLY_K = config["assembly"]["k"][-1]
+# -------- Bayesgraph -----------------
+BAYESPATHS_DIR = config["bayespaths"]["dir"]
+BAYESPATHS_G = config["bayespaths"]["nb_strains"]
+# -------- Binning -----------------
 MIN_CONTIG_SIZE = config["concoct_contig_size"]
+# -------- Desman -----------------
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]
 MIN_COV_DESMAN = config["desman"]["min_cov"]
-COG_FILE=SCG_DATA+"/scg_cogs_min0.97_max1.03_unique_genera.txt"
+# -------- Evaluation -----------------
+REFDATA=config["evaluation"]["genomes"]
+EVAL_SCRIPTS=config["evaluation"]["scripts"]
+
 #TODO rename + maybe simplify
 LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
 
@@ -102,15 +113,6 @@ def is_fastq(wildcards):
             return True
     return False
 
-def check_scratch_avail(root):
-    if os.path.isdir(root):
-        try:
-            with tempfile.TemporaryDirectory(dir=root) as temp_dir:
-                return True
-        except:
-            print("Launch with tmpdir failed")
-    return False
-
 rule bowtie_index:
     input:   "{path}/{ref}.fasta"
     output:  touch("{path}/{ref}/index.done")
@@ -151,3 +153,4 @@ rule samtools_sort:
     message: "Sorting {input}"
     run:
         shell("samtools sort --threads %d -T {wildcards.path}/{wildcards.name}.tmp -O bam -o {output} {input} &> {log}" % (threads - 1))
+

@@ -89,14 +89,11 @@ def main(gfa_regex, cog_threshold, bins_to_merge, cogs_to_ignore):
     # output cog to be ignored
     with open(bins_to_merge, "w") as out:
       #TODO list(List) looks very weird!
-        out.write("\n".join(["\t".join([key]+list(List))
-                                for key, List in dict_to_flag2.items()]))
+        out.write("\n".join(["\t".join([key]+list(List))for key, List in dict_merge_bins.items()]))
     # output bins to be merged
     with open(cogs_to_ignore, "w") as out:
       #TODO list(List) looks very weird!
-        out.write("\n".join(["\t".join([key]+list(List))
-                                for key, List in dict_merge_bins.items()]))
-
+        out.write("\n".join(["\t".join([key]+list(List))for key, List in dict_to_flag2.items()]))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

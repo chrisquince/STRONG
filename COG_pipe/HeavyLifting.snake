@@ -1,5 +1,5 @@
 include: "Common.snake"
-
+include: "Binning.snake"
 import glob
 import os
 

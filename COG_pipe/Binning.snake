@@ -1,4 +1,6 @@
-
+include: "Common.snake"
+include: "Assembly.snake"
+include: "COGs_annotation.snake"
 #rule all_local: 
 #   input: cov="binning/C10K_coverage.tsv",
 #          bins="binning/clustering_gt500.csv",

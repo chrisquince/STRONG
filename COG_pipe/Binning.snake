@@ -5,6 +5,30 @@
 #          touch="binning/bin_creation.done"
 
 
+#TODO change paths?
+#TODO check that works correctly with subset of samples?
+rule unitig_profiles:
+    input:
+        graph="{path}.gfa",
+        reads_desc="samples.yaml"
+    output:
+        "{path}.mult_prof"
+    params:
+        gp="{path}"
+    log:
+        "{path}.mult_prof.log"
+    threads:
+        THREADS
+    shell:
+        "{SOFT}/spades-edge-profiles {input.reads_desc} {params.gp} {output} "
+        "-k {ASSEMBLY_K} -t {threads} -tmpdir $(dirname {output})/tmp &> {log}"
+
+rule copy_fasta:
+    input:   "assembly/%s/assembly.fasta" % ASSEMBLER
+    output:  "profile/assembly.fasta"
+    shell: "cp {input} {output}"
+
+
 #cut contigs by ORFs and get the bed file
 rule cut_contigs:
     input:  fa="profile/assembly.fasta",

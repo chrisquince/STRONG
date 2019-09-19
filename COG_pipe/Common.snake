@@ -43,7 +43,7 @@ MIN_COV_DESMAN = config["desman"]["min_cov"]
 REFDATA=config["evaluation"]["genomes"]
 EVAL_SCRIPTS=config["evaluation"]["scripts"]
 
-#TODO rename + maybe simplify
+#TODO rename + maybe simplify?
 LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
 
 #Autodetect samples and their reads

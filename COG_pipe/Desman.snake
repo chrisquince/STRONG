@@ -8,8 +8,6 @@ include: "Binning.snake"
 #TODO do we want to use initial bins here?
 BIN_IDS, = glob_wildcards("subgraphs/Bin_ini/Bin_{id}/SCG.fna")
 
-rule prepare: 
-  input: "desman/contig_bins.done"
 
 rule all: 
   input: expand("desman/Bin_{id}/desman_analysis_done", id=BIN_IDS)
@@ -18,10 +16,10 @@ rule bin_contigs:
   input:
     bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
     fasta="profile/assembly.fasta"
-  output: touch("desman/contig_bins.done")
+  output: expand("desman/Bin_{id}/Bin_{id}.fasta", id=BIN_IDS)
   params: " ".join(BIN_IDS)
   shell: """
-  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} $(dirname {output}) -l {params} -d
+  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} desman -l {params} -d
   """ 
   
 rule contigs_bed:

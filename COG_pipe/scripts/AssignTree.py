@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import sys
 import re
+import argparse
 
 from ete3 import Tree
 from collections import defaultdict, Counter
-from operator import itemgetter
+import operator 
 
 MIN_SUPPORT = 0.0
 NB_RANKS = 7

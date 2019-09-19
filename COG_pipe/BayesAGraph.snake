@@ -8,7 +8,7 @@ def read_selected_bins(fn):
     return [line.strip() for line in open(fn).readlines()]
 
 BINS = read_selected_bins("bayespaths/selected_bins.txt") if os.path.exists("bayespaths/selected_bins.txt") \
-                else read_selected_bins("subgraphs/Merged_Bin/selected_bins.txt")
+                else read_selected_bins("subgraphs/bin_merged/selected_bins.txt")
 
 rule all:
     input: expand("bayespaths/{bin}/PGamma.csv", bin=BINS),
@@ -16,19 +16,19 @@ rule all:
 
 #Create the file with selected bin ids for editing on subsequent restarts
 rule copy_list:
-    input: "subgraphs/Merged_Bin/selected_bins.txt"
+    input: "subgraphs/bin_merged/selected_bins.txt"
     output: "bayespaths/selected_bins.txt"
     shell:
         "cp {input} {output}"
 
 rule bayespaths:
-    input:  "subgraphs/Merged_Bin/{bin}/selected_cogs.tsv"
+    input:  "subgraphs/bin_merged/{bin}/selected_cogs.tsv"
     output: "bayespaths/{bin}/PGamma.csv"
     log:    "bayespaths/Logs/{bin}.log"
     message: "Running BayesPaths on {wildcards.bin}"
     params: kmer=ASSEMBLY_K,
             read_len=READ_LENGTH,
-            subgraph_dir="subgraphs/Merged_Bin/{bin}/simplif"
+            subgraph_dir="subgraphs/bin_merged/{bin}/simplif"
     threads: 10
     #TODO why do we explicitly ask for python interpreter here?
     shell: """

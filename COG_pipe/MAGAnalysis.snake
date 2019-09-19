@@ -6,7 +6,6 @@ rule all:
 rule aggregate_SCG:
     input: "subgraphs/bin_init/folder_done"
     output: expand("mag_analysis/SCGs/{cog}.fna", cog=LIST_COGS) 
-    #TODO why weird filename?
     shell: """
      {SCRIPTS}/ExtractSCGs.py $(dirname {input}) {COG_FILE} mag_analysis/
       """

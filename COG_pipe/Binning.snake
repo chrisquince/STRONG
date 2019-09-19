@@ -35,7 +35,7 @@ rule cut_contigs:
             gff="annotation/assembly.gff"
     output: contig="profile/split.fasta",
             contig_bed="profile/split.bed"
-    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} {output.contig_bed} -c {FRAGMENT_SIZE}> {output.contig}"
+    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} {output.contig_bed} -c {FRAGMENT_SIZE} > {output.contig}"
 
 # ---- use bedtool to compute coverage  ----------------------------------------------------
 rule bedtools_split_cov:

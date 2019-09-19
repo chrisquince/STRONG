@@ -113,6 +113,7 @@ def is_fastq(wildcards):
             return True
     return False
 
+
 rule bowtie_index:
     input:   "{path}/{ref}.fasta"
     output:  touch("{path}/{ref}/index.done")
@@ -154,3 +155,7 @@ rule samtools_sort:
     run:
         shell("samtools sort --threads %d -T {wildcards.path}/{wildcards.name}.tmp -O bam -o {output} {input} &> {log}" % (threads - 1))
 
+rule index_fasta:
+    input: "{path}.fasta"
+    output: "{path}.fasta.fai"
+    shell: "samtools faidx {input}"

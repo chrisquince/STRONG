@@ -33,6 +33,7 @@ ASSEMBLY_K = config["assembly"]["k"][-1]
 BAYESPATHS_DIR = config["bayespaths"]["dir"]
 BAYESPATHS_G = config["bayespaths"]["nb_strains"]
 # -------- Binning -----------------
+FRAGMENT_SIZE = config["concoct_fragment_size"]
 MIN_CONTIG_SIZE = config["concoct_contig_size"]
 # -------- Desman -----------------
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
@@ -159,3 +160,9 @@ rule index_fasta:
     input: "{path}.fasta"
     output: "{path}.fasta.fai"
     shell: "samtools faidx {input}"
+
+rule index_samples_bam:
+    input:   "{path}.sorted.bam",
+    output:  "{path}.sorted.bam.bai",
+    message: "Indexing bam file {path}.sorted.bam"
+    shell:   "samtools index {input}"

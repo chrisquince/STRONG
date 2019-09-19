@@ -6,37 +6,25 @@
 
 
 #cut contigs by ORFs and get the bed file
-#TODO parameterize
-#TODO we probably shouldn't change profile folder at this point
 rule cut_contigs:
     input:  fa="profile/assembly.fasta",
             gff="annotation/assembly.gff"
-    output: contig="profile/split_10K.fasta",
-            contig_bed="profile/split_10K.bed"
-    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} {output.contig_bed} > {output.contig}"
-
-
-#TODO use common 
-rule index_samples_bam:
-    input:   "{path}.sorted.bam",
-    output:  "{path}.sorted.bam.bai",
-    message: "Indexing bam file {path}.sorted.bam"
-    shell:   "samtools index {input}"
-
+    output: contig="profile/split.fasta",
+            contig_bed="profile/split.bed"
+    shell:  "{SCRIPTS}/Use_orf_to_cut.py {input.fa} {input.gff} {output.contig_bed} -c {FRAGMENT_SIZE}> {output.contig}"
 
 # ---- use bedtool to compute coverage  ----------------------------------------------------
-# TODO parameterize fragment length
 rule bedtools_split_cov:
     input:   sample="profile/assembly/{sample}.sorted.bam",
-             bed="profile/split_10K.bed"
-    output:  "profile/split_10K/{sample}.cov"
-    log:     "profile/split_10K/{sample}.log"
+             bed="profile/split.bed"
+    output:  "profile/split/{sample}.cov"
+    log:     "profile/split/{sample}.log"
     shell:   "bedtools coverage -a {input.bed} -b {input.sample} -mean > {output} 2>{log} "
 
 # ---- use a awk onliner to regroup all coverages into a unique file -----------------------
 rule coverage:
-    input:   expand("profile/split_10K/{sample}.cov", sample = SAMPLES)
-    output:  "profile/split_10K/coverage.tsv"
+    input:   expand("profile/split/{sample}.cov", sample = SAMPLES)
+    output:  "profile/split/coverage.tsv"
     shell : """
             echo -e "contig\t""$(ls {input} | cut -f1 -d "." | rev | cut -f1 -d "/" |rev | tr "\n" "\t" | sed 's/\t$//')"> {output}
             awk 'NR==FNR{{Matrix_coverage[1,FNR]=$4}}FNR==1{{f++}}{{Matrix_coverage[f+1,FNR]=$5}}END{{for(x=1;x<=FNR;x++){{for(y=1;y<ARGC+1;y++){{if(y<ARGC){{printf("%s\t",Matrix_coverage[y,x])}}if(y==ARGC){{printf("%s",Matrix_coverage[y,x]);print""}}}}}}}}' {input} >>{output}"""
@@ -47,11 +35,10 @@ rule initial_quantity_of_bins:
     output:"binning/ini_bins.cnt"
     shell: "{SCRIPTS}/get_num_bin_ini.py {input}>{output}"
 
-#TODO Parameterize?! What's happening with MIN_CONTIG_SIZE? 
 #  concoct 
 rule concoct:
-    input:   cov="profile/split_10K/coverage.tsv",
-             fasta="profile/split_10K.fasta",
+    input:   cov="profile/split/coverage.tsv",
+             fasta="profile/split.fasta",
              bin_cnt="binning/ini_bins.cnt"
     output:  bins="binning/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
              data="binning/original_data_gt%d.csv" % MIN_CONTIG_SIZE
@@ -72,7 +59,6 @@ rule refine:
             table_R="{path}/clustering_gt%d_SCG_table_R.csv" % MIN_CONTIG_SIZE
     log:    "{path}/refine.log"
     threads: 1000
-    #TODO does concoct_refine support output folder now? 
     shell:  """ 
             {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
             sed '1d' {input.bins}  > {output.R}
@@ -82,7 +68,6 @@ rule refine:
             {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
             """
 
-#TODO try using {MIN_CONTIG_SIZE}?
 rule merge_contigs:
     input:   "{path}/clustering_refine.csv",
     output:  "{path}/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
@@ -90,7 +75,6 @@ rule merge_contigs:
     threads: THREADS
     shell:   "{SCRIPTS}/Consensus.py {input} >{output} 2>{log}"
 
-#TODO rename the rule? looks like it deals with SCGs
 rule create_bin_folders:
     input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
              fasta="annotation/SCG.fna"

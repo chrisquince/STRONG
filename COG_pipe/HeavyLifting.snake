@@ -3,13 +3,13 @@ include: "Common.snake"
 import glob
 import os
 
-#FIXME shouldn't we start subgraphs folder here?
+#FIXME shouldn't we start subgraphs folder here ?
 def bin_paths_by_type(bin_type):
   return [os.path.dirname(path) for path in glob.glob("subgraphs/%s/Bin_*/SCG.fna" % bin_type)]
 
 INIT_BIN_PATHS=bin_paths_by_type("bin_init")
 
-#TODO think of a better flag name
+#TODO think of a better flag name ?
 rule all:
     input: "subgraphs/bin_merged/selected_bins.txt"
 
@@ -46,8 +46,8 @@ def bin_avg_cov(bin_cov_fn, bin_name):
     assert False
     return 0
     
-#FIXME do I need to specify tmp folder
-#TODO refactor? (maybe without a loop)
+#FIXME do I need to specify tmp folder ?
+#TODO refactor? (maybe without a loop) ? ? 
 rule simplify_subgraphs:
     input: bin_cov="subgraphs/{bin_type}/bin_cov.tsv",
            profiles_flag="subgraphs/{bin_type}/{bin}/profile.done"
@@ -73,12 +73,11 @@ rule identify_bins_to_merge:
              bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
     params:  folder="subgraphs/{bin_type}"
     #TODO use the input somehow? 
-    #TODO remove '
-    #TODO parameterize
-    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' 10 {output.bins_to_merge} {output.cogs_to_ignore}"
+    #TODO remove ' ?
+    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore}"
 
 #TODO review logic and maybe move to scripts / separate into multiple rules
-#FIXME normalize variable names and spacing
+#FIXME normalize variable names and spacing ?
 checkpoint merge_bins:
     input:  merge_plan="subgraphs/bin_init/bins_to_merge.tsv",
             contig_assign="binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
@@ -87,7 +86,6 @@ checkpoint merge_bins:
     shell:  "{SCRIPTS}/merge_bins.py {input.merge_plan} $(dirname {input.merge_plan}) "
             "{input.contig_assign} $(dirname {output}) &> {log}"
 
-#TODO remove by reusing another snakefile (as discussed with Seb)
 rule compute_avg_cov_merged:
     input:   "subgraphs/bin_merged/clustering.csv"
     output:  "subgraphs/bin_merged/bin_cov.tsv"
@@ -99,20 +97,17 @@ rule flag_bad_cogs:
     output:  touch("{path}/{bin}/selected_cogs.tsv")
     run:
         all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/{cog}.gfa")
-        #TODO introduce helper function?
+        #TODO introduce helper function? ??
         with open(input[0]) as cogs_to_ignore:
             for line in cogs_to_ignore:
                 split_line = line.rstrip().split("\t")
                 if split_line[0] == wildcards.bin:
                     bad_cogs = {cog for cog in split_line[1:]}
-
                     with open(output[0], "w") as out:
-                        #TODO will using sets simplify the code?
                         out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
 
                     return
 
-#TODO review logic
 def merged_bins_cogs(wildcards):
     checkpoints.merge_bins.get()
     # since we linked non merged bins in the merged bin folder, bins in that folder are, at that point in time, the correct set of bin to consider. 
@@ -123,9 +118,8 @@ rule select_bins_for_strain_analysis:
     output: "subgraphs/bin_merged/selected_bins.txt"
     message: "Select bins containing sufficient number of COGs"
     run:
-      #FIXME magic constant
       # select bin_name only, not full path 
       bins = [os.path.basename(os.path.dirname(cogs_fn)) for cogs_fn in input \
-              if len(list(open(cogs_fn).readlines())) >= 10]
+              if len(list(open(cogs_fn).readlines())) >= COG_RUN]
       with open(output[0], 'w') as out:
           out.write("\n".join(bins))

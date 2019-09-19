@@ -30,6 +30,8 @@ ASSEMBLER = config["assembly"]["assembler"]
 ASSEMBLER_DIR = config["assembly"]["dir"]
 ASSEMBLY_K = config["assembly"]["k"][-1]
 # -------- Bayesgraph -----------------
+COG_RUN=config["bayespaths"]["min_orf_number_to_run_a_bin"] # if there is not enough COG left we don't try to resolve strain in that bin
+MERGE_VALUE=config["bayespaths"]["min_orf_number_to_merge_bins"] # if there's too many COG in common between bins we mergge them 
 BAYESPATHS_DIR = config["bayespaths"]["dir"]
 BAYESPATHS_G = config["bayespaths"]["nb_strains"]
 # -------- Binning -----------------

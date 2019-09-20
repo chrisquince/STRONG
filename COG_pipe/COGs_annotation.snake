@@ -52,4 +52,4 @@ rule extract_SCG_sequences:
     output:
         "{path}/SCG.fna"
     shell:
-        "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {SCG_DATA}/scg_cogs_min0.97_max1.03_unique_genera.txt {input.gff} > {output}"
+        "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {COG_FILE} {input.gff} > {output}"

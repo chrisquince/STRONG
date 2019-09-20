@@ -3,7 +3,7 @@ import glob
 from os.path import basename,dirname
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 include: "Common.snake"
-
+include: "Binning.snake"
 # Bayespath
 BIN_TO_BLAST = {basename(dirname(file)): file.replace(".fa", ".blast") for file in glob.glob("bayespaths/*/*_simplif_PHaplo_*.fa")}
 BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_simplif_PHaplo_{nb}.fa")[0]

@@ -1,5 +1,5 @@
 include: "Common.snake"
-
+include: "Binning.snake"
 import glob
 import os
 
@@ -54,7 +54,7 @@ rule simplify_subgraphs:
     output: touch("subgraphs/{bin_type}/{bin}/simplif.done")
     threads: THREADS
     run:
-      avg_cov = bin_avg_cov(input[0], wildcards["bin"])
+      avg_cov = bin_avg_cov(input.bin_cov, wildcards["bin"])
       shell("""
             out=$(dirname {output})/simplif
             rm -rf $out
@@ -94,13 +94,13 @@ rule compute_avg_cov_merged:
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 rule flag_bad_cogs:
-    input:  "{path}/bin_cogs_to_ignore.tsv",
-            "{path}/{bin}/simplif.done"
+    input:  cogs_to_ignore_file="{path}/bin_cogs_to_ignore.tsv",
+            simplif_done_file="{path}/{bin}/simplif.done"
     output:  touch("{path}/{bin}/selected_cogs.tsv")
     run:
         all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/{cog}.gfa")
         #TODO introduce helper function?
-        with open(input[0]) as cogs_to_ignore:
+        with open(input.cogs_to_ignore_file) as cogs_to_ignore:
             for line in cogs_to_ignore:
                 split_line = line.rstrip().split("\t")
                 if split_line[0] == wildcards.bin:

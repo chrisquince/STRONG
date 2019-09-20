@@ -17,14 +17,14 @@ rule extract_subgraphs:
     input:   cogs="subgraphs/{bin_type}/{bin}/SCG.fna",
              gfa="assembly/high_res/simplified.gfa"
     output:  touch("subgraphs/{bin_type}/{bin}/raw_subgraphs/subgraph.done")
-    log:     "subgraphs/{bin_type}/{bin}/subgraph.log"
+    log:     "subgraphs/{bin_type}/{bin}/raw_subgraphs/subgraph.log"
     threads: THREADS
     shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o $(dirname {output}) -k {ASSEMBLY_K} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
 
 rule create_unitig_profile:
     input: flag="subgraphs/{bin_type}/{bin}/raw_subgraphs/subgraph.done",
            mult_prof="assembly/high_res/simplified.mult_prof"
-    output: touch('subgraphs/{bin_type}/{bin}/profile.done')
+    output: touch('subgraphs/{bin_type}/{bin}/raw_subgraphs/profile.done')
     shell:  """
             rm -rf $(dirname {input.flag})/*.tsv
             for file in $(dirname {input.flag})/*gfa; do
@@ -50,8 +50,8 @@ def bin_avg_cov(bin_cov_fn, bin_name):
 #TODO refactor? (maybe without a loop) ? ? 
 rule simplify_subgraphs:
     input: bin_cov="subgraphs/{bin_type}/bin_cov.tsv",
-           profiles_flag="subgraphs/{bin_type}/{bin}/profile.done"
-    output: touch("subgraphs/{bin_type}/{bin}/simplif.done")
+           profiles_flag="subgraphs/{bin_type}/{bin}/raw_subgraphs/profile.done"
+    output: touch("subgraphs/{bin_type}/{bin}/simplif/simplif.done")
     threads: THREADS
     run:
       avg_cov = bin_avg_cov(input.bin_cov, wildcards["bin"])
@@ -67,14 +67,14 @@ rule simplify_subgraphs:
             """)
 
 rule identify_bins_to_merge:
-    input:   lambda w: expand("{path}/simplif.done", path = bin_paths_by_type(w["bin_type"]))
+    input:   lambda w: expand("{path}/simplif/simplif.done", path = bin_paths_by_type(w["bin_type"]))
     #TODO should we put cogs to ignore files within the bin subfolders?
     output:  cogs_to_ignore = "subgraphs/{bin_type}/bin_cogs_to_ignore.tsv",
              bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
     params:  folder="subgraphs/{bin_type}"
     #TODO use the input somehow? 
     #TODO remove ' ?
-    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore}"
+    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'bin*/simplif/COG*.gfa' {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore}"
 
 #TODO review logic and maybe move to scripts / separate into multiple rules
 #FIXME normalize variable names and spacing ?
@@ -93,7 +93,7 @@ rule compute_avg_cov_merged:
 
 rule flag_bad_cogs:
     input:  cogs_to_ignore_file="{path}/bin_cogs_to_ignore.tsv",
-            simplif_done_file="{path}/{bin}/simplif.done"
+            simplif_done_file="{path}/{bin}/simplif/simplif.done"
     output:  touch("{path}/{bin}/selected_cogs.tsv")
     run:
         all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/{cog}.gfa")

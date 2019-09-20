@@ -88,7 +88,7 @@ rule bed_like_file_for_ExtractCountFreqGenes:
         Dico_SCG = {header.split()[0]: header.split(
         ) for header, seq in SimpleFastaParser(open(input.Bin_SCG))}
     # NODE_11_length_160076_cov_189.092050_50 COG0552 strand=+
-        with open(open(output.bedlike, "w")) as handle
+        with open(output.bedlike, "w") as handle :
             for line in open(input.SCG_bed):
                 contig, start, end, orf = line.rstrip().split("\t")
                 if orf in Dico_SCG:
@@ -100,8 +100,7 @@ rule bed_like_file_for_ExtractCountFreqGenes:
 
 rule extract_counts:
     input:
-        def all_counts(wildcards): return expand(
-            "{{path}}/{sample}.cnt.gz", sample=SAMPLES),
+        expand("{{path}}/{sample}.cnt.gz", sample=SAMPLES),
         SCG_bedlike = "{path}/SCG_bed_like.tsv"
     output:
         "{path}/count.csv"

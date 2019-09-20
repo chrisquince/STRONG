@@ -1,49 +1,46 @@
 from Bio.SeqIO.FastaIO import SimpleFastaParser
-import glob,os
+import glob
+import os
 include: "Common.snake"
 include: "Binning.snake"
 
-#TODO normalize the indentation
-
-#TODO do we want to use initial bins here?
-BIN_IDS, = glob_wildcards("subgraphs/Bin_ini/Bin_{id}/SCG.fna")
 
 
-rule all: 
-  input: expand("desman/Bin_{id}/desman_analysis_done", id=BIN_IDS)
+
+BIN_IDS, = glob_wildcards("subgraphs/bin_init/Bin_{id}/SCG.fna")
+
+rule prepare:
+    input: "desman/contig_bins.done"
+
+rule all:
+    input: expand("desman/Bin_{id}/desman_analysis_done", id=BIN_IDS)
 
 rule bin_contigs:
-  input:
-    bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
-    fasta="profile/assembly.fasta"
-  output: expand("desman/Bin_{id}/Bin_{id}.fasta", id=BIN_IDS)
-  params: " ".join(BIN_IDS)
-  shell: """
-  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} desman -l {params} -d
-  """ 
-  
+    input:
+        bin = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+        fasta = "profile/assembly.fasta"
+    output: expand("desman/Bin_{id}/Bin_{id}.fasta", id=BIN_IDS)
+    params: " ".join(BIN_IDS)
+    shell: """
+  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} $(dirname {output}) -l {params} -d
+  """
+
+>>>>>>> refactoring_#64
 rule contigs_bed:
-  input: "desman/{bin}/{bin}.fasta"
-  output: "desman/{bin}/{bin}.bed"
-  shell: "{SCRIPTS}/WriteBed.py {input} > {output}"
+    input: "desman/{bin}/{bin}.fasta"
+    output: "desman/{bin}/{bin}.bed"
+    shell: "{SCRIPTS}/WriteBed.py {input} > {output}"
 
 rule bam_by_bin:
-    input: 
-        global_bam="profile/assembly/{sample}.sorted.bam",
-        bin_bed="desman/{bin}/{bin}.bed"
-    output: 
-        bin_bam="desman/{bin}/{sample}.{bin}.bam"
-    #TODO probably unnecessary
+    input:
+        global_bam = "profile/assembly/{sample}.sorted.bam",
+        bin_bed = "desman/{bin}/{bin}.bed"
+    output:
+        bin_bam = "desman/{bin}/{sample}.{bin}.bam"
     threads: THREADS
     shell: """
     samtools view -b -L {input.bin_bed} {input.global_bam} -@{threads} > {output.bin_bam}
     """
-
-#TODO use rule from common
-rule index_fasta:
-  input: "{path}.fasta"
-  output: "{path}.fasta.fai"
-  shell: "samtools faidx {input}"
 
 rule bam_readcount:
     input:
@@ -54,121 +51,117 @@ rule bam_readcount:
     output: "desman/{bin}/{sample}.cnt.gz"
     log:
         "desman/{bin}/bam_readcount_{sample}.log"
-    shell:"""
+    shell: """
         samtools index {input.bam} {input.bam}.bai
         bam-readcount -l {input.bed} -f {input.fasta} {input.bam} 2> {log} | gzip > {output}
         """
 
 rule assembly_bed:
-  input:
-      "annotation/assembly.gff",
-  output:
-      "desman/assembly.bed"
-  shell:"""
+    input:
+        "annotation/assembly.gff",
+    output:
+        "desman/assembly.bed"
+    shell: """
       {SCRIPTS}/Gff_to_bed.py {input} {output}
       """
 
 rule SCG_bed:
-  input:
-      all_bed="desman/assembly.bed",
-      SCG_file="annotation/SCG.fna"
-  output: 
-      SCG_bed="desman/SCG.bed"
-  run:
-      seq_names={name.split()[0] for name,seq in SimpleFastaParser(open(input.SCG_file))}
-      with open(output.SCG_bed, 'w') as scg_bed:
-          for line in open(input.all_bed):
-              if line.split()[3] in seq_names:
-                  scg_bed.write(line)
+    input:
+        all_bed = "desman/assembly.bed",
+        SCG_file = "annotation/SCG.fna"
+    output:
+        SCG_bed = "desman/SCG.bed"
+    run:
+        seq_names = {name.split()[0] for name, seq in SimpleFastaParser(
+            open(input.SCG_file))}
+        with open(output.SCG_bed, 'w') as scg_bed:
+            for line in open(input.all_bed):
+                if line.split()[3] in seq_names:
+                    scg_bed.write(line)
 
 rule bed_like_file_for_ExtractCountFreqGenes:
-  input:
-      SCG_bed="desman/SCG.bed",
-      Bin_SCG="subgraphs/Bin_ini/{bin}/SCG.fna"
-  output: 
-  #TODO weird naming...
-      bedlike="desman/{bin}/SCG_bed_like.tsv"
-  run:
-    Dico_SCG={header.split()[0]:header.split() for header,seq in SimpleFastaParser(open(input.Bin_SCG))}
-  # NODE_11_length_160076_cov_189.092050_50 COG0552 strand=+
-  #FIXME use the with ... as ... syntax
-    Handle=open(output.bedlike,"w")
-    for line in open(input.SCG_bed) :
-      contig,start,end,orf=line.rstrip().split("\t")
-      if orf in Dico_SCG :
-        cog,strand=Dico_SCG[orf][1:]
-        cog,strand=Dico_SCG[orf][1:]
-        strand=str((strand=="strand=+")*1-(strand=="strand=-")*1)
-        contig="_".join(orf.split("_")[:-1])
-        Handle.write(",".join([cog,contig,start,end,orf,strand])+"\n")  
-    Handle.close()
+    input:
+        SCG_bed = "desman/SCG.bed",
+        Bin_SCG = "subgraphs/bin_init/{bin}/SCG.fna"
+    output:
+        bedlike = "desman/{bin}/SCG_bed_like.tsv"
+    run:
+        Dico_SCG = {header.split()[0]: header.split(
+        ) for header, seq in SimpleFastaParser(open(input.Bin_SCG))}
+    # NODE_11_length_160076_cov_189.092050_50 COG0552 strand=+
+        with open(output.bedlike, "w") as handle :
+            for line in open(input.SCG_bed):
+                contig, start, end, orf = line.rstrip().split("\t")
+                if orf in Dico_SCG:
+                    cog, strand = Dico_SCG[orf][1:]
+                    cog, strand = Dico_SCG[orf][1:]
+                    strand = str((strand == "strand=+")*1-(strand == "strand=-")*1)
+                    contig = "_".join(orf.split("_")[:-1])
+                    handle.write(",".join([cog, contig, start, end, orf, strand])+"\n")
 
 rule extract_counts:
     input:
-        all_counts = lambda wildcards: expand("{{path}}/{sample}.cnt.gz", sample=SAMPLES),
-        SCG_bedlike="{path}/SCG_bed_like.tsv"
+        expand("{{path}}/{sample}.cnt.gz", sample=SAMPLES),
+        SCG_bedlike = "{path}/SCG_bed_like.tsv"
     output:
         "{path}/count.csv"
     params:
         input_dir = "{path}"
     log:
         "{path}/extract_counts.log"
-    #TODO Why explicity python call?
-    shell:"""
+    shell: """
     python {DSCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
         """
 
 checkpoint filter_variant:
     input:
         "desman/{bin}/count.csv"
-    output :
-        expand("desman/{{bin}}/freqs_{output_file_type}", 
-                output_file_type = ["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
-    params : "desman/{bin}/freqs_"
+    output:
+        expand("desman/{{bin}}/freqs_{output_file_type}",
+               output_file_type=["sel_var.csv", "p_df.csv", "q_df.csv", "r_df.csv", "tran_df.csv", "log.txt"])
+    params: "desman/{bin}/freqs_"
     log:
         "desman/Logs/{bin}_Filter_variant.log"
-    shell:"""
+    shell: """
         Variant_Filter.py {input} -o {params} -p -m {MIN_COV_DESMAN} 2>{log}
         """
 
 rule run_desman:
     input:
-        sel_var="desman/{bin}/freqs_sel_var.csv",
-        err="desman/{bin}/freqs_tran_df.csv"
+        sel_var = "desman/{bin}/freqs_sel_var.csv",
+        err = "desman/{bin}/freqs_tran_df.csv"
     output:
         "desman/{bin}/Run_{g}_{r}/fit.txt"
     log:
         "desman/Logs/Run_{g}_{r}/{bin}_{g}_{r}.log"
-    shell:"""
+    shell: """
       desman {input.sel_var} -e {input.err} -o $(dirname {output}) -m {MIN_COV_DESMAN} -i 100 -g {wildcards.g} -s {wildcards.r} &> {log}
       """
 
 
 rule desman_fit:
-    input: expand("desman/{{bin}}/Run_{g}_{r}/fit.txt",g=range(1,DESMAN_HAPLOTYPE_NB+1),r=range(DESMAN_REPEAT))
+    input: expand("desman/{{bin}}/Run_{g}_{r}/fit.txt", g=range(1, DESMAN_HAPLOTYPE_NB+1), r=range(DESMAN_REPEAT))
     output: "desman/{bin}/Deviance.csv"
-    #TODO use {input}!
-    shell : """
-        cat $( ls desman/{wildcards.bin}/Run_*/fit.txt) | cut -d"," -f2- > {output}
+    shell: """
+        cat {input} | cut -d"," -f2- > {output}
         sed -i '1iH,G,LP,Dev' {output}
     """
 
 rule desman_plot:
     input: "{path}/Deviance.csv",
     output: "{path}/Deviance.pdf"
-    #TODO why not redirecting to log file?
+    log: "{path}/PlotDev.log"
     shell: """
-        {DSCRIPTS}/PlotDev.R -l {input} -o {output} 2> /dev/null
+        {DSCRIPTS}/PlotDev.R -l {input} -o {output} 2> {log}
     """
 
 rule haplo_seqs:
-    input: 
-       fasta="profile/assembly.fasta",
-       deviance_file="{path}/Deviance.pdf",
-       SCG_bedlike="{path}/SCG_bed_like.tsv"
+    input:
+        fasta = "profile/assembly.fasta",
+        deviance_file = "{path}/Deviance.pdf",
+        SCG_bedlike = "{path}/SCG_bed_like.tsv"
     output: "{path}/best_run.txt"
     params: "{path}"
-    #TODO why explicit call to python
     shell: """
         python {DSCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
         
@@ -176,22 +169,18 @@ rule haplo_seqs:
 
         mkdir -p {params}/haplotype_seqs
         python {DSCRIPTS}/GetVariantsCore.py {input.fasta} {input.SCG_bedlike} $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
-    """ 
+    """
 
-#TODO check the logic with Seb
-#Why do we need checkpoint here? 
 def do_we_need_to_run_desman(wildcards):
-  freq_sel_var_file=checkpoints.filter_variant.get(bin=wildcards.bin).output[0] 
-  # "binning/{bin}/count.csv"
-  nb_line=len([line for line in open(freq_sel_var_file)])
-  if nb_line>1:
-    return "desman/" + wildcards.bin + "/best_run.txt"
-  else:
-    return freq_sel_var_file
+    freq_sel_var_file = checkpoints.filter_variant.get(bin=wildcards.bin).output[0]
+    # "binning/{bin}/count.csv"
+    nb_line = len([line for line in open(freq_sel_var_file)])
+    if nb_line > 1:
+        return "desman/" + wildcards.bin + "/best_run.txt"
+    else:
+        return freq_sel_var_file
 
-rule is_desman_done :
-  input: do_we_need_to_run_desman
-  output: touch("desman/{bin}/desman_analysis_done")
-  #TODO echo to /dev/null?
-  shell: "echo 'Analysis done' > /dev/null"
 
+rule is_desman_done:
+    input: do_we_need_to_run_desman
+    output: touch("desman/{bin}/desman_analysis_done")

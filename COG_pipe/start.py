@@ -110,9 +110,8 @@ with cd(exec_dir):
         #call_snake(["--snakefile", "Desman.snake", "prepare"])
         call_snake(["--snakefile", "Desman.snake", "all"])
 
-    #TODO rename to give a better idea of what is happening
     if config["maganalysis"]["execution"]:
-        print("Step #4 - MAGAnalysis") 
+        print("Step #4 - MAGAnalysis : place mags in a tree of refferences") 
         call_snake(["--snakefile", "MAGAnalysis.snake"])
         
     if config["evaluation"]["execution"]:

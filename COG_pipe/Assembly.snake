@@ -8,27 +8,6 @@ import os.path
 LEFT_READS = [SAMPLE_READS[s][0] for s in SAMPLES]
 RIGHT_READS = [SAMPLE_READS[s][1] for s in SAMPLES]
 
-# Assemble with MegaHIT
-#TODO limit memory
-rule megahit:
-    input:   LEFT_READS, RIGHT_READS
-    output:  "assembly/megahit/final.contigs.fa"
-    params:  left=",".join(expand("{l}", l=LEFT_READS)),
-             right=",".join(expand("{r}", r=RIGHT_READS)),
-             dir="assembly/megahit/"
-    threads: 16
-    log:     "assembly/megahit.log"
-    message: "Assembling with MegaHIT"
-    shell:   "rm -rf {params.dir} && "
-             "{SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
-             " -t {threads} -o {params.dir} &> {log}"
-
-rule megahit_convert:
-    input:   "assembly/megahit/final.contigs.fa"
-    output:  "assembly/megahit/assembly.fasta"
-    message: "Converting megahit contig names into our format"
-    shell:   "sed -r 's/>(k[0-9]+)_([0-9]+) flag=. multi=([0-9]+|[0-9]+\.[0-9]+) len=([0-9]+)/>NODE_\\2_length_\\4_cov_\\3/' {input} > {output}"
-
 # Assemble with SPAdes
 rule spades:
     input:   LEFT_READS, RIGHT_READS
@@ -70,42 +49,3 @@ rule simplify:
     shell: 
         '{SOFT}/spades-gsimplifier {params.gp} {params.out} --gfa -k {ASSEMBLY_K} '
         '-read-length {READ_LENGTH} -t {threads} -tmpdir {params.tmp} &> {log}'
-
-#TODO move downstream + change paths
-#TODO check that works correctly with subset of samples
-rule unitig_profiles:
-    input:
-        graph="{path}.gfa",
-        reads_desc="samples.yaml"
-    output:
-        "{path}.mult_prof"
-    params:
-        gp="{path}"
-    log:
-        "{path}.mult_prof.log"
-    threads:
-        THREADS
-    shell:
-        "{SOFT}/spades-edge-profiles {input.reads_desc} {params.gp} {output} "
-        "-k {ASSEMBLY_K} -t {threads} -tmpdir $(dirname {output})/tmp &> {log}"
-
-#TODO move downstream
-rule copy_fasta:
-    input:   "assembly/%s/assembly.fasta" % ASSEMBLER
-    output:  "profile/assembly.fasta"
-    shell: "cp {input} {output}"
-
-#rule depth:
-#    input:   expand("profile/jgi/{{frags}}/{sample}.sorted.bam", sample=SAMPLES)
-#    output:  "profile/jgi/{frags}/assembly.{type,mpl|var}"
-#    params:  lambda w: "" if w.type == "var" else "--noIntraDepthVariance"
-#    log:     "profile/jgi/{frags}/{type}.log"
-#    message: "Calculating depths for {wildcards.frags} contigs from {wildcards.group}"
-#    threads: THREADS
-#    shell:   """
-#             . /home/snurk/miniconda3/etc/profile.d/conda.sh
-#             set +u; conda activate metabat; set -u
-#             export OMP_NUM_THREADS={threads} 
-#             jgi_summarize_bam_contig_depths {params} \
-#                  --outputDepth {output} {input} &> {log}
-#             """

@@ -10,7 +10,7 @@ BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_simplif_PHaplo_{nb}.fa")[0]
 # Desman
 DESMAN_BINS = set(glob_wildcards("desman/{bin}/haplotype_seqs/{name}.fa")[0])
 BINS_TO_HAPS = {bin_:glob.glob("desman/"+bin_+"/haplotype_seqs/*.fa") for bin_ in DESMAN_BINS}
-print(DESMAN_BINS)
+
 rule results:
     input: expand("evaluation/bayespaths/{bin}_blastbest.tsv", bin=BIN),
            expand("evaluation/desman/{bin}_blastbest.tsv", bin=DESMAN_BINS),

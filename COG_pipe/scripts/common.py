@@ -11,13 +11,15 @@ import os.path
 import re
 
 default_values = {
+    "concoct_fragment_size": 10000,
     "concoct_contig_size": 500,
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21, 33, 55],
                     "mem": 120, "threads": 16, "groups": []},
     "desman": {"execution": 0, "nb_haplotypes": 10, "nb_repeat": 5,
                "min_cov": 1, "dscripts": None},
-    "bayespaths": {},
+    "bayespaths": {"min_orf_number_to_merge_bins":10,
+                   "min_orf_number_to_run_a_bin":10},
     "maganalysis": {"execution": 0},
     "evaluation": {"execution": 0, "genomes": ""},
 }

@@ -1,15 +1,15 @@
 include: "Common.snake"
 include: "Assembly.snake"
 include: "Binning.snake"
-include: "COGs_annotation.snake"
+include: "cogs_annotation.snake"
 
 import os.path
 
 rule all: 
-    input: "profile/split_10K/coverage.tsv",
+    input: "profile/split/coverage.tsv",
            "binning/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
            "assembly/high_res/simplified.mult_prof",
            "annotation/SCG.fna",
-           "subgraphs/Bin_ini/folder_done",
-           "subgraphs/Bin_ini/bin_cov.tsv"
+           "subgraphs/bin_init/folder_done",
+           "subgraphs/bin_init/bin_cov.tsv"
 

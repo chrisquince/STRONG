@@ -4,9 +4,8 @@ rule all:
   input: "mag_analysis/AlignAll/AlignAllR_assign.tsv"
 
 rule aggregate_SCG:
-    input: "subgraphs/Bin_ini/folder_done"
+    input: "subgraphs/bin_init/folder_done"
     output: expand("mag_analysis/SCGs/{cog}.fna", cog=LIST_COGS) 
-    #TODO why weird filename?
     shell: """
      {SCRIPTS}/ExtractSCGs.py $(dirname {input}) {COG_FILE} mag_analysis/
       """

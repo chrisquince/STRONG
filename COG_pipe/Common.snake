@@ -30,9 +30,12 @@ ASSEMBLER = config["assembly"]["assembler"]
 ASSEMBLER_DIR = config["assembly"]["dir"]
 ASSEMBLY_K = config["assembly"]["k"][-1]
 # -------- Bayesgraph -----------------
+COG_RUN=config["bayespaths"]["min_orf_number_to_run_a_bin"] # if there is not enough COG left we don't try to resolve strain in that bin
+MERGE_VALUE=config["bayespaths"]["min_orf_number_to_merge_bins"] # if there's too many COG in common between bins we mergge them 
 BAYESPATHS_DIR = config["bayespaths"]["dir"]
 BAYESPATHS_G = config["bayespaths"]["nb_strains"]
 # -------- Binning -----------------
+FRAGMENT_SIZE = config["concoct_fragment_size"]
 MIN_CONTIG_SIZE = config["concoct_contig_size"]
 # -------- Desman -----------------
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
@@ -42,7 +45,7 @@ MIN_COV_DESMAN = config["desman"]["min_cov"]
 REFDATA=config["evaluation"]["genomes"]
 EVAL_SCRIPTS=config["evaluation"]["scripts"]
 
-#TODO rename + maybe simplify
+#TODO rename + maybe simplify?
 LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
 
 #Autodetect samples and their reads
@@ -113,6 +116,7 @@ def is_fastq(wildcards):
             return True
     return False
 
+
 rule bowtie_index:
     input:   "{path}/{ref}.fasta"
     output:  touch("{path}/{ref}/index.done")
@@ -154,3 +158,13 @@ rule samtools_sort:
     run:
         shell("samtools sort --threads %d -T {wildcards.path}/{wildcards.name}.tmp -O bam -o {output} {input} &> {log}" % (threads - 1))
 
+rule index_fasta:
+    input: "{path}.fasta"
+    output: "{path}.fasta.fai"
+    shell: "samtools faidx {input}"
+
+rule index_samples_bam:
+    input:   "{path}.sorted.bam",
+    output:  "{path}.sorted.bam.bai",
+    message: "Indexing bam file {path}.sorted.bam"
+    shell:   "samtools index {input}"

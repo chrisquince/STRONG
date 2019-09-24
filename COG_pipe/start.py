@@ -111,7 +111,7 @@ with cd(exec_dir):
         call_snake(["--snakefile", "Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:
-        print("Step #4 - MAGAnalysis : place mags in a tree of refferences") 
+        print("Step #4 - MAGAnalysis : place mags in a tree of references") 
         call_snake(["--snakefile", "MAGAnalysis.snake"])
         
     if config["evaluation"]["execution"]:

@@ -3,13 +3,22 @@ include: "Binning.snake"
 import glob
 import os
 
-#FIXME shouldn't we start subgraphs folder here ?
 def bin_paths_by_type(bin_type):
   return [os.path.dirname(path) for path in glob.glob("subgraphs/%s/Bin_*/SCG.fna" % bin_type)]
 
-INIT_BIN_PATHS=bin_paths_by_type("bin_init")
 
-#TODO think of a better flag name ?
+rule create_bin_folders:
+    input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+             fasta="annotation/SCG.fna"
+    output:  touch("subgraphs/bin_init/folder_done")
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f $(dirname {output})/"
+
+rule compute_avg_cov:
+    input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    output:  "subgraphs/bin_init/bin_cov.tsv"
+    shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
+
+
 rule all:
     input: "subgraphs/bin_merged/selected_bins.txt"
 
@@ -73,11 +82,9 @@ rule identify_bins_to_merge:
              bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
     params:  folder="subgraphs/{bin_type}"
     #TODO use the input somehow? 
-    #TODO remove ' ?
+    #TODO remove '
     shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'bin*/simplif/COG*.gfa' {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore}"
 
-#TODO review logic and maybe move to scripts / separate into multiple rules
-#FIXME normalize variable names and spacing ?
 checkpoint merge_bins:
     input:  merge_plan="subgraphs/bin_init/bins_to_merge.tsv",
             contig_assign="binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
@@ -91,22 +98,20 @@ rule compute_avg_cov_merged:
     output:  "subgraphs/bin_merged/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
+def read_bad_cogs(filename, bin):
+    try:
+        with open(filename) as handle:
+            return next(line.rstrip().split("\t")[1:] for line in handle if line.rstrip().split("\t")[0]==bin)
+
 rule flag_bad_cogs:
     input:  cogs_to_ignore_file="{path}/bin_cogs_to_ignore.tsv",
             simplif_done_file="{path}/{bin}/simplif/simplif.done"
     output:  touch("{path}/{bin}/selected_cogs.tsv")
     run:
         all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/{cog}.gfa")
-        #TODO introduce helper function? ??
-        with open(input.cogs_to_ignore_file) as cogs_to_ignore:
-            for line in cogs_to_ignore:
-                split_line = line.rstrip().split("\t")
-                if split_line[0] == wildcards.bin:
-                    bad_cogs = {cog for cog in split_line[1:]}
-                    with open(output[0], "w") as out:
-                        out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
-
-                    return
+        bad_cogs=read_bad_cogs(filename, bin)
+        with open(output[0], "w") as out:
+            out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
 
 def merged_bins_cogs(wildcards):
     checkpoints.merge_bins.get()
@@ -120,6 +125,6 @@ rule select_bins_for_strain_analysis:
     run:
       # select bin_name only, not full path 
       bins = [os.path.basename(os.path.dirname(cogs_fn)) for cogs_fn in input \
-              if len(list(open(cogs_fn).readlines())) >= COG_RUN]
+              if len(list(open(cogs_fn).readlines())) >= MIN_ORF_NUMBER_TO_RUN_A_BIN]
       with open(output[0], 'w') as out:
           out.write("\n".join(bins))

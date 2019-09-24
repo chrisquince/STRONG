@@ -25,7 +25,6 @@ rule bin_contigs:
   {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} $(dirname {output}) -l {params} -d
   """
 
->>>>>>> refactoring_#64
 rule contigs_bed:
     input: "desman/{bin}/{bin}.fasta"
     output: "desman/{bin}/{bin}.bed"
@@ -65,36 +64,35 @@ rule assembly_bed:
       {SCRIPTS}/Gff_to_bed.py {input} {output}
       """
 
-rule SCG_bed:
+rule scg_bed:
     input:
         all_bed = "desman/assembly.bed",
-        SCG_file = "annotation/SCG.fna"
+        scg_file = "annotation/SCG.fna"
     output:
-        SCG_bed = "desman/SCG.bed"
+        scg_bed = "desman/SCG.bed"
     run:
         seq_names = {name.split()[0] for name, seq in SimpleFastaParser(
-            open(input.SCG_file))}
-        with open(output.SCG_bed, 'w') as scg_bed:
+            open(input.scg_file))}
+        with open(output.scg_bed, 'w') as scg_bed:
             for line in open(input.all_bed):
                 if line.split()[3] in seq_names:
                     scg_bed.write(line)
 
-rule bed_like_file_for_ExtractCountFreqGenes:
+rule build_scg_coordinates_for_ExtractCountFreqGenes:
     input:
-        SCG_bed = "desman/SCG.bed",
-        Bin_SCG = "subgraphs/bin_init/{bin}/SCG.fna"
+        scg_bed = "desman/SCG.bed",
+        bin_scg = "subgraphs/bin_init/{bin}/SCG.fna"
     output:
-        bedlike = "desman/{bin}/SCG_bed_like.tsv"
+        coordinates = "desman/{bin}/scg_coordinates.tsv"
     run:
-        Dico_SCG = {header.split()[0]: header.split(
-        ) for header, seq in SimpleFastaParser(open(input.Bin_SCG))}
+        dict_scg = {header.split()[0]: header.split() for header, seq in SimpleFastaParser(open(input.bin_scg))}
     # NODE_11_length_160076_cov_189.092050_50 COG0552 strand=+
-        with open(output.bedlike, "w") as handle :
-            for line in open(input.SCG_bed):
+        with open(output.coordinates, "w") as handle :
+            for line in open(input.scg_bed):
                 contig, start, end, orf = line.rstrip().split("\t")
-                if orf in Dico_SCG:
-                    cog, strand = Dico_SCG[orf][1:]
-                    cog, strand = Dico_SCG[orf][1:]
+                if orf in dict_scg:
+                    cog, strand = dict_scg[orf][1:]
+                    cog, strand = dict_scg[orf][1:]
                     strand = str((strand == "strand=+")*1-(strand == "strand=-")*1)
                     contig = "_".join(orf.split("_")[:-1])
                     handle.write(",".join([cog, contig, start, end, orf, strand])+"\n")
@@ -102,7 +100,7 @@ rule bed_like_file_for_ExtractCountFreqGenes:
 rule extract_counts:
     input:
         expand("{{path}}/{sample}.cnt.gz", sample=SAMPLES),
-        SCG_bedlike = "{path}/SCG_bed_like.tsv"
+        scg_coordinates = "{path}/scg_coordinates.tsv"
     output:
         "{path}/count.csv"
     params:
@@ -110,7 +108,7 @@ rule extract_counts:
     log:
         "{path}/extract_counts.log"
     shell: """
-    python {DSCRIPTS}/ExtractCountFreqGenes.py {input.SCG_bedlike} {params.input_dir} --output_file {output} &>> {log}
+    python {DSCRIPTS}/ExtractCountFreqGenes.py {input.scg_coordinates} {params.input_dir} --output_file {output} &>> {log}
         """
 
 checkpoint filter_variant:
@@ -159,7 +157,7 @@ rule haplo_seqs:
     input:
         fasta = "profile/assembly.fasta",
         deviance_file = "{path}/Deviance.pdf",
-        SCG_bedlike = "{path}/SCG_bed_like.tsv"
+        scg_coordinates = "{path}/scg_coordinates.tsv"
     output: "{path}/best_run.txt"
     params: "{path}"
     shell: """
@@ -168,13 +166,13 @@ rule haplo_seqs:
         cut -d"," -f 1 < {params}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
 
         mkdir -p {params}/haplotype_seqs
-        python {DSCRIPTS}/GetVariantsCore.py {input.fasta} {input.SCG_bedlike} $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
+        python {DSCRIPTS}/GetVariantsCore.py {input.fasta} {input.scg_coordinates} $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
     """
 
 def do_we_need_to_run_desman(wildcards):
     freq_sel_var_file = checkpoints.filter_variant.get(bin=wildcards.bin).output[0]
     # "binning/{bin}/count.csv"
-    nb_line = len([line for line in open(freq_sel_var_file)])
+    nb_line = len([inline for inline in open(freq_sel_var_file)])
     if nb_line > 1:
         return "desman/" + wildcards.bin + "/best_run.txt"
     else:

@@ -30,7 +30,7 @@ ASSEMBLER = config["assembly"]["assembler"]
 ASSEMBLER_DIR = config["assembly"]["dir"]
 ASSEMBLY_K = config["assembly"]["k"][-1]
 # -------- Bayesgraph -----------------
-COG_RUN=config["bayespaths"]["min_orf_number_to_run_a_bin"] # if there is not enough COG left we don't try to resolve strain in that bin
+MIN_ORF_NUMBER_TO_RUN_A_BIN=config["bayespaths"]["min_orf_number_to_run_a_bin"] # if there is not enough COG left we don't try to resolve strain in that bin
 MERGE_VALUE=config["bayespaths"]["min_orf_number_to_merge_bins"] # if there's too many COG in common between bins we mergge them 
 BAYESPATHS_DIR = config["bayespaths"]["dir"]
 BAYESPATHS_G = config["bayespaths"]["nb_strains"]
@@ -41,12 +41,12 @@ MIN_CONTIG_SIZE = config["concoct_contig_size"]
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]
 MIN_COV_DESMAN = config["desman"]["min_cov"]
+ANNOTATED_COGS=[s.rstrip() for s in open(COG_FILE)]
 # -------- Evaluation -----------------
 REFDATA=config["evaluation"]["genomes"]
 EVAL_SCRIPTS=config["evaluation"]["scripts"]
 
-#TODO rename + maybe simplify?
-LIST_COGS=list(map(str.rstrip,open(COG_FILE).readlines()))
+
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented

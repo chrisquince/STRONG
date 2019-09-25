@@ -69,7 +69,7 @@ rule blastn:
 
 rule blast_best:
     input: blast = lambda w: BIN_TO_BLAST[w.bin],
-           margfile = "bayespaths/{bin}/{bin}_margFile.csv"
+           margfile = "bayespaths/{bin}/{bin}margFile.csv"
     output: "evaluation/bayespaths/{bin}_blastbest.tsv"
     shell: "{EVAL_SCRIPTS}/BlastBest.py {input.blast} {input.margfile} {REFDATA}/MapSeq.csv > {output}"
 

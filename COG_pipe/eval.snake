@@ -5,8 +5,10 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 include: "Common.snake"
 include: "Binning.snake"
 # Bayespath
-BIN_TO_BLAST = {basename(dirname(file)): file.replace(".fa", ".blast") for file in glob.glob("bayespaths/*/*_simplif_PHaplo_*.fa")}
-BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_simplif_PHaplo_{nb}.fa")[0]
+BIN_TO_BLAST = {basename(dirname(file)): file.replace(".fa", ".blast") for file in glob.glob("bayespaths/*/*_PHaplo_*.fa")}
+print(BIN_TO_BLAST)
+BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_PHaplo_{nb}.fa")[0]
+print(BIN)
 # Desman
 DESMAN_BINS = set(glob_wildcards("desman/{bin}/haplotype_seqs/{name}.fa")[0])
 BINS_TO_HAPS = {bin_:glob.glob("desman/"+bin_+"/haplotype_seqs/*.fa") for bin_ in DESMAN_BINS}
@@ -67,7 +69,7 @@ rule blastn:
 
 rule blast_best:
     input: blast = lambda w: BIN_TO_BLAST[w.bin],
-           margfile = "bayespaths/{bin}/{bin}_simplifmargFile.csv"
+           margfile = "bayespaths/{bin}/{bin}_margFile.csv"
     output: "evaluation/bayespaths/{bin}_blastbest.tsv"
     shell: "{EVAL_SCRIPTS}/BlastBest.py {input.blast} {input.margfile} {REFDATA}/MapSeq.csv > {output}"
 

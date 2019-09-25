@@ -32,7 +32,6 @@ def main(Bin_file,Fasta_file,path,Table):
 		Handle.write(",".join(["Cluster"]+List_SCG)+"\n")
 		Handle.write("\n".join(map(lambda List:','.join(map(str,List)),SCG_table)))
 		Handle.close()
-
 #-------------- create a folder by Mag with a folder by COG and their sequences inside -------------------
 	if path :
 		# which are 75% complete
@@ -41,7 +40,7 @@ def main(Bin_file,Fasta_file,path,Table):
 		for Mag in List_Mags :
 			List_contigs_SCG=[]
 			Mag_path=path+"Bin_"+Mag
-			os.system("mkdir "+Mag_path)
+			os.system("mkdir -p "+Mag_path)
 			Handle=open(Mag_path+"/SCG.fna","w")
 			Handle.write("".join(map(lambda x:">"+x[0]+"\n"+x[1]+"\n",[Fasta for List_fasta in Dico_bins_SCG[Mag].values() for Fasta in List_fasta])))
 			Handle.close()

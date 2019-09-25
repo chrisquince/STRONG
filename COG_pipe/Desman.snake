@@ -22,7 +22,7 @@ rule bin_contigs:
     output: expand("desman/Bin_{id}/Bin_{id}.fasta", id=BIN_IDS)
     params: " ".join(BIN_IDS)
     shell: """
-  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} $(dirname {output}) -l {params} -d
+  {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} desman -l {params} -d
   """
 
 rule contigs_bed:

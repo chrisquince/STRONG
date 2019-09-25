@@ -16,11 +16,6 @@ rule results:
            expand("evaluation/desman/{bin}_blastbest.tsv", bin=DESMAN_BINS),
            "evaluation/bayespaths/SpeciesMaxCov.csv",
 
-rule index_bam:
-    input: "{file}.sorted.bam"
-    output: "{file}.sorted.bam.bai"
-    shell: "samtools index {input}"
-
 rule contig_to_ref_counts:
     input: assembly = "profile/assembly.fasta",
            list_samples = expand("profile/assembly/{sample}.sorted.bam", sample=SAMPLES),

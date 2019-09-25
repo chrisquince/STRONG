@@ -10,6 +10,5 @@ rule all:
            "binning/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
            "assembly/high_res/simplified.mult_prof",
            "annotation/SCG.fna",
-           "subgraphs/bin_init/folder_done",
-           "subgraphs/bin_init/bin_cov.tsv"
-
+           "subgraphs/bin_init/bin_cov.tsv",
+           "subgraphs/bin_init/folder_done"

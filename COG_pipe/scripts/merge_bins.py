@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 import argparse 
 import glob
+import shutil
 import os
 
 def make_link(source_root, subfolder, target_root):
     relpath = os.path.relpath(source_root, target_root)
     os.symlink(os.path.join(relpath, subfolder), os.path.join(target_root, subfolder))
+
+def make_copy(source_root, subfolder, target_root):
+    shutil.copytree(os.path.join(source_root, subfolder), os.path.join(target_root, subfolder))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -41,7 +46,8 @@ if __name__ == "__main__":
     # link all non merged bin in the merged bin folder
     for b in set(all_bins) - merged_bins:
         #os.system("ln -s %s/%s %s" % (args.bins_dir, b, args.out_dir))
-        make_link(args.bins_dir, b, args.out_dir)
+        # make_link(args.bins_dir, b, args.out_dir)
+        make_copy(args.bins_dir, b, args.out_dir)
 
     # create a new contig assignment file 
     with open(args.out_dir + "/clustering.csv", "w") as out:

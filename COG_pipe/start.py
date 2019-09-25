@@ -105,15 +105,15 @@ with cd(exec_dir):
     call_snake(["--snakefile", "BayesAGraph.snake"])
 
     if config["desman"]["execution"]:
-        print("Step #3 - Strain Analysis with Desman") 
+        print("Step #4 - Strain Analysis with Desman") 
         #TODO (for Sergey) return the previously removed checkpoint and remove two calls 
         #call_snake(["--snakefile", "Desman.snake", "prepare"])
         call_snake(["--snakefile", "Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:
-        print("Step #4 - MAGAnalysis : place mags in a tree of references") 
+        print("Step #5 - MAGAnalysis : place mags in a tree of references") 
         call_snake(["--snakefile", "MAGAnalysis.snake"])
         
     if config["evaluation"]["execution"]:
-        print("Step #5 - running evaluation") 
+        print("Step #6 - running evaluation") 
         call_snake(["--snakefile", "eval.snake"])

@@ -164,7 +164,7 @@ rule index_fasta:
     shell: "samtools faidx {input}"
 
 rule index_samples_bam:
-    input:   "{path}.sorted.bam",
-    output:  "{path}.sorted.bam.bai",
-    message: "Indexing bam file {path}.sorted.bam"
+    input:   "{path}.sorted.bam"
+    output:  "{path}.sorted.bam.bai"
+    message: "Indexing bam file {wildcards.path}.sorted.bam"
     shell:   "samtools index {input}"

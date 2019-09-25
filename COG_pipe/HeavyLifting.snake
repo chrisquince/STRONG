@@ -1,26 +1,16 @@
 include: "Common.snake"
 include: "Binning.snake"
+
 import glob
 import os
+from os.path import dirname,basename,realpath
 
 def bin_paths_by_type(bin_type):
   return [os.path.dirname(path) for path in glob.glob("subgraphs/%s/Bin_*/SCG.fna" % bin_type)]
 
-
-rule create_bin_folders:
-    input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
-             fasta="annotation/SCG.fna"
-    output:  touch("subgraphs/bin_init/folder_done")
-    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f $(dirname {output})/"
-
-rule compute_avg_cov:
-    input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
-    output:  "subgraphs/bin_init/bin_cov.tsv"
-    shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
-
-
 rule all:
     input: "subgraphs/bin_merged/selected_bins.txt"
+
 
 rule extract_subgraphs:
     input:   cogs="subgraphs/{bin_type}/{bin}/SCG.fna",
@@ -65,7 +55,7 @@ rule simplify_subgraphs:
     run:
       avg_cov = bin_avg_cov(input.bin_cov, wildcards["bin"])
       shell("""
-            out=$(dirname {output})/simplif
+            out=$(dirname {output})/
             rm -rf $out
             mkdir -p $out/tmp
             in=$(dirname {input.profiles_flag})
@@ -75,23 +65,24 @@ rule simplify_subgraphs:
             done
             """)
 
+
 rule identify_bins_to_merge:
-    input:   lambda w: expand("{path}/simplif/simplif.done", path = bin_paths_by_type(w["bin_type"]))
+    input: lambda wildcards:expand("{path}/simplif/simplif.done", path = bin_paths_by_type(wildcards["bin_type"]))
     #TODO should we put cogs to ignore files within the bin subfolders?
     output:  cogs_to_ignore = "subgraphs/{bin_type}/bin_cogs_to_ignore.tsv",
              bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
-    params:  folder="subgraphs/{bin_type}"
+    params:  folder = "subgraphs/{bin_type}"
     #TODO use the input somehow? 
     #TODO remove '
-    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'bin*/simplif/COG*.gfa' {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore}"
+    shell:   "{SCRIPTS}/Common_unitigs.py {params.folder}/'Bin*/simplif/COG*.gfa' {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore}"
 
 checkpoint merge_bins:
-    input:  merge_plan="subgraphs/bin_init/bins_to_merge.tsv",
-            contig_assign="binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
-    output: "subgraphs/bin_merged/clustering.csv"
+    input:  merge_plan = "subgraphs/bin_init/bins_to_merge.tsv",
+            contig_assign = "binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
+    output: cluster = "subgraphs/bin_merged/clustering.csv"
     log:    "subgraphs/bin_merged/merge.log"
     shell:  "{SCRIPTS}/merge_bins.py {input.merge_plan} $(dirname {input.merge_plan}) "
-            "{input.contig_assign} $(dirname {output}) &> {log}"
+            "{input.contig_assign} $(dirname {output.cluster}) &> {log}"
 
 rule compute_avg_cov_merged:
     input:   "subgraphs/bin_merged/clustering.csv"
@@ -99,24 +90,23 @@ rule compute_avg_cov_merged:
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
 def read_bad_cogs(filename, bin):
-    try:
-        with open(filename) as handle:
-            return next(line.rstrip().split("\t")[1:] for line in handle if line.rstrip().split("\t")[0]==bin)
+    with open(filename) as handle:
+        return next(line.rstrip().split("\t")[1:] for line in handle if line.rstrip().split("\t")[0]==bin)
 
 rule flag_bad_cogs:
-    input:  cogs_to_ignore_file="{path}/bin_cogs_to_ignore.tsv",
-            simplif_done_file="{path}/{bin}/simplif/simplif.done"
-    output:  touch("{path}/{bin}/selected_cogs.tsv")
+    input: cogs_to_ignore_file="subgraphs/bin_merged/bin_cogs_to_ignore.tsv",
+           simplif_done_file="{path}/{bin}/simplif/simplif.done"
+    output: touch("{path}/{bin}/selected_cogs.tsv")
     run:
-        all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/{cog}.gfa")
-        bad_cogs=read_bad_cogs(filename, bin)
+        all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/simplif/{cog}.gfa")
+        bad_cogs=read_bad_cogs(input.cogs_to_ignore_file,wildcards.bin)
         with open(output[0], "w") as out:
             out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
 
 def merged_bins_cogs(wildcards):
     checkpoints.merge_bins.get()
-    # since we linked non merged bins in the merged bin folder, bins in that folder are, at that point in time, the correct set of bin to consider. 
-    return [binpath+"/selected_cogs.tsv" for binpath in bin_paths_by_type("bin_merged")]
+    # we need to return selected_cogs.tsv only for all bins from "bin_merged", but in a smart way : we need the realpath, because otherwise, snakemake (in rule flag_bad_cogs) will look for a rule able to generate the simplif.done in all bins from bin_merged, even if in reality such file exist already ---> not sufficient, since subgraphs/bin_merged/bin_cogs_to_ignore.tsv need also all the bin_merged/simplifs.done to be present. Let's put this on hold and just use a copy
+    return [realpath(binpath)+"/selected_cogs.tsv" for binpath in bin_paths_by_type("bin_merged")]
 
 rule select_bins_for_strain_analysis:
     input:  merged_bins_cogs

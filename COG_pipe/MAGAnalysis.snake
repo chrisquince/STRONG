@@ -5,14 +5,14 @@ rule all:
 
 rule aggregate_SCG:
     input: "subgraphs/bin_init/folder_done"
-    output: expand("mag_analysis/SCGs/{cog}.fna", cog=LIST_COGS) 
+    output: expand("mag_analysis/SCGs/{cog}.fna", cog=ANNOTATED_COGS) 
     shell: """
      {SCRIPTS}/ExtractSCGs.py $(dirname {input}) {COG_FILE} mag_analysis/
       """
 
 rule extract_ref_SCGs:
     input: SCG_DATA + "/All_COGs.tar.gz"
-    output: expand("mag_analysis/All_{cog}.ffn", cog=LIST_COGS)
+    output: expand("mag_analysis/All_{cog}.ffn", cog=ANNOTATED_COGS)
     shell: "tar -xf {input} -C mag_analysis"
 
 rule mafft:
@@ -33,8 +33,8 @@ rule trimal :
     shell: "trimal -in {input} -out {output} -gt 0.9 -cons 60"
 
 rule generate_data_for_fastree:
-    input: trimed = expand("{{path}}/{cog}_al.gfa", cog = LIST_COGS),
-           alignement = expand("{{path}}/{cog}_all.gffn", cog = LIST_COGS)
+    input: trimed = expand("{{path}}/{cog}_al.gfa", cog = ANNOTATED_COGS),
+           alignement = expand("{{path}}/{cog}_all.gffn", cog = ANNOTATED_COGS)
     output: gfa = "{path}/AlignAllR.gfa",
             names = "{path}/Names.txt",
             temp = temp("{path}/temp_combine_genes.tmp")

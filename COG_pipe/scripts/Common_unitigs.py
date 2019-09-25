@@ -66,7 +66,7 @@ def main(gfa_regex, cog_threshold, bins_to_merge, cogs_to_ignore):
     for file in list_gfa_files:
         cog = file.split("/")[-1].split(".gfa")[0]
         # more robust but still inherently not robust to naming changes
-        bin_ = re.findall(".*?Bin.*?(Bin_.+?)/", file)[0]
+        bin_ = re.findall(".*?bin.*?(Bin_.+?)/", file)[0]
         dict_cogbin_unitigs[cog][bin_] = {line.split(
             "\t")[2] for line in open(file) if line[0] == "S"}
 

@@ -67,9 +67,13 @@ rule blastn:
 
 rule blast_best:
     input: blast = lambda w: BIN_TO_BLAST[w.bin],
-           margfile = "bayespaths/{bin}/{bin}margFile.csv"
+           margfile = "bayespaths/{bin}/{bin}_PmargFile.csv",
+           diverfile = "bayespaths/{bin}/{bin}_PDiver.csv",
+           gammafile = "bayespaths/{bin}/{bin}_PGamma.csv"
     output: "evaluation/bayespaths/{bin}_blastbest.tsv"
-    shell: "{EVAL_SCRIPTS}/BlastBest.py {input.blast} {input.margfile} {REFDATA}/MapSeq.csv > {output}"
+    shell: "{EVAL_SCRIPTS}/BlastBest.py {input.blast} {input.margfile} {input.diverfile} {input.gammafile} {REFDATA}/MapSeq.csv > {output}"
+
+
 
 # Desman part
 

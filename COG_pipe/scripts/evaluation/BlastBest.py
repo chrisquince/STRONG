@@ -16,6 +16,10 @@ def main(argv):
 
     parser.add_argument("marg_file", help="csv marg file")
 
+    parser.add_argument("diver_file", help="csv marg file")
+    
+    parser.add_argument("gamma_file", help="csv marg file")
+
     parser.add_argument("map_file", help="csv map file")
 
     args = parser.parse_args()
@@ -32,6 +36,27 @@ def main(argv):
 
             for tok in toks:
                 mapSeq[tok] = strain
+
+
+    diverStrain = {}
+    with open(args.diver_file, 'r') as source:
+        for line in source:
+            line = line.rstrip()
+            toks = line.split(",")
+            
+            diverStrain[toks[0]] = toks[1]
+
+    gammaStrain = {}
+    with open(args.gamma_file, 'r') as source:
+        for line in source:
+            line = line.rstrip()
+            toks = line.split(",")
+            
+            gammaSum = np.sum(np.asarray([float(x) for x in toks[1:]]))
+            
+            gammaStrain[toks[0]] = gammaSum
+    
+                
 
     genes = set()
     haplo_gene_unc = defaultdict(lambda: defaultdict(list))
@@ -120,11 +145,12 @@ def main(argv):
             mean_gene_unc[gene] = np.mean(
                 np.asarray(haplo_gene_unc[gene][haplo]))
         mean_unc = np.mean(np.asarray(list(mean_gene_unc.values())))
-
+        gStrain = gammaStrain[haplo]
+        dStrain = diverStrain[haplo]
         print(haplo + "\t" + bestMatch + "\t" + str(nHits) +
               "\t" + "{:10.4f}".format(pid) + "\t" + "{:10.4e}".format(
             mean_unc) + "\t" + str(diff) + "\t" +
-            str(haplo_match_length[haplo][bestMatch]))
+            str(haplo_match_length[haplo][bestMatch]) + "\t" + str(dStrain) + "\t" + str(gStrain))
 
 
 if __name__ == "__main__":

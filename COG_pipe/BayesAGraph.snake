@@ -11,7 +11,7 @@ BINS = read_selected_bins("bayespaths/selected_bins.txt") if os.path.exists("bay
                 else read_selected_bins("subgraphs/bin_merged/selected_bins.txt")
 
 rule all:
-    input: expand("bayespaths/{bin}/{bin}_PGamma.csv", bin=BINS),
+    input: expand("bayespaths/{bin}/{bin}_summary.txt", bin=BINS),
            "bayespaths/selected_bins.txt"
 
 #Create the file with selected bin ids for editing on subsequent restarts
@@ -23,7 +23,7 @@ rule copy_list:
 
 rule bayespaths:
     input:  "subgraphs/bin_merged/{bin}/selected_cogs.tsv"
-    output: "bayespaths/{bin}/{bin}_PGamma.csv"
+    output: "bayespaths/{bin}/{bin}_summary.txt"
     log:    "bayespaths/Logs/{bin}.log"
     message: "Running BayesPaths on {wildcards.bin}"
     params: kmer=ASSEMBLY_K,

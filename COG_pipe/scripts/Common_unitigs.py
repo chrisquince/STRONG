@@ -64,10 +64,10 @@ def get_overlaping_bins(dict_cogbin_unitigs, cog_threshold):
     dict_merge_bins={}
     for list_bins in list_sets_tomerge:
         index=1
-        new_name="bin__merged_"+str(index)
+        new_name="Bin_merged_"+str(index)
         while new_name in set_bins_global:
             index+=1
-            new_name="bin__merged_"+str(index)
+            new_name="Bin_merged_"+str(index)
         set_bins_global.add(new_name)
         dict_merge_bins[new_name] = list_bins
     return dict_to_flag, dict_merge_bins

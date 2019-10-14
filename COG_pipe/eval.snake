@@ -77,7 +77,7 @@ rule blast_best:
 
 rule combine_eval_bp:
     input: blastbest = "evaluation/bayespaths/{bin}_blastbest.tsv",
-           maxcov = "evaluation/bayespaths/SpeciesMax.csv"
+           maxcov = "evaluation/bayespaths/SpeciesMaxCov.csv"
     output: output = "evaluation/bayespaths/{bin}_combine.tsv"
     shell: "{EVAL_SCRIPTS}/Combine.py {input.blastbest} {input.maxcov} {wildcards.bin} > {output}"
 

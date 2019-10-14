@@ -13,7 +13,7 @@ BINS_TO_HAPS = {bin_:glob.glob("desman/"+bin_+"/haplotype_seqs/*.fa") for bin_ i
 
 rule results:
     input: expand("evaluation/bayespaths/{bin}_combine.tsv", bin=BIN),
-           expand("evaluation/desman/{bin}_blastbest.tsv", bin=DESMAN_BINS),
+           expand("evaluation/desman/{bin}_combine.tsv", bin=DESMAN_BINS),
            "evaluation/bayespaths/SpeciesMaxCov.csv",
 
 rule contig_to_ref_counts:
@@ -99,3 +99,11 @@ rule desman_blast_best:
     input: "evaluation/desman/{bin}.blast"
     output: "evaluation/desman/{bin}_blastbest.tsv"
     shell: "{EVAL_SCRIPTS}/DesmanBlastBest.py {input} {REFDATA}/MapSeq.csv > {output}"
+
+rule combine_eval_d:
+    input: blastbest = "evaluation/desman/{bin}_blastbest.tsv",
+           maxcov = "evaluation/bayespaths/SpeciesMaxCov.csv"
+    output: output = "evaluation/desman/{bin}_combine.tsv"
+    shell: "{EVAL_SCRIPTS}/CombineD.py {input.blastbest} {input.maxcov} {wildcards.bin} > {output}"
+
+

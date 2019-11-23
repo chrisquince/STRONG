@@ -64,8 +64,8 @@ def main(rpsblast_ouptut, database_file, min_evalue, min_pid, min_subject_pid, m
         if (evalue >= min_evalue) & (pid >= min_pid) & (subject_Pid >= min_subject_pid) & (coverage >= min_coverage) & (query_coverage >= min_query_coverage):
             querry_annotation.append(
                 [query, subject, evalue, pid, subject_Pid, coverage, query_coverage])
-    if Querry_Annotation:
-        Print_Final_annotation(Querry_Annotation)
+    if querry_annotation:
+        Print_Final_annotation(query_annotation)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -19,7 +19,8 @@ default_values = {
     "desman": {"execution": 0, "nb_haplotypes": 10, "nb_repeat": 5,
                "min_cov": 1, "dscripts": None},
     "bayespaths": {"min_orf_number_to_merge_bins": 10,
-                   "min_orf_number_to_run_a_bin": 10},
+                   "min_orf_number_to_run_a_bin": 10,
+                   "percent_unitigs_shared":0.1},
     "maganalysis": {"execution": 0},
     "evaluation": {"execution": 0, "genomes": ""},
 }

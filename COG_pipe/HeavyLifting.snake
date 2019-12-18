@@ -11,7 +11,6 @@ def bin_paths_by_type(bin_type):
 rule all:
     input: "subgraphs/bin_merged/selected_bins.txt"
 
-
 rule extract_subgraphs:
     input:   cogs="subgraphs/{bin_type}/{bin}/SCG.fna",
              gfa="assembly/high_res/simplified.gfa"

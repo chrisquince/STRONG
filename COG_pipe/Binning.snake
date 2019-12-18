@@ -106,7 +106,7 @@ rule create_bin_folders:
     input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
              fasta="annotation/SCG.fna"
     output:  touch("subgraphs/bin_init/folder_done")
-    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -f $(dirname {output})/"
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -all $(dirname {output})/"
 
 rule compute_avg_cov:
     input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE

@@ -26,6 +26,9 @@ assembly:
 # ----- BayesPaths parameters ------
 bayespaths:
     nb_strains: 16
+    min_orf_number_to_merge_bins: 10
+    min_orf_number_to_run_a_bin: 10
+    percent_unitigs_shared: 0.1
 
 # ----- DESMAN parameters ------
 desman:

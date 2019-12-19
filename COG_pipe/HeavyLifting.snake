@@ -100,18 +100,19 @@ def read_bad_cogs(filename, bin_):
 rule flag_bad_cogs:
     input: cogs_to_ignore_file="subgraphs/bin_merged/bin_cogs_to_ignore.tsv",
            simplif_done_file="{path}/{bin}/simplif/simplif.done"
-    output: "{path}/{bin}/selected_cogs.tsv"
+    output: selected="{path}/{bin}/selected_cogs.tsv"
     run:
         all_cogs, = glob_wildcards(os.path.dirname(output[0]) + "/simplif/{cog}.gfa")
         bad_cogs=read_bad_cogs(input.cogs_to_ignore_file,wildcards.bin)
-        with open(output[0], "w") as out:
+        with open(output["selected"], "w") as out:
             out.write("\n".join(sorted([cog for cog in all_cogs if cog not in bad_cogs])))
 
 def merged_bins_cogs(wildcards):
     checkpoints.merge_bins.get()
     # because we don't have anything to catch the case where extracted subgraph of merged bin need to be merged 
     checkpoints.identify_bins_to_merge.get(bin_type="bin_merged")
-    assert os.stat("subgraphs/bin_merged/bins_to_merge.tsv").st_size == 0
+    size=os.stat("subgraphs/bin_merged/bins_to_merge.tsv").st_size
+    assert size == 0, "subgraphs/bin_merged/bins_to_merge.tsv is not null, it's " % size
     return [realpath(binpath)+"/selected_cogs.tsv" for binpath in bin_paths_by_type("bin_merged")]
 
 rule select_bins_for_strain_analysis:
@@ -120,14 +121,4 @@ rule select_bins_for_strain_analysis:
             merge_recipe = "subgraphs/bin_init/bins_to_merge.tsv" 
     output: selected="subgraphs/bin_merged/selected_bins.txt"
     message: "Select bins containing sufficient number of COGs"
-    run:
-      # select bin_name only, not full path 
-      bins = [os.path.basename(os.path.dirname(cogs_fn)) for cogs_fn in input["select"] \
-              if len(list(open(cogs_fn).readlines())) >= MIN_ORF_NUMBER_TO_RUN_A_BIN]
-      # we have been considering indistinctly bins and mags previously, we will now only retain mags
-      mags = ["Bins_%s" % line.rstrip() for line in open(input["mags"])]
-      merged_recipe = {line.rstrip().split('\t')[0]:line.rstrip().split('\t')[1:] for line in open(input["merge_recipe"])}
-      mags += [merged_bin for mergerd_bin,list_bins in merged_recipe.items() if (set(mags)&set(merged_recipe))!=set()]
-      bins_selected=list(set(mags)&set(bins))
-      with open(output["selected"], 'w') as out:
-          out.write("\n".join(bins))
+    shell: "{SCRIPTS}/this_should_not_be_a_script.py {input.mags} {input.merge_recipe} {output.selected} {MIN_ORF_NUMBER_TO_RUN_A_BIN} -s {input.select}"

@@ -20,11 +20,12 @@ def get_overlaping_bins(dict_cogbin_unitigs, cog_threshold, overlap_threshold):
                 if set1 & set2:
                     if max(len(set1 & set2)/float(len(set1)), len(set1 & set2)/float(len(set2))) >= overlap_threshold:
                         dict_bins_common_cogs[tuple(sorted([bin1, bin2]))].append(Cog)
+
     # Summarize for each bin how many cogs are shared
     dict_bin_cogs = defaultdict(set)
-    for (cog1, cog2), list_cogs in dict_bins_common_cogs.items():
-        dict_bin_cogs[cog1] |= set(list_cogs)
-        dict_bin_cogs[cog2] |= set(list_cogs)
+    for (bin1, bin2), list_cogs in dict_bins_common_cogs.items():
+        dict_bin_cogs[bin1] |= set(list_cogs)
+        dict_bin_cogs[bin2] |= set(list_cogs)
 
     # So which bins should be merged and which should just be flagged
     candidate_to_merge = {}

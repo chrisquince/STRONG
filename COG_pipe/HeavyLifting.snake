@@ -118,7 +118,7 @@ rule select_bins_for_strain_analysis:
     input:  select = merged_bins_cogs,
             mags = "binning/list_mags.tsv",
             merge_recipe = "subgraphs/bin_init/bins_to_merge.tsv" 
-    output: "subgraphs/bin_merged/selected_bins.txt"
+    output: selected="subgraphs/bin_merged/selected_bins.txt"
     message: "Select bins containing sufficient number of COGs"
     run:
       # select bin_name only, not full path 
@@ -129,5 +129,5 @@ rule select_bins_for_strain_analysis:
       merged_recipe = {line.rstrip().split('\t')[0]:line.rstrip().split('\t')[1:] for line in open(input["merge_recipe"])}
       mags += [merged_bin for mergerd_bin,list_bins in merged_recipe.items() if (set(mags)&set(merged_recipe))!=set()]
       bins_selected=list(set(mags)&set(bins))
-      with open(output[0], 'w') as out:
+      with open(output["selected"], 'w') as out:
           out.write("\n".join(bins))

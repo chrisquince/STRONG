@@ -116,9 +116,10 @@ def merged_bins_cogs(wildcards):
     return [realpath(binpath)+"/selected_cogs.tsv" for binpath in bin_paths_by_type("bin_merged")]
 
 rule select_bins_for_strain_analysis:
-    input:  select = "subgraphs/bin_merged",
+    input:  select = merged_bins_cogs,
             mags = "binning/list_mags.tsv",
-            merge_recipe = "subgraphs/bin_init/bins_to_merge.tsv" 
+            merge_recipe = "subgraphs/bin_init/bins_to_merge.tsv", 
+            input_csv = "subgraphs/bin_merged/clustering.csv"
     output: selected="subgraphs/bin_merged/selected_bins.txt"
     message: "Select bins containing sufficient number of COGs"
-    shell: "{SCRIPTS}/this_should_not_be_a_script.py {input.mags} {input.merge_recipe} {output.selected} {input.select} {MIN_ORF_NUMBER_TO_RUN_A_BIN}"
+    shell: "{SCRIPTS}/this_should_not_be_a_script.py {input.mags} {input.merge_recipe} {output.selected} $(dirname {input.input_csv}) {MIN_ORF_NUMBER_TO_RUN_A_BIN}"

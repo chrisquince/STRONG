@@ -5,8 +5,8 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 include: "Common.snake"
 include: "Binning.snake"
 # Bayespath
-BIN_TO_BLAST = {basename(dirname(file)): file.replace(".fa", ".blast") for file in glob.glob("bayespaths/*/*_PHaplo_*.fa")}
-BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_PHaplo_{nb}.fa")[0]
+BIN_TO_BLAST = {basename(dirname(file)): file.replace(".fa", ".blast") for file in glob.glob("bayespaths/*/*_QHaplo_*.fa")}
+BIN = glob_wildcards("bayespaths/{bin}/{also_bins}_QHaplo_{nb}.fa")[0]
 # Desman
 DESMAN_BINS = set(glob_wildcards("desman/{bin}/haplotype_seqs/{name}.fa")[0])
 BINS_TO_HAPS = {bin_:glob.glob("desman/"+bin_+"/haplotype_seqs/*.fa") for bin_ in DESMAN_BINS}
@@ -68,9 +68,9 @@ rule blastn:
 
 rule blast_best:
     input: blast = lambda w: BIN_TO_BLAST[w.bin],
-           margfile = "bayespaths/{bin}/{bin}_PmargFile.csv",
-           diverfile = "bayespaths/{bin}/{bin}_PDiver.csv",
-           gammafile = "bayespaths/{bin}/{bin}_PGamma.csv"
+           margfile = "bayespaths/{bin}/{bin}_QmargFile.csv",
+           diverfile = "bayespaths/{bin}/{bin}_QDiver.csv",
+           gammafile = "bayespaths/{bin}/{bin}_QGamma.csv"
     output: "evaluation/bayespaths/{bin}_blastbest.tsv"
     shell: "{EVAL_SCRIPTS}/BlastBest.py {input.blast} {input.margfile} {input.diverfile} {input.gammafile} {REFDATA}/MapSeq.csv > {output}"
 

@@ -11,7 +11,7 @@ from os.path import basename, join, dirname
 from collections import defaultdict
 
 
-def get_overlaping_bins(dict_cogbin_unitigs, cog_threshold, overlap_threshold):
+def get_overlaping_bins(mags, dict_cogbin_unitigs, cog_threshold, overlap_threshold):
     set_bins_global = {key for dict_ in dict_cogbin_unitigs.values() for key in dict_}
     dict_bins_common_cogs = defaultdict(list)
     for Cog, dict__bin_unitig in dict_cogbin_unitigs.items():
@@ -19,7 +19,8 @@ def get_overlaping_bins(dict_cogbin_unitigs, cog_threshold, overlap_threshold):
             for bin2, set2 in list(dict__bin_unitig.items())[index+1:]:
                 if set1 & set2:
                     if max(len(set1 & set2)/float(len(set1)), len(set1 & set2)/float(len(set2))) >= overlap_threshold:
-                        dict_bins_common_cogs[tuple(sorted([bin1, bin2]))].append(Cog)
+                        if bin1 in mags and bin2 in mags:
+                            dict_bins_common_cogs[tuple(sorted([bin1, bin2]))].append(Cog)
 
     # Summarize for each bin how many cogs are shared
     dict_bin_cogs = defaultdict(set)
@@ -86,7 +87,7 @@ def update_cogbin_unitigs(dict_merge_bins,dict_cogbin_unitigs):
     return dict_cogbin_unitigs_merged
 
 
-def main(cog_threshold, bins_to_merge, cogs_to_ignore, bins_to_process, rel_path, overlap_threshold):
+def main(mag_list, cog_threshold, bins_to_merge, cogs_to_ignore, bins_to_process, rel_path, overlap_threshold):
     dict_cogbin_unitigs = defaultdict(lambda: defaultdict(set))
 
     for bin_path in bins_to_process:
@@ -96,8 +97,10 @@ def main(cog_threshold, bins_to_merge, cogs_to_ignore, bins_to_process, rel_path
             test = {line.split("\t")[2] for line in open(cog_file) if line[0] == "S"}
             dict_cogbin_unitigs[cog][bin_] = test
 
+    mags = set(["Bin_%s" % line.rstrip() for line in open(mag_list)])
+
     # find out which bin needs to be merged or have cogs to flags
-    dict_to_flag, dict_merge_bins = get_overlaping_bins(dict_cogbin_unitigs, cog_threshold, overlap_threshold)
+    dict_to_flag, dict_merge_bins = get_overlaping_bins(mags, dict_cogbin_unitigs, cog_threshold, overlap_threshold,mag_list)
 
     # add the merged bin in this datastructure before checking again if they share cogs or need to be merged
     flag=True
@@ -105,7 +108,7 @@ def main(cog_threshold, bins_to_merge, cogs_to_ignore, bins_to_process, rel_path
     dict_merg_bins_global.update(dict_merge_bins)
     while flag==True:
         dict_cogbin_unitigs_merged=update_cogbin_unitigs(dict_merge_bins,dict_cogbin_unitigs)
-        dict_to_flag_new, dict_merge_bins_new = get_overlaping_bins(dict_cogbin_unitigs_merged, cog_threshold, overlap_threshold)
+        dict_to_flag_new, dict_merge_bins_new = get_overlaping_bins(mags, dict_cogbin_unitigs_merged, cog_threshold, overlap_threshold)
         if dict_merge_bins_new!={}:
             # merge the dict_merge_bins
             to_forget=[]
@@ -136,10 +139,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", nargs='+', help="list of all bin considered",required=True)    
     parser.add_argument("-g", help="relative path of graph files from the Bin directory, must end in COG*.gfa",required=True)
-    parser.add_argument("cog_threshold", help="number of cogs in common between bins to require merging",default="10")
+    parser.add_argument("mag_list", help="List of mags that can be merged")    
+    parser.add_argument("cog_threshold", help="number of cogs in common between bins to require merging")
     parser.add_argument("bins_to_merge", help="Output merge plan (.tsv)")
     parser.add_argument("cogs_to_ignore", help="Output bin cogs to ignore (.tsv)")
     parser.add_argument("-t", help="overlap treshold, percent of unitigs shared between graphs, to consider the graphs shared by multiple bins",default='0.1')
     args = parser.parse_args()
     
-    main(int(args.cog_threshold), args.bins_to_merge, args.cogs_to_ignore, args.b, args.g, float(args.t))
+    main(args.mag_list, int(args.cog_threshold), args.bins_to_merge, args.cogs_to_ignore, args.b, args.g, float(args.t))

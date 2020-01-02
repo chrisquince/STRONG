@@ -19,8 +19,8 @@ def get_overlaping_bins(mags, dict_cogbin_unitigs, cog_threshold, overlap_thresh
             for bin2, set2 in list(dict__bin_unitig.items())[index+1:]:
                 if set1 & set2:
                     if max(len(set1 & set2)/float(len(set1)), len(set1 & set2)/float(len(set2))) >= overlap_threshold:
-                        if bin1 in mags and bin2 in mags:
-                            dict_bins_common_cogs[tuple(sorted([bin1, bin2]))].append(Cog)
+#                        if bin1 in mags and bin2 in mags:
+                        dict_bins_common_cogs[tuple(sorted([bin1, bin2]))].append(Cog)
 
     # Summarize for each bin how many cogs are shared
     dict_bin_cogs = defaultdict(set)
@@ -39,7 +39,11 @@ def get_overlaping_bins(mags, dict_cogbin_unitigs, cog_threshold, overlap_thresh
             candidate_to_merge[bins] = list_cog
 
     # list bins to merge
-    list_sets_tomerge = [{bin1, bin2} for (bin1, bin2) in dict_bins_common_cogs.keys() if (bin1 in candidate_to_merge) and (bin2 in candidate_to_merge)]
+    list_sets_tomerge = []
+    for (bin1, bin2) in dict_bins_common_cogs.keys():
+        if bin1 in candidate_to_merge and bin2 in candidate_to_merge:
+            if bin1 in mags and bin2 in mags:
+                list_sets_tomerge.append({bin1, bin2}) 
 
     # take into accounts bins with too many shared COGs but not going to be merged 
     bins_going_to_merge={bins for set_bin in list_sets_tomerge for bins in set_bin}
@@ -100,7 +104,7 @@ def main(mag_list, cog_threshold, bins_to_merge, cogs_to_ignore, bins_to_process
     mags = set(["Bin_%s" % line.rstrip() for line in open(mag_list)])
 
     # find out which bin needs to be merged or have cogs to flags
-    dict_to_flag, dict_merge_bins = get_overlaping_bins(mags, dict_cogbin_unitigs, cog_threshold, overlap_threshold,mag_list)
+    dict_to_flag, dict_merge_bins = get_overlaping_bins(mags, dict_cogbin_unitigs, cog_threshold, overlap_threshold)
 
     # add the merged bin in this datastructure before checking again if they share cogs or need to be merged
     flag=True
@@ -145,5 +149,5 @@ if __name__ == "__main__":
     parser.add_argument("cogs_to_ignore", help="Output bin cogs to ignore (.tsv)")
     parser.add_argument("-t", help="overlap treshold, percent of unitigs shared between graphs, to consider the graphs shared by multiple bins",default='0.1')
     args = parser.parse_args()
-    
+    #import ipdb; ipdb.set_trace()
     main(args.mag_list, int(args.cog_threshold), args.bins_to_merge, args.cogs_to_ignore, args.b, args.g, float(args.t))

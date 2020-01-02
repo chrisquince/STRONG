@@ -15,6 +15,7 @@ rule results:
     input: expand("evaluation/bayespaths/{bin}_combine.tsv", bin=BIN),
            expand("evaluation/desman/{bin}_combine.tsv", bin=DESMAN_BINS),
            "evaluation/bayespaths/SpeciesMaxCov.csv",
+           "evaluation/desman/SpeciesMaxCovD.csv"
 
 rule contig_to_ref_counts:
     input: assembly = "profile/assembly.fasta",
@@ -59,6 +60,13 @@ rule strain_coverage:
            mergeBinFile = "subgraphs/bin_init/bins_to_merge.tsv"
     output: "{path}/SpeciesMaxCov.csv"
     shell: "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {REFDATA}/coverage.tsv {input.maxFile} {input.mergeBinFile} > {output}"
+
+rule strain_coveraged:
+    input: maxFile = "evaluation/bayespaths/SpeciesMax.csv",
+           mergeBinFile = "subgraphs/bin_init/bins_to_merge.tsv"
+    output: "{path}/SpeciesMaxCovD.csv"
+    shell: "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {REFDATA}/coverage.tsv {input.maxFile} {input.mergeBinFile} --nomerge > {output}"
+
 
 rule blastn:
     input: "{file}.fa"

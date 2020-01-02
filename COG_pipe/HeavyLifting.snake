@@ -68,8 +68,9 @@ rule simplify_subgraphs:
 
 checkpoint identify_bins_to_merge:
     #this is not a good way of defining input : may fail if input is evaluated before execution of some over rule  which should implicitely have been caried out beforehand. The right way to do it, is to have it depend on a checkpoint, for instance it fail if called before bin_merged folder is created.
-    input: lambda wildcards:expand("{path}/simplif/simplif.done", path = bin_paths_by_type(wildcards["bin_type"]))
-    #TODO should we put cogs to ignore files within the bin subfolders?
+    input: lambda wildcards:expand("{path}/simplif/simplif.done", path = bin_paths_by_type(wildcards["bin_type"])),
+           mags = "binning/list_mags.tsv"    
+#TODO should we put cogs to ignore files within the bin subfolders?
     output:  cogs_to_ignore = "subgraphs/{bin_type}/bin_cogs_to_ignore.tsv",
              bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
     params:  list_bins = lambda wildcards:" ".join(map(dirname,glob.glob("subgraphs/"+wildcards.bin_type+"/Bin*/"))),
@@ -77,7 +78,7 @@ checkpoint identify_bins_to_merge:
     #TODO use the input somehow? 
     #TODO remove '
     shell:   """
-    {SCRIPTS}/Common_unitigs.py -b {params.list_bins} -g {params.graph_rel_path} {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore} -t {MERGE_THRESHOLD}
+    {SCRIPTS}/Common_unitigs.py -b {params.list_bins} -g {params.graph_rel_path} {input.mags} {MERGE_VALUE} {output.bins_to_merge} {output.cogs_to_ignore} -t {MERGE_THRESHOLD}
     """
 
 checkpoint merge_bins:

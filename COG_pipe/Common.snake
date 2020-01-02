@@ -169,3 +169,14 @@ rule index_samples_bam:
     output:  "{path}.sorted.bam.bai"
     message: "Indexing bam file {wildcards.path}.sorted.bam"
     shell:   "samtools index {input}"
+
+def read_selected_bins(fn):
+    assert os.path.exists(fn)
+    print("Reading selected bins from %s" % fn)
+    return [line.strip() for line in open(fn).readlines()]
+
+
+def read_mags(fn):
+    assert os.path.exists(fn)
+    print("Reading selected MAGs from %s" % fn)
+    return ["Bin_%s" % line.rstrip() for line in open(fn).readlines()]

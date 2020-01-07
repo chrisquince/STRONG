@@ -25,12 +25,14 @@ rule create_unitig_profile:
     output: touch('subgraphs/{bin_type}/{bin}/raw_subgraphs/profile.done')
     shell:  """
             rm -rf $(dirname {input.flag})/*.tsv
-            for file in $(dirname {input.flag})/*gfa; do
-                stub=${{file%.gfa}}
-                awk '/^S/{{print ">"$2"\\n"$3 }}' $file | grep ">" | sed 's/>//g' > $stub.id    
-                awk 'FNR==NR {{hash[$1]; next}} $1 in hash' $stub.id {input.mult_prof} > ${{stub}}.tsv
-                rm $stub.id
-            done
+            if ls $(dirname {input.flag})/*gfa 1> /dev/null 2>&1; then 
+                for file in $(dirname {input.flag})/*gfa; do
+                    stub=${{file%.gfa}}
+                    awk '/^S/{{print ">"$2"\\n"$3 }}' $file | grep ">" | sed 's/>//g' > $stub.id    
+                    awk 'FNR==NR {{hash[$1]; next}} $1 in hash' $stub.id {input.mult_prof} > ${{stub}}.tsv
+                    rm $stub.id
+                done
+            fi
             """
 
 def bin_avg_cov(bin_cov_fn, bin_name):
@@ -58,10 +60,14 @@ rule simplify_subgraphs:
             rm -rf $out
             mkdir -p $out/tmp
             in=$(dirname {input.profiles_flag})
-            for g in $in/*gfa; do
-                name=$(basename $g .gfa)
-                {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
-            done
+
+            if ls $in/*gfa 1> /dev/null 2>&1; then
+                for g in $in/*gfa; do
+                    name=$(basename $g .gfa)
+                    {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
+                done
+            fi
+
             """)
 
 
@@ -96,8 +102,14 @@ rule compute_avg_cov_merged:
 
 def read_bad_cogs(filename, bin_):
     with open(filename) as handle:
-        return next(line.rstrip().split("\t")[1:] for line in handle if line.rstrip().split("\t")[0]==bin_)
-
+        for line in handle:
+            toks = line.rstrip().split("\t")
+            
+            if toks[0] == bin_:
+                return toks[1:]
+    
+    return []
+                
 rule flag_bad_cogs:
     input: cogs_to_ignore_file="subgraphs/bin_merged/bin_cogs_to_ignore.tsv",
            simplif_done_file="{path}/{bin}/simplif/simplif.done"

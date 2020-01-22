@@ -1,6 +1,3 @@
 [submodule "BayesAGraphSVA"]
 	path = BayesAGraphSVA
 	url = https://github.com/chrisquince/BayesAGraphSVA.git
-[submodule "DESMAN"]
-	path = DESMAN
-	url = https://github.com/chrisquince/DESMAN.git

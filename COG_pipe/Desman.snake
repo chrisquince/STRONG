@@ -5,21 +5,21 @@ include: "Common.snake"
 include: "Binning.snake"
 
 
+BIN_IDS = read_selected_bins('binning/list_mags.tsv')  
+BINS = ["Bin_%s" % x for x in BIN_IDS] 
 
-
-BIN_IDS, = glob_wildcards("subgraphs/bin_init/Bin_{id}/SCG.fna")
 
 rule prepare:
     input: "desman/contig_bins.done"
 
 rule all:
-    input: expand("desman/Bin_{id}/desman_analysis_done", id=BIN_IDS)
+    input: expand("desman/{Bin}/desman_analysis_done", Bin=BINS)
 
 rule bin_contigs:
     input:
         bin = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
         fasta = "profile/assembly.fasta"
-    output: expand("desman/Bin_{id}/Bin_{id}.fasta", id=BIN_IDS)
+    output: expand("desman/{Bin}/{Bin}.fasta", Bin=BINS)
     params: " ".join(BIN_IDS)
     shell: """
   {SCRIPTS}/Split_fasta_by_bin.py {input.fasta} {input.bin} desman -l {params} -d

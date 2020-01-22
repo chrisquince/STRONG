@@ -2,10 +2,6 @@ include: "Common.snake"
 
 import os
 
-def read_selected_bins(fn):
-    assert os.path.exists(fn)
-    print("Reading selected bins from %s" % fn)
-    return [line.strip() for line in open(fn).readlines()]
 
 BINS = read_selected_bins("bayespaths/selected_bins.txt") if os.path.exists("bayespaths/selected_bins.txt") \
                 else read_selected_bins("subgraphs/bin_merged/selected_bins.txt")

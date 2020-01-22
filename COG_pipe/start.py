@@ -106,8 +106,8 @@ with cd(exec_dir):
 
     if config["desman"]["execution"]:
         print("Step #4 - Strain Analysis with Desman") 
-        #TODO (for Sergey) return the previously removed checkpoint and remove two calls 
-        #call_snake(["--snakefile", "Desman.snake", "prepare"])
+    #     #TODO (for Sergey) return the previously removed checkpoint and remove two calls 
+    #     #call_snake(["--snakefile", "Desman.snake", "prepare"])
         call_snake(["--snakefile", "Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:

@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("contig_assign", help="File with original contigs assignment")
     parser.add_argument("out_dir", help="Output folder (NB: should be relative to the root!)")
     args = parser.parse_args()
-
+    print("launched")
     os.system('rm -rf %s/Bin_*' % args.out_dir)
 
     #FIXME can we just consider all the subfolders?

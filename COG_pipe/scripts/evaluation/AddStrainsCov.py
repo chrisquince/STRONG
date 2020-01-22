@@ -14,7 +14,7 @@ def main(argv):
     parser.add_argument("cov_file", help="long read maps")
     parser.add_argument("assign_file", help="read lengths")
     parser.add_argument("merge_file", help="read lengths")
-
+    parser.add_argument('--nomerge', dest='merge', action='store_false')
     args = parser.parse_args()
 #    import ipdb; ipdb.set_trace()
     species_strains = defaultdict(set)
@@ -30,15 +30,15 @@ def main(argv):
 
     mergeBins = defaultdict(list)
     mergeMap = {}
+    if args.merge:
+        with open(args.merge_file) as sin:
+            for line in sin:
+                line = line.rstrip()
+                toks = line.split('\t')
 
-    with open(args.merge_file) as sin:
-        for line in sin:
-            line = line.rstrip()
-            toks = line.split('\t')
-
-            for mbin in toks[1:]:
-                mergeMap[mbin] = toks[0]
-                mergeBins[toks[0]].append(mbin)
+                for mbin in toks[1:]:
+                    mergeMap[mbin] = toks[0]
+                    mergeBins[toks[0]].append(mbin)
     mergeSpecies = defaultdict(list)
     mergeStrains = defaultdict(list)
     mergeCovs = defaultdict(list)

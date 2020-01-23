@@ -4,3 +4,6 @@
 [submodule "DESMAN"]
 	path = DESMAN
 	url = https://github.com/chrisquince/DESMAN.git
+[submodule "SPAdes"]
+	path = SPAdes
+	url = https://github.com/snurk/spades.git

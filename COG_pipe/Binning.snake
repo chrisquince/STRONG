@@ -9,6 +9,7 @@ include: "cogs_annotation.snake"
 
 #TODO change paths?
 #TODO check that works correctly with subset of samples?
+#TODO switch to the gfa input?
 rule unitig_profiles:
     input:
         graph="{path}.gfa",
@@ -22,8 +23,8 @@ rule unitig_profiles:
     threads:
         THREADS
     shell:
-        "{SOFT}/spades-edge-profiles {input.reads_desc} {params.gp} {output} "
-        "-k {ASSEMBLY_K} -t {threads} -tmpdir $(dirname {output})/tmp &> {log}"
+        "{SOFT}/unitig-coverage {input.reads_desc} {params.gp} {output} "
+        "-k {ASSEMBLY_K} -t {threads} --tmpdir $(dirname {output})/tmp &> {log}"
 
 rule copy_fasta:
     input:   "assembly/%s/assembly.fasta" % ASSEMBLER

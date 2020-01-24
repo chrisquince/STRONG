@@ -17,7 +17,7 @@ rule extract_subgraphs:
     output:  touch("subgraphs/{bin_type}/{bin}/raw_subgraphs/subgraph.done")
     log:     "subgraphs/{bin_type}/{bin}/raw_subgraphs/subgraph.log"
     threads: THREADS
-    shell:   "{SOFT}/subgraph-extractor -part-seq {input.cogs} -graph {input.gfa} -o $(dirname {output}) -k {ASSEMBLY_K} -t {threads} -cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
+    shell:   "{SOFT}/cds-subgraphs --part-seq {input.cogs} --graph {input.gfa} -o $(dirname {output}) -k {ASSEMBLY_K} -t {threads} --cds-len-est {SCG_DATA}/coreCogs.tsv> {log}"
 
 rule create_unitig_profile:
     input: flag="subgraphs/{bin_type}/{bin}/raw_subgraphs/subgraph.done",
@@ -64,7 +64,7 @@ rule simplify_subgraphs:
             if ls $in/*gfa 1> /dev/null 2>&1; then
                 for g in $in/*gfa; do
                     name=$(basename $g .gfa)
-                    {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} -read-length {READ_LENGTH} -t {threads} -tmpdir $out/tmp &> $out/$name.log
+                    {SOFT}/spades-gsimplifier $g $out/$name --gfa -k {ASSEMBLY_K} -s $in/$name.stops -d $in/$name.deadends -p $in/$name.tsv -c {avg_cov} --read-length {READ_LENGTH} -t {threads} --tmpdir $out/tmp &> $out/$name.log
                 done
             fi
 

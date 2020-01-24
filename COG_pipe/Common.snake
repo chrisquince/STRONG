@@ -20,7 +20,7 @@ READ_LENGTH = config["read_length"]
 # -------- Sources -----------------
 SCRIPTS = config["scripts"]
 DSCRIPTS = config["desman"]["dscripts"]
-SOFT = config["soft"]
+SOFT = config["spades_tools"]
 # -------- COGs -----------------
 COG_DB= config["cog_database"]
 SCG_DATA = config["scg_data"]

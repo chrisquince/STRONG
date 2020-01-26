@@ -11,7 +11,7 @@ data: /mnt/gpfs/Hackathon/Test  # path to data folder
 cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database
 
 # ----- SPAdes tools dependency -----
-#spades_tools: /home/sergei/cog_tools
+spades_tools: /mnt/gpfs/chris/repos/STRONG/SPAdes/assembler/build/release/bin/
 
 # ----- Binning parameters ------
 concoct_contig_size: 1000
@@ -21,7 +21,6 @@ assembly:
     k: [77]
     mem: 2000
     threads: 24
-    #dir: /home/sergei/cog_tools/spades/bin
 
 # ----- BayesPaths parameters ------
 bayespaths:

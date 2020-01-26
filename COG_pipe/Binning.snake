@@ -23,7 +23,7 @@ rule unitig_profiles:
     threads:
         THREADS
     shell:
-        "{SOFT}/unitig-coverage {input.reads_desc} {params.gp} {output} "
+        "{SOFT}/unitig-coverage {input.reads_desc} {input.graph} {output} "
         "-k {ASSEMBLY_K} -t {threads} --tmpdir $(dirname {output})/tmp &> {log}"
 
 rule copy_fasta:

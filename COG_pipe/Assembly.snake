@@ -48,4 +48,4 @@ rule simplify:
     message: "Simplifying high-res graph in {wildcards.path}"
     shell: 
         '{SOFT}/spades-gsimplifier {params.gp} {params.out} --gfa -k {ASSEMBLY_K} '
-        '-read-length {READ_LENGTH} -t {threads} -tmpdir {params.tmp} &> {log}'
+        '--read-length {READ_LENGTH} -t {threads} --tmpdir {params.tmp} &> {log}'

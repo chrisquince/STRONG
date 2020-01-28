@@ -98,22 +98,26 @@ with cd(exec_dir):
     print("Step #1 - Assembly / Binning / COG Annotation")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
 
-    print("Step #2 - Subgraph Processing / Bin merging")
-    call_snake(["--snakefile", "HeavyLifting.snake"])
 
-    print("Step #3 - Strain Decomposition")
-    call_snake(["--snakefile", "BayesAGraph.snake"])
+    print("Step #2 - Bin annotation")
+    call_snake(["--snakefile", "Bin_annotation.snake"])
+
+    #print("Step #2 - Subgraph Processing / Bin merging")
+    #call_snake(["--snakefile", "HeavyLifting.snake"])
+
+    #print("Step #3 - Strain Decomposition")
+    #call_snake(["--snakefile", "BayesAGraph.snake"])
 
     if config["desman"]["execution"]:
         print("Step #4 - Strain Analysis with Desman") 
     #     #TODO (for Sergey) return the previously removed checkpoint and remove two calls 
     #     #call_snake(["--snakefile", "Desman.snake", "prepare"])
-        call_snake(["--snakefile", "Desman.snake", "all"])
+        #call_snake(["--snakefile", "Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:
         print("Step #5 - MAGAnalysis : place mags in a tree of references") 
-        call_snake(["--snakefile", "MAGAnalysis.snake"])
+        #call_snake(["--snakefile", "MAGAnalysis.snake"])
         
     if config["evaluation"]["execution"]:
         print("Step #6 - running evaluation") 
-        call_snake(["--snakefile", "eval.snake"])
+     #   call_snake(["--snakefile", "eval.snake"])

@@ -1,0 +1,53 @@
+include: "Common.snake"
+include: "Assembly.snake"
+include: "cogs_annotation.snake"
+
+
+BINS, = glob_wildcards("subgraphs/bin_init/{bin}/contigs.fasta") 
+
+
+rule all:
+    input: expand("subgraphs/bin_init/{bin}/SCG.fna", bin=BINS)
+
+
+# select best hit and use criterion : min 5% coverage, min 1e-10 evalue
+rule parse_cogs_annotation_bin:
+    input:
+        "{path}/contigs.Rpsblast_cogs.tsv"
+    output:
+        "{path}/Cogs_filtered.tsv"
+    log: "{path}/cog_filtering.log"
+    shell:
+        "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output} 2> {log}"
+
+# extract from the bed file all position of SCG 
+rule extract_SCG_sequences_bin:
+    input:
+        annotation="{path}/Cogs_filtered.tsv",
+        gff="{path}/contigs.gff",
+        fna="{path}/contigs.fna"
+    output:
+        "{path}/SCG.fna"
+    shell:
+        "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {COG_FILE} {input.gff} > {output}"
+
+
+rule prodigal_bin:
+    input:"{path}/contigs.fasta"
+    output:
+        faa="{path}/contigs.faa",
+        fna="{path}/contigs.fna",
+        gff="{path}/contigs.gff"
+    log:
+        "{path}/prodigal.log"
+    shell:
+        """
+ #           contig_len=$({SCRIPTS}/SumLengths.py {input})
+
+#            if [ $contig_len -gt 20000 ]; then
+  #              prodigal -i {input} -a {output.faa} -d {output.fna} -f gff -o {output.gff} &> {log} 
+   #         else
+                prodigal -i {input} -a {output.faa} -d {output.fna} -f gff -o {output.gff} -p meta &> {log} 
+    #        fi
+        """
+

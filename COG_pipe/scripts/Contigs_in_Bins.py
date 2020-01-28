@@ -2,13 +2,11 @@
 import argparse
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 from collections import Counter, defaultdict
-from pathlib import Path
 import os
-
+import errno
+import sys
 
 def main(argv):
-
-    args = parser.parse_args()
 
     parser = argparse.ArgumentParser()
     
@@ -19,8 +17,7 @@ def main(argv):
     parser.add_argument("bin_path", help="path to where you want to store the bins folders")
     
     args = parser.parse_args()
-
-    #import ipdb; ipdb.set_trace()
+#    import ipdb; ipdb.set_trace()
     
     contigs_seq = {}
     
@@ -35,16 +32,21 @@ def main(argv):
     with open(args.bin_file, 'r') as fp:
         for cnt, line in enumerate(fp):
             if cnt > 0:
-                line.rstrip()
+                line = line.rstrip()
                 toks = line.split(",")
                 bin_assign[toks[1]].append(toks[0])
     
-    for bin, contigs in bin_assign.items():
+    for bin_idx, contigs in bin_assign.items():
         
-        binPath = args.bin_path + '/' + "Bin_"+ bin
+        binPath = args.bin_path + '/' + "Bin_" + bin_idx + '/'
         
-        Path(binPath).mkdir(parents=True, exist_ok=True)
-    
+        if not os.path.exists(binPath):
+            try:
+                os.makedirs(binPath, 0o700)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+
         FastaFileName = binPath + '/contigs.fasta'
         
         with open(FastaFileName, 'w') as ff:

@@ -83,7 +83,7 @@ rule refine:
             table="{path}/clustering_gt%d_SCG_table.csv" % MIN_CONTIG_SIZE,
             bins_R="{path}/clustering_refine.csv",
             table_R="{path}/clustering_gt%d_SCG_table_R.csv" % MIN_CONTIG_SIZE,
-            mags="binning/list_mags.tsv
+            mags="{path}/list_mags.tsv"
     log:    "{path}/refine.log"
     threads: 1000
     shell:  """ 
@@ -106,12 +106,14 @@ rule merge_contigs:
 rule put_contigs_in_bins:
     input:
         bin = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
-        fasta = "profile/assembly.fasta",
+        fasta = "profile/assembly.fasta"
     output: done=touch("subgraphs/bin_init/folder_done")
-    shell: """{SCRIPTS}/Contigs_in_Bins.py {input.fasta} {input.bin} """
+    shell: """{SCRIPTS}/Contigs_in_Bins.py {input.bin} {input.fasta} $(dirname {output.done})   """
 
 rule compute_avg_cov:
     input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
     output:  "subgraphs/bin_init/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
+
+
 

@@ -25,7 +25,7 @@ def isStandardCode11(gff_fn):
             if 'transl_table=4' in line:
                 count4 += 1
 
-    if count11 > count4:
+    if count11 >= count4:
         return 1
     else:
         return 0

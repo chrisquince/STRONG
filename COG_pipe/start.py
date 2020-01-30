@@ -98,7 +98,6 @@ with cd(exec_dir):
     print("Step #1 - Assembly / Binning / COG Annotation")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
 
-
     print("Step #2 - Bin annotation")
     call_snake(["--snakefile", "Bin_annotation.snake"])
 

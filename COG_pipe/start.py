@@ -98,9 +98,6 @@ with cd(exec_dir):
     print("Step #1 - Assembly / Binning / COG Annotation")
     call_snake(["--snakefile", "SCogSubGraph.snake"])
 
-    print("Step #2 - Bin annotation")
-    call_snake(["--snakefile", "Bin_annotation.snake"])
-
     print("Step #2 - Subgraph Processing / Bin merging")
     call_snake(["--snakefile", "HeavyLifting.snake"])
 
@@ -110,7 +107,7 @@ with cd(exec_dir):
     if config["desman"]["execution"]:
         print("Step #4 - Strain Analysis with Desman") 
     #     #TODO (for Sergey) return the previously removed checkpoint and remove two calls 
-        #call_snake(["--snakefile", "Desman.snake", "prepare"])
+    #     #call_snake(["--snakefile", "Desman.snake", "prepare"])
         call_snake(["--snakefile", "Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:

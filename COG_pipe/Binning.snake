@@ -92,7 +92,7 @@ rule refine:
             cd binning
             concoct_refine ../{output.R} ../{input.data} ../{output.table} -t {threads} &> ../{log}
             cd -
-            {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R} 
+            {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
             """
 
 rule merge_contigs:
@@ -102,28 +102,16 @@ rule merge_contigs:
     threads: THREADS
     shell:   "{SCRIPTS}/Consensus.py {input} >{output} 2>{log}"
 
-rule get_merged_mags:
-    input:  bins="{path}/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
-            SCG="annotation/SCG.fna"
-    output: table="{path}/clustering_gt%d_merged_table.csv" % MIN_CONTIG_SIZE,
-            mags="{path}/list_mags.tsv"
-    log:    "{path}/get_merged_mags.log"
-    threads: THREADS
-    shell:  """
-            {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table} -l {output.mags}
-            """
 
-rule put_contigs_in_bins:
-    input:
-        bin = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
-        fasta = "profile/assembly.fasta"
-    output: done=touch("subgraphs/bin_init/folder_done")
-    shell: """{SCRIPTS}/Contigs_in_Bins.py {input.bin} {input.fasta} $(dirname {output.done})   """
+rule create_bin_folders:
+    input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+             fasta="annotation/SCG.fna"
+    output:  mags="binning/list_mags.tsv",
+             done=touch("subgraphs/bin_init/folder_done")
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -all $(dirname {output.done})/ -l {output.mags}"
 
 rule compute_avg_cov:
     input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
     output:  "subgraphs/bin_init/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
-
-
 

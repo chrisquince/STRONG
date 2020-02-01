@@ -5,13 +5,11 @@ samples: '*' # specify a list samples to use or '*' to use all samples
 threads : 8 # single task nb threads
 
 # ------ Assembly parameters ------ 
-data: /mnt/gpfs/Hackathon/Test  # path to data folder
+data: /mnt/gpfs/chris/Projects/STRONG_Runs/Test  # path to data folder
 
 # ----- Annotation database -----
 cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database
 
-# ----- SPAdes tools dependency -----
-spades_tools: /mnt/gpfs/chris/repos/STRONG/SPAdes/assembler/build/release/bin/
 
 # ----- Binning parameters ------
 concoct_contig_size: 1000
@@ -43,6 +41,6 @@ maganalysis:
 # -----  Evaluation ------
 evaluation:
     execution: 1
-    genomes: "/mnt/gpfs/Hackathon/Test/Eval" # path to refferences genomes 
+    genomes: "/mnt/gpfs/chris/Projects/STRONG_Runs/Test/Eval" # path to refferences genomes 
 
 

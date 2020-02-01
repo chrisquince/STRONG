@@ -52,3 +52,14 @@ rule extract_SCG_sequences:
         "{path}/SCG.fna"
     shell:
         "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {COG_FILE} {input.gff} > {output}"
+
+
+# extract from the bed file all position of SCG 
+rule get_SCG_tables:
+    input:
+        annotation="{path}/assembly.gff",
+        scg="{path}/SCG.fna"
+    output:
+        "{path}/SCG_tables.tsv"
+    shell:
+        "{SCRIPTS}/ParseTable.py {input.annotation} {input.scg} > {output}"

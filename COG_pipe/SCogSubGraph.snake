@@ -8,6 +8,6 @@ import os.path
 rule all: 
     input: "profile/split/coverage.tsv",
            "assembly/high_res/simplified.mult_prof",
-           "annotation/SCG.fna",
+           "annotation/SCG_tables.tsv",
            "subgraphs/bin_init/bin_cov.tsv",
            "subgraphs/bin_init/folder_done"

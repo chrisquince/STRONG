@@ -52,7 +52,7 @@ rule bam_readcount:
         "desman/{bin}/bam_readcount_{sample}.log"
     shell: """
         samtools index {input.bam} {input.bam}.bai
-        bam-readcount -l {input.bed} -f {input.fasta} {input.bam} 2> {log} | gzip > {output}
+        bam-readcount -w 1 -l {input.bed} -f {input.fasta} {input.bam} 2> {log} | gzip > {output}
         """
 
 rule assembly_bed:

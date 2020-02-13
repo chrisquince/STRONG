@@ -56,7 +56,7 @@ rule coverage:
             echo -e "contig\t""$(ls -U {input} | cut -f1 -d "." | rev | cut -f1 -d "/" |rev | tr "\n" "\t" | sed 's/\t$//')"> {output}
             awk 'NR==FNR{{Matrix_coverage[1,FNR]=$4}}FNR==1{{f++}}{{Matrix_coverage[f+1,FNR]=$5}}END{{for(x=1;x<=FNR;x++){{for(y=1;y<ARGC+1;y++){{if(y<ARGC){{printf("%s\t",Matrix_coverage[y,x])}}if(y==ARGC){{printf("%s",Matrix_coverage[y,x]);print""}}}}}}}}' {input} >>{output}"""
 
-# We take a look at all the SCG, take the median over the 36 of them, and multiply that by 10
+# We take a look at all the SCG, take the median over the 36 of them, and multiply that by 2
 rule initial_quantity_of_bins:
     input: "annotation/SCG.fna"
     output:"binning/ini_bins.cnt"

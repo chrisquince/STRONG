@@ -4,10 +4,11 @@ rule all:
   input: "mag_analysis/AlignAll/AlignAllR_assign.tsv"
 
 rule aggregate_SCG:
-    input: "binning/list_mags.tsv"
+    input: mags = "binning/list_mags.tsv",
+           bin_dir = "subgraphs/bin_init" 
     output: expand("mag_analysis/SCGs/{cog}.fna", cog=ANNOTATED_COGS) 
     shell: """
-     {SCRIPTS}/ExtractSCGs.py $(dirname {input}) {COG_FILE} mag_analysis/
+     {SCRIPTS}/ExtractSCGs.py {input.bin_dir} {COG_FILE} {input.mags} mag_analysis/
       """
 
 rule extract_ref_SCGs:

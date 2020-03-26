@@ -22,4 +22,5 @@ dependencies:
     - statsmodels
     - pathos
     - ete3
+    - bedtools
 

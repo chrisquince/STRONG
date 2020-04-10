@@ -101,11 +101,12 @@ with cd(exec_dir):
     print("Step #2 - Subgraph Processing / Bin merging")
     call_snake(["--snakefile", "HeavyLifting.snake"])
     
-    print("Step #3 - Strain Analysis with Desman") 
-    call_snake(["--snakefile", "Desman.snake", "all"])
-
-    print("Step #4 - Strain Decomposition")
+    print("Step #3 - Strain Decomposition")
     call_snake(["--snakefile", "BayesAGraph.snake"])
+
+    if config["desman"]["execution"]:
+        print("Step #4 - Strain Analysis with Desman") 
+        call_snake(["--snakefile", "Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:
         print("Step #5 - MAGAnalysis : place mags in a tree of references") 

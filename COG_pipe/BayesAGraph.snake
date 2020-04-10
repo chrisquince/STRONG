@@ -27,19 +27,5 @@ rule bayespaths:
             subgraph_dir="subgraphs/bin_merged/{bin}/simplif"
     threads: 10
     shell: """
-            if [ -f "desman/{wildcards.bin}/best_run.txt" ]; then
-                desmang=$(cut -d',' -f 1 "desman/{wildcards.bin}/best_run.txt")
-
-                let desmang*=2
-
-                if [ $desmang -gt {BAYESPATHS_G} ]; then
-                    desmang={BAYESPATHS_G}
-                elif [ $desmang -lt 5 ]; then
-                    desmang=5
-                fi 
-            else
-                desmang={BAYESPATHS_G}
-            fi 
-            echo "$desmang"
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input} {params.subgraph_dir} {params.kmer} bayespaths/{wildcards.bin}/{wildcards.bin} -g $desmang -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} &> {log}
+            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input} {params.subgraph_dir} {params.kmer} bayespaths/{wildcards.bin}/{wildcards.bin} -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} &> {log}
             """

@@ -75,24 +75,33 @@ rule concoct:
              concoct --coverage_file {input.cov} --composition_file {input.fasta} -b $(dirname {output.bins}) -c $(<{input.bin_cnt}) -l {MIN_CONTIG_SIZE} -t {threads} &>{log} 
              """
 
+# generate orfs bed
+rule bed_orfs:
+    input:   gff="{path}/assembly.gff"
+    output:  bed="{path}/assembly.bed"
+    shell : "{SCRIPTS}/Gff_to_bed.py {input.gff} {output.bed}"
+
+
 # path=binning
 rule refine:
     input:  bins="{path}/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
             SCG="annotation/SCG.fna",
-            data="{path}/original_data_gt%d.csv" % MIN_CONTIG_SIZE
+            data="{path}/original_data_gt%d.csv" % MIN_CONTIG_SIZE,
+            orf_bed = "annotation/assembly.bed",
+            split_bed = "profile/split.bed"
     output: R=temp("{path}/clustering_gt%dR.csv") % MIN_CONTIG_SIZE,
             table="{path}/clustering_gt%d_SCG_table.csv" % MIN_CONTIG_SIZE,
             bins_R="{path}/clustering_refine.csv",
-            table_R="{path}/clustering_gt%d_SCG_table_R.csv" % MIN_CONTIG_SIZE
+            table_R="{path}/clustering_gt%d_SCG_table_R.csv" % MIN_CONTIG_SIZE,
     log:    "{path}/refine.log"
     threads: 1000
     shell:  """ 
-            {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} -t {output.table}
+            {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} {input.orf_bed} {input.split_bed} -t {output.table}
             sed '1d' {input.bins}  > {output.R}
             cd binning
             concoct_refine ../{output.R} ../{input.data} ../{output.table} -t {threads} &> ../{log}
             cd -
-            {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} -t {output.table_R}
+            {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} {input.orf_bed} {input.split_bed} -t {output.table_R}
             """
 
 rule merge_contigs:
@@ -105,9 +114,11 @@ rule merge_contigs:
 
 rule create_bin_folders:
     input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
-             fasta="annotation/SCG.fna"
+             fasta="annotation/SCG.fna",
+             orf_bed = "annotation/assembly.bed",
+             split_bed = "profile/split.bed"
     output:  mags="binning/list_mags.tsv"
-    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} -all subgraphs/bin_init/ -l {output.mags}"
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} {input.orf_bed} {input.split_bed} -all subgraphs/bin_init/ -l {output.mags}"
 
 rule compute_avg_cov:
     input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE

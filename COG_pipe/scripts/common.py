@@ -13,6 +13,8 @@ import re
 default_values = {
     "concoct_fragment_size": 10000,
     "concoct_contig_size": 500,
+    "concoct_bin_multiplier": 3,
+    "concoct_bin_max": 2000,
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21, 33, 55],
                     "mem": 120, "threads": 16, "groups": []},

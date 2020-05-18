@@ -60,7 +60,7 @@ rule coverage:
 rule initial_quantity_of_bins:
     input: "annotation/SCG.fna"
     output:"binning/ini_bins.cnt"
-    shell: "{SCRIPTS}/get_num_bin_ini.py {input}>{output}"
+    shell: "{SCRIPTS}/get_num_bin_ini.py {input} {BINMULTIPLIER} {BINMAX} >{output}"
 
 #  concoct 
 rule concoct:

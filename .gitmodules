@@ -4,3 +4,6 @@
 [submodule "SPAdes"]
 	path = SPAdes
 	url = https://github.com/snurk/spades.git
+[submodule "BayesPaths"]
+	path = BayesPaths
+	url = https://github.com/chrisquince/BayesPaths.git

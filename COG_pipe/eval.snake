@@ -110,7 +110,7 @@ rule desman_blast_best:
 
 rule combine_eval_d:
     input: blastbest = "evaluation/desman/{bin}_blastbest.tsv",
-           maxcov = "evaluation/bayespaths/SpeciesMaxCov.csv"
+           maxcov = "evaluation/desman/SpeciesMaxCovD.csv"
     output: output = "evaluation/desman/{bin}_combine.tsv"
     shell: "{EVAL_SCRIPTS}/CombineD.py {input.blastbest} {input.maxcov} {wildcards.bin} > {output}"
 

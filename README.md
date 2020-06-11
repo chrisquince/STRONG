@@ -4,13 +4,13 @@
 
 STRONG resolves strain on assembly graphs by resolving variants on core COGs using co-occurrence across multiple samples.
 
+## Prerequisites
+
+The following pieces of software should be installed on your machine before attempting to install STRONG
+    - Conda
+    - cMake
+
 ## Installation
-
-The full list of requirement is listed in the file conda_env.yaml and can be installed through conda with the following command :
-
-```
-conda env create -f conda_env.yaml
-```
 
 Requires recursive cloning:
 
@@ -21,7 +21,27 @@ git clone --recurse-submodules https://github.com/chrisquince/STRONG.git
 To update
 
 ```
+cd STRONG/COG_pipe
 git submodule foreach git pull origin master
+```
+
+The full list of requirement is listed in the file conda_env.yaml and can be installed through conda with the following command :
+
+```
+conda env create -f conda_env.yaml
+```
+
+Once the STRONG environment has been installed activate it with the following command :
+
+```
+conda activate STRONG
+```
+
+Next compile SPAdes by running the following commands :
+
+```
+cd ../SPAdes/assembler
+./spades_compile.sh
 ```
 
 ## Quick start
@@ -32,7 +52,7 @@ Run from within the COG_pipe directory. Using the following command:
 python3 ./start.py --config config.yaml output_dir --threads 32
 ```
 
-Optionally pass snakemake parameters e.g. '--dryrun'
+Optionally pass snakemake parameters with the -s option e.g. '-s --dryrun'
 
 ## Config file
 

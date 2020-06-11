@@ -47,7 +47,7 @@ def fill_default_values(config):
         default_values["scripts"] = os.path.join(local_dir, "scripts")
         default_values["scg_data"] = os.path.join(local_dir, "scg_data")
         default_values["bayespaths"]["dir"] = os.path.join(
-            local_dir, "..", "BayesAGraphSVA")
+            local_dir, "..", "BayesPaths")
         default_values["desman"]["dscripts"] = os.path.join(
             local_dir, "..", "DESMAN/scripts")
         default_values["evaluation"]['scripts'] = os.path.join(

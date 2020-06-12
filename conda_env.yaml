@@ -24,4 +24,5 @@ dependencies:
     - pathos
     - ete3
     - bedtools
+    - cmake
 

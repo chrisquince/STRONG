@@ -27,5 +27,5 @@ rule bayespaths:
             subgraph_dir="subgraphs/bin_merged/{bin}/simplif"
     threads: 10
     shell: """
-            python3 {BAYESPATHS_DIR}/BayesPaths.py -t {BAYESPATHS_DIR}/coreCogs.tsv -l {input} {params.subgraph_dir} {params.kmer} bayespaths/{wildcards.bin}/{wildcards.bin} -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} &> {log}
+            python3 {BAYESPATHS_DIR}/bin/bayespaths -t {BAYESPATHS_DIR}/Data/coreCogs.tsv -l {input} {params.subgraph_dir} {params.kmer} bayespaths/{wildcards.bin}/{wildcards.bin} -g {BAYESPATHS_G} -e {BAYESPATHS_DIR}/runfg_source/ -r {params.read_len} &> {log}
             """

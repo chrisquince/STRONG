@@ -1,7 +1,8 @@
-name: STRONG
+name: STRONG2
 channels:
-    - https://metachannel.conda-forge.org/bioconda,anaconda,conda-forge/--max-build-no
     - bioconda
+    - anaconda
+    - conda-forge
 dependencies:
     - snakemake >=5.5.4
     - python

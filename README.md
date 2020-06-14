@@ -107,11 +107,11 @@ wget https://strongtest.s3.climb.ac.uk/Test.tar.gz
 tar -xvzf Test.tar.gz
 ```
 
-Finally we are ready to run from within the COG_pipe directory. Using the following command:
+We are now ready to run STRONG from within the COG_pipe directory. Using the following command:
 
 ```
 cd ~/repos/STRONG/COG_pipe
-python3 ./start.py --config config.yaml output_dir --threads 32
+python3 ./start.py --config config.yaml ~/STRONG_Runs/TestResults --threads 32 --dryrun
 ```
 
 Optionally pass snakemake parameters with the -s option e.g. '-s --dryrun'

@@ -1,4 +1,4 @@
-name: STRONG2
+name: STRONG
 channels:
     - bioconda
     - anaconda
@@ -25,4 +25,12 @@ dependencies:
     - ete3
     - bedtools
     - cmake
+    - matplotlib
+    - numpy
+    - pandas
+    - networkx
+    - sklearn
+    - libreadline-dev
+    - libbz2-dev
+
 

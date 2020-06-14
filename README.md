@@ -7,29 +7,64 @@ STRONG resolves strain on assembly graphs by resolving variants on core COGs usi
 ## Prerequisites
 
 The following pieces of software should be installed on your machine before attempting to install STRONG
-    - Conda
-    - cMake
+    - conda (miniconda)
+    - cmake, zlib, GNU readline, G++
+    
+For a standard Ubuntu 16.04 distribution. The above packages would be installed as:
+
+```
+    sudo apt-get update
+    sudo apt-get -y install libbz2-dev libreadline-dev cmake g++ zlib1g zlib1g-dev
+```
+
+Python is also need for the conda install we recommend Python 3.7.
+To install miniconda follow the instructions (here)[https://docs.conda.io/en/latest/miniconda.html]:
 
 ## Installation
 
-Requires recursive cloning:
+STRONG can be installed anywhere but for the below we assume it will be placed in ~/repos that you 
+may have to create in your home dir:
+```
+cd ~/repos
+```
+
+We begin by cloning STRONG recursively:
 
 ```
 git clone --recurse-submodules https://github.com/chrisquince/STRONG.git
 ```
 
-To update
+If you need to update in future:
 
 ```
-cd STRONG/COG_pipe
+cd STRONG
 git submodule foreach git pull origin master
 ```
 
-The full list of requirement is listed in the file conda_env.yaml and can be installed through conda with the following command :
+We recommend that you first compile the SPAdes executables outside of conda:
 
 ```
-conda env create -f conda_env.yaml
+cd ./SPAdes/assembler
+
+./spades_compile.sh
+
+cd ../..
 ```
+
+The full list of requirements is listed in the file conda_env.yaml we recommend mamba for install. This can be 
+itself installed through conda by:
+```
+conda install -c conda-forge mamba
+```
+
+Then we use mamba to resolve the STRONG environment from with the STRONG home directory:
+
+```
+mamba env create -f conda_env.yaml
+```
+
+This should take 5 - 10 minutes with mamba.
+
 
 Once the STRONG environment has been installed activate it with the following command :
 
@@ -37,18 +72,45 @@ Once the STRONG environment has been installed activate it with the following co
 conda activate STRONG
 ```
 
-Next compile SPAdes by running the following commands :
+
+It is also necessary to install the BayesPaths executable with the STRONG conda:
 
 ```
-cd ../SPAdes/assembler
-./spades_compile.sh
+cd BayesPaths
+python ./setup.py install
 ```
+
+Finally we will also need a version of the COG database installed. We make this available for download 
+and again we recommend placing it in a directory ~/Database but it could be placed anywhere:
+
+```
+mkdir Database
+wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
+tar -xvzf rpsblast_cog_db.tar.gz
+```
+
+## Native installation (Not supported yet)
+
+STRONG has a lot of required software, this is an attempt to demonstrate how to install all of them to avoid the 
+conda recipe above. 
+
 
 ## Quick start
 
-Run from within the COG_pipe directory. Using the following command:
+First we will download a fairly simple synthetic test data set from known microbial strains into another directory 
+~/STRONG_Runs that we will use for STRONG output:
 
 ```
+mkdir ~/STRONG_Runs
+cd  ~/STRONG_Runs
+wget https://strongtest.s3.climb.ac.uk/Test.tar.gz
+tar -xvzf Test.tar.gz
+```
+
+Finally we are ready to run from within the COG_pipe directory. Using the following command:
+
+```
+cd ~/repos/STRONG/COG_pipe
 python3 ./start.py --config config.yaml output_dir --threads 32
 ```
 

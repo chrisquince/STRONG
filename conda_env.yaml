@@ -30,7 +30,5 @@ dependencies:
     - pandas
     - networkx
     - sklearn
-    - libreadline-dev
-    - libbz2-dev
 
 

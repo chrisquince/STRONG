@@ -30,5 +30,4 @@ dependencies:
     - pandas
     - networkx
     - scikit-learn
-
-
+    - yaml

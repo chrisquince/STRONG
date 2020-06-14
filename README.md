@@ -34,7 +34,7 @@ We begin by cloning STRONG recursively:
 git clone --recurse-submodules https://github.com/chrisquince/STRONG.git
 ```
 
-STRONG contains (DESMAN)[https://github.com/chrisquince/DESMAN] and (BayesPaths)[https://github.com/chrisquince/BayesPaths] as submodules.
+STRONG contains [DESMAN](https://github.com/chrisquince/DESMAN) and [BayesPaths](https://github.com/chrisquince/BayesPaths) as submodules.
 
 If you need to update in future:
 
@@ -82,9 +82,9 @@ cd BayesPaths
 python ./setup.py install
 ```
 
-BayesPaths use precompiled executables in the runfg_source directory. These are compatible 
-with Linux x86-64 on other platforms. These will require compilation from source see
-the (BayesPaths repo)[https://github.com/chrisquince/BayesPaths] for details. 
+BayesPaths use precompiled executables in the runfg_source directory. These are only compatible 
+with Linux x86-64 and on other platforms they will require compilation from source see
+the [BayesPaths repo](https://github.com/chrisquince/BayesPaths]) for details. 
 
 
 Finally we will also need a version of the COG database installed. We make this available for download 

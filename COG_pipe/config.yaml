@@ -5,10 +5,10 @@ samples: '*' # specify a list samples to use or '*' to use all samples
 threads : 8 # single task nb threads
 
 # ------ Assembly parameters ------ 
-data: /mnt/gpfs/chris/Projects/STRONG_Runs/Test  # path to data folder
+data: ~/STRONG_Runs/Test  # path to data folder
 
 # ----- Annotation database -----
-cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database
+cog_database: ~/Database/rpsblast_cog_db/Cog # COG database
 
 
 # ----- Binning parameters ------
@@ -41,6 +41,6 @@ maganalysis:
 # -----  Evaluation ------
 evaluation:
     execution: 1
-    genomes: "/mnt/gpfs/chris/Projects/STRONG_Runs/Test/Eval" # path to refferences genomes 
+    genomes: "~/STRONG_Runs/Test/Eval" # path to refferences genomes 
 
 

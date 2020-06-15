@@ -2,7 +2,7 @@
 
 ## Overview
 
-STRONG resolves strain on assembly graphs by resolving variants on core COGs using co-occurrence across multiple samples.
+STRONG resolves strains on assembly graphs by resolving variants on core COGs using co-occurrence across multiple samples.
 
 ## Prerequisites
 
@@ -43,12 +43,14 @@ cd STRONG
 git submodule foreach git pull origin master
 ```
 
-We recommend that you first compile the SPAdes executables outside of conda:
+We recommend that you first compile the SPAdes and COG tools executables outside of conda:
 
 ```
 cd ./SPAdes/assembler
 
 ./spades_compile.sh
+
+./build_cog_tools.sh 
 
 cd ../..
 ```

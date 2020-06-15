@@ -186,7 +186,7 @@ Then it is fine to run the actual pipeline as follows:
 ```
 python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --verbose
 ```
-The number of threads is optional and should not be set as appropriate to your system.
+The number of threads is optional and should be set as appropriate to your system.
 
 
 ## Config file

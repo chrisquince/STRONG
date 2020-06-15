@@ -162,7 +162,32 @@ cd $SPATH/STRONG/COG_pipe
 python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
 ```
 
-This will 
+This will run the pipeline in 'dryrun' mode which will list commands to be run without actually 
+executing. This can only get as far as a checkpoint where an assertion error will be generated. Do 
+not worry about this. If it looks similar to:
+```
+Step #3 - Strain Decomposition
+...
+
+AssertionError in line 176 of /home/ubuntu/repos/STRONG/COG_pipe/Common.snake.
+  File "/home/ubuntu/repos/STRONG/COG_pipe/BayesAGraph.snake", line 7, in <module>
+  File "/home/ubuntu/repos/STRONG/COG_pipe/Common.snake", line 176, in read_selected_bins
+Traceback (most recent call last):
+  File "./start.py", line 105, in <module>
+    call_snake(["--snakefile", "BayesAGraph.snake"])
+  File "./start.py", line 80, in call_snake
+    subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
+  File "/home/ubuntu/miniconda3/envs/STRONG/lib/python3.7/subprocess.py", line 363, in check_call
+    raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['snakemake', '--directory', '/home/ubuntu/STRONG_Runs/TestResults', '--cores', '8', '--config', 'LOCAL_DIR=/home/ubuntu/repos/STRONG/COG_pipe', '--latency-wait', '120', '-k', '-p', '-r', '--verbose', '--dryrun', '--snakefile', 'BayesAGraph.snake']' returned non-zero exit status 1.
+```
+
+Then it is fine to run the actual pipeline as follows:
+```
+python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --verbose
+```
+The number of threads is optional and should not be set as appropriate to your system.
+
 
 ## Config file
 

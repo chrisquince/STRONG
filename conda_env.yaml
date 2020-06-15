@@ -26,8 +26,7 @@ dependencies:
     - bedtools
     - cmake
     - matplotlib
-    - numpy
-    - pandas
-    - networkx
+    - numpy=1.16.0
+    - pandas>=0.24.0
+    - networkx>=2.4
     - scikit-learn
-    - yaml

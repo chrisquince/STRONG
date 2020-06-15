@@ -53,7 +53,7 @@ def fill_default_values(config):
         default_values["evaluation"]['scripts'] = os.path.join(
             local_dir, "scripts/evaluation")
         default_values["spades_tools"] = os.path.join(
-            local_dir, "..", "SPAdes/assembler/build/release/bin")
+            local_dir, "..", "SPAdes/assembler/build_spades/bin")
         default_values["assembly"]['dir'] = os.path.join(
             local_dir, "..", "SPAdes/assembler/bin")
     setdefault_recursively(config)

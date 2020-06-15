@@ -61,7 +61,7 @@ itself installed through conda by:
 conda install -c conda-forge mamba
 ```
 
-Then we use mamba to resolve the STRONG environment from with the STRONG home directory:
+Then we use mamba to resolve the STRONG environment from within the STRONG home directory:
 
 ```
 mamba env create -f conda_env.yaml
@@ -89,13 +89,23 @@ with Linux x86-64 and on other platforms they will require compilation from sour
 the [BayesPaths repo](https://github.com/chrisquince/BayesPaths]) for details. 
 
 
-Finally we will also need a version of the COG database installed. We make this available for download 
+We will also need a version of the COG database installed. We make this available for download 
 and again we recommend placing it in a directory ~/Database but it could be placed anywhere:
 
 ```
 mkdir Database
 wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
 tar -xvzf rpsblast_cog_db.tar.gz
+```
+
+Unfortunately there is a bug in the conda CONCOCT package caused by updates to Pandas
+this needs to be fixed before running the pipeline:
+
+```
+CPATH=`which concoct_refine`
+sed -i 's/values/to_numpy/g' $CPATH
+sed -i 's/as_matrix/to_numpy/g' $CPATH
+sed -i 's/int(NK), args.seed, args.threads)/ int(NK), args.seed, args.threads, 500)/g' $CPATH
 ```
 
 ## Native installation (Not supported yet)

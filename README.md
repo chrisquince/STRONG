@@ -142,12 +142,12 @@ need to edited first though. The following edits are necessary:
 data: /mypath/torunthings/STRONG_Runs/Test
 ```
 
-1. The cog_database field to:
+2. The cog_database field to:
 ```
 cog_database: /path/to_my/database/rpsblast_cog_db/Cog
 ```
 
-1. The evaluation genomes field which contains the known genomes to validate to 
+3. The evaluation genomes field which contains the known genomes to validate to 
 ```
 genomes: /mypath/torunthings/STRONG_Runs/Test/Eval
 ```

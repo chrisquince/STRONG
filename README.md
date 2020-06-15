@@ -22,10 +22,13 @@ To install miniconda follow the instructions (here)[https://docs.conda.io/en/lat
 
 ## Installation
 
-STRONG can be installed anywhere but for the below we assume it will be placed in ~/repos that you 
+STRONG can be installed anywhere but for the below we assume it will be placed in a location
+SPATH that you set as an environment variable:
+ that you 
 may have to create in your home dir:
 ```
-cd ~/repos
+export SPATH=/mypath/to/repos
+cd $SPATH
 ```
 
 We begin by cloning STRONG recursively:
@@ -46,13 +49,12 @@ git submodule foreach git pull origin master
 We recommend that you first compile the SPAdes and COG tools executables outside of conda:
 
 ```
-cd ./SPAdes/assembler
+cd ./STRONG/SPAdes/assembler
 
 ./spades_compile.sh
 
 ./build_cog_tools.sh 
 
-cd ../..
 ```
 
 The full list of requirements is listed in the file conda_env.yaml we recommend mamba for install. This can be 
@@ -64,6 +66,8 @@ conda install -c conda-forge mamba
 Then we use mamba to resolve the STRONG environment from within the STRONG home directory:
 
 ```
+cd $SPATH/STRONG
+
 mamba env create -f conda_env.yaml
 ```
 
@@ -90,10 +94,12 @@ the [BayesPaths repo](https://github.com/chrisquince/BayesPaths]) for details.
 
 
 We will also need a version of the COG database installed. We make this available for download 
-and again we recommend placing it in a directory ~/Database but it could be placed anywhere:
+and it can be placed anywhere. Here we point the DB_PATH variable to its location which should 
+be chosen appropriately:
 
 ```
-mkdir Database
+export DB_PATH=/path/to_my/database
+cd $DB_PATH
 wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
 tar -xvzf rpsblast_cog_db.tar.gz
 ```

@@ -123,20 +123,26 @@ conda recipe above.
 ## Quick start
 
 First we will download a fairly simple synthetic test data set from known microbial strains into another directory 
-~/STRONG_Runs that we will use for STRONG output:
+/mypath/torunthings/STRONG_Runs that we will use for STRONG output:
 
 ```
-mkdir ~/STRONG_Runs
-cd  ~/STRONG_Runs
+export SRPATH=/mypath/torunthings/STRONG_Runs
+mkdir $SRPATH
+cd  $SRPATH
 wget https://strongtest.s3.climb.ac.uk/Test.tar.gz
 tar -xvzf Test.tar.gz
 ```
 
-We are now ready to run STRONG from within the COG_pipe directory. Using the following command:
+We are now ready to run STRONG from within the COG_pipe directory. The config.yaml file will 
+need to edited first though. The data directory needs to be set to $SRPATH/Test and 
+cog_database to  $DB_PATH/rpsblast_cog_db/Cog and the Eval directory to $SRPATH/Test/Eval.
+
+
+Then run the following command:
 
 ```
-cd ~/repos/STRONG/COG_pipe
-python3 ./start.py --config config.yaml ~/STRONG_Runs/TestResults --threads 32 --dryrun
+cd $SPATH/STRONG/COG_pipe
+python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8
 ```
 
 Optionally pass snakemake parameters with the -s option e.g. '-s --dryrun'

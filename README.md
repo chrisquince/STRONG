@@ -134,18 +134,35 @@ tar -xvzf Test.tar.gz
 ```
 
 We are now ready to run STRONG from within the COG_pipe directory. The config.yaml file will 
-need to edited first though. The data directory needs to be set to $SRPATH/Test and 
-cog_database to  $DB_PATH/rpsblast_cog_db/Cog and the Eval directory to $SRPATH/Test/Eval.
+need to edited first though. The following edits are necessary:
 
+1. The data directory needs to point at the samples to be assembled in this case edit:
+
+```
+data: /mypath/torunthings/STRONG_Runs/Test
+```
+
+1. The cog_database field to:
+```
+cog_database: /path/to_my/database/rpsblast_cog_db/Cog
+```
+
+1. The evaluation genomes field which contains the known genomes to validate to 
+```
+genomes: /mypath/torunthings/STRONG_Runs/Test/Eval
+```
+For real data this step would be deactivated by setting 'execution: 0'
+
+All these paths need to be absolute see below for more details on the config file.
 
 Then run the following command:
 
 ```
 cd $SPATH/STRONG/COG_pipe
-python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8
+python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
 ```
 
-Optionally pass snakemake parameters with the -s option e.g. '-s --dryrun'
+This will 
 
 ## Config file
 

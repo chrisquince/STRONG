@@ -30,3 +30,4 @@ dependencies:
     - pandas>=0.24.0
     - networkx>=2.4
     - scikit-learn
+    - bam-readcount

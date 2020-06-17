@@ -31,3 +31,7 @@ dependencies:
     - networkx>=2.4
     - scikit-learn
     - bam-readcount
+    - r-base
+    - r-ggplot2
+    - r-reshape
+    - r-getopt

@@ -249,10 +249,10 @@ evaluation:
 ## Pipeline
 # Assembly and binning 
 ![alt tag](./Figures/Dag_rules1.png)
-# BayesAGraohsSVA
+# BayesAGraphsSVA
 ![alt tag](./Figures/Dag_rules2.png)
 # Desman 
-to be uploaded
+![alt tag](./Figures/Dag_rules4.png)
 # MAGanalysis
 ![alt tag](./Figures/Dag_rules5.png)
 # Evaluation

@@ -88,6 +88,14 @@ cd BayesPaths
 python ./setup.py install
 ```
 
+And also DESMAN:
+
+```
+cd ../DESMAN
+python ./setup.py install
+```
+
+
 BayesPaths use precompiled executables in the runfg_source directory. These are only compatible 
 with Linux x86-64 and on other platforms they will require compilation from source see
 the [BayesPaths repo](https://github.com/chrisquince/BayesPaths]) for details. 

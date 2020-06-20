@@ -35,6 +35,8 @@ MERGE_VALUE=config["bayespaths"]["min_orf_number_to_merge_bins"] # if there's to
 MERGE_THRESHOLD=config["bayespaths"]["percent_unitigs_shared"] # minimum number of unitigs shared between graph to consider there is a link 
 BAYESPATHS_DIR = config["bayespaths"]["dir"]
 BAYESPATHS_G = config["bayespaths"]["nb_strains"]
+BAYESPATHS_NMF_RUNS = config["bayespaths"]["nmf_runs"]
+BAYESPATHS_MAX_GITER = config["bayespaths"]["max_giter"]
 # -------- Binning -----------------
 FRAGMENT_SIZE = config["concoct_fragment_size"]
 MIN_CONTIG_SIZE = config["concoct_contig_size"]

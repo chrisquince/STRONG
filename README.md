@@ -110,6 +110,7 @@ export DB_PATH=/path/to_my/database
 cd $DB_PATH
 wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
 tar -xvzf rpsblast_cog_db.tar.gz
+rm rpsblast_cog_db.tar.gz
 ```
 
 Unfortunately there is a bug in the conda CONCOCT package caused by updates to Pandas
@@ -139,10 +140,13 @@ mkdir $SRPATH
 cd  $SRPATH
 wget https://strongtest.s3.climb.ac.uk/Test.tar.gz
 tar -xvzf Test.tar.gz
+rm Test.tar.gz
 ```
 
-We are now ready to run STRONG from within the COG_pipe directory. The config.yaml file will 
-need to edited first though. The following edits are necessary:
+We are now ready to run STRONG from within the COG_pipe directory. Two example yamls are 
+provided, for a high quality run of real data start from config.yaml but for this simple example 
+use test_config.yaml which assumes a maximum of 5 strains per MAG as explained below.
+This file will need to be edited though. The following edits are necessary:
 
 1. The data directory needs to point at the samples to be assembled in this case edit:
 
@@ -167,7 +171,7 @@ Then run the following command:
 
 ```
 cd $SPATH/STRONG/COG_pipe
-python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
+python3 ./start.py --config test_config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
 ```
 
 This will run the pipeline in 'dryrun' mode which will list commands to be run without actually 

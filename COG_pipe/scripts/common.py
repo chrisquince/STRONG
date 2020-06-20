@@ -23,7 +23,7 @@ default_values = {
     "bayespaths": {"min_orf_number_to_merge_bins": 10,
                    "min_orf_number_to_run_a_bin": 10,
                    "percent_unitigs_shared": 0.1,
-                   "nb_strains": 16},
+                   "nb_strains": 16,"nmf_iters":10},
     "maganalysis": {"execution": 0},
     "evaluation": {"execution": 0, "genomes": ""},
 }

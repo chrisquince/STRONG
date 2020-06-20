@@ -51,8 +51,6 @@ We recommend that you first compile the SPAdes and COG tools executables outside
 ```
 cd ./STRONG/SPAdes/assembler
 
-./spades_compile.sh
-
 ./build_cog_tools.sh 
 
 ```

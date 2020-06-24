@@ -161,12 +161,12 @@ rule haplo_seqs:
     output: "{path}/best_run.txt"
     params: "{path}"
     shell: """
-        python {DSCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
+        {DSCRIPTS}/resolvenhap.py {params}/Run > {params}/best_run.txt
         
         cut -d"," -f 1 < {params}/freqs_sel_var.csv | sort | uniq | sed '1d' > {params}/coregenes.txt
 
         mkdir -p {params}/haplotype_seqs
-        python {DSCRIPTS}/GetVariantsCore.py {input.fasta} {input.scg_coordinates} $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
+        {DSCRIPTS}/GetVariantsCore.py {input.fasta} {input.scg_coordinates} $(cut -d"," -f5 {params}/best_run.txt) {params}/coregenes.txt -o {params}/haplotype_seqs/
     """
 
 def do_we_need_to_run_desman(wildcards):

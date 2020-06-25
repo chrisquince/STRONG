@@ -10,6 +10,8 @@ import os
 import os.path
 import re
 
+
+
 default_values = {
     "concoct_fragment_size": 10000,
     "concoct_contig_size": 500,
@@ -46,19 +48,30 @@ def setdefault_recursively(tgt, default=default_values):
 def fill_default_values(config):
     local_dir = config.get("LOCAL_DIR")
     if local_dir:
-        default_values["scripts"] = os.path.join(local_dir, "scripts")
-        default_values["scg_data"] = os.path.join(local_dir, "scg_data")
-        default_values["bayespaths"]["dir"] = os.path.join(
-            local_dir, "..", "BayesPaths")
+        default_values["scripts"] = os.path.join(local_dir, "Burrow/scripts")
+        default_values["scg_data"] = os.path.join(local_dir, "Burrow/scg_data")
+        default_values["bayespaths"]["dir"] = os.path.join(local_dir, "BayesPaths")
         default_values["desman"]["dscripts"] = os.path.join(
-            local_dir, "..", "DESMAN/scripts")
+            local_dir, "DESMAN/scripts")
         default_values["evaluation"]['scripts'] = os.path.join(
-            local_dir, "scripts/evaluation")
-        default_values["spades_tools"] = os.path.join(
-            local_dir, "..", "SPAdes/assembler/build_spades/bin")
+            local_dir, "Burrow/scripts/evaluation")
+        default_values["spades_tools"] = os.path.join(local_dir, "SPAdes/assembler/build_spades/bin")
         default_values["assembly"]['dir'] = os.path.join(
-            local_dir, "..", "SPAdes/assembler/bin")
+            local_dir, "SPAdes/assembler/bin")
     setdefault_recursively(config)
+
+#copied from http://stackoverflow.com/questions/431684/how-do-i-cd-in-python/13197763#13197763
+class cd:
+    """Context manager for changing the current working directory"""
+    def __init__(self, newPath):
+        self.newPath = os.path.expanduser(newPath)
+
+    def __enter__(self):
+        self.savedPath = os.getcwd()
+        os.chdir(self.newPath)
+
+    def __exit__(self, etype, value, traceback):
+        os.chdir(self.savedPath)
 
 
 def sample_name(fullname):

@@ -1,5 +1,6 @@
 include: "Common.snake"
 include: "Binning.snake"
+include: "cogs_annotation.snake"
 
 import glob
 import os

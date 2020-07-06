@@ -1,12 +1,3 @@
-include: "Common.snake"
-include: "Assembly.snake"
-include: "cogs_annotation.snake"
-#rule all_local: 
-#   input: cov="binning/C10K_coverage.tsv",
-#          bins="binning/clustering_gt500.csv",
-#          touch="binning/bin_creation.done"
-
-
 #TODO change paths?
 #TODO check that works correctly with subset of samples?
 #TODO switch to the gfa input?

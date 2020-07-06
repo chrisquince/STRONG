@@ -32,23 +32,6 @@ if not os.path.exists(args.dir):
 output_dir = os.path.abspath(os.path.realpath(args.dir))
 print("Output folder set to", output_dir)
 
-# base parameters used to call snakeamke
-base_params = ["snakemake", "--directory", output_dir, "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR, "--latency-wait", "120","-k"]
-
-# parse args
-
-if args.verbose:
-    # Output commands + give reasons + verbose (add "-n" for dry-run)
-    base_params.extend(["-p", "-r", "--verbose"]) 
-if args.dryrun:
-    base_params.extend(["--dryrun"])
-if args.unlock:
-    base_params.extend(["--unlock"])
-if args.dag:
-    base_params.extend(["--rulegraph"])
-if args.s :
-    base_params.extend(args.s)
-
 
 # check config file given is the same as the one in the output dir, also copy it there if it does not exist.
 config_path = os.path.join(output_dir, "config.yaml")
@@ -63,6 +46,24 @@ if args.config:
 if (not os.path.exists(config_path))&(os.path.exists(args.config)):
     print("No config file present in %s, and config file was either not specified or not found. Please use --config to specify config file"%output_dir)
     sys.exit(239)
+
+
+# base parameters used to call snakeamke
+base_params = ["snakemake", "--directory", output_dir, "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR,"--configfile=%s"%config_path, "--latency-wait", "120","-k"]
+
+# parse args
+if args.verbose:
+    # Output commands + give reasons + verbose (add "-n" for dry-run)
+    base_params.extend(["-p", "-r", "--verbose"]) 
+if args.dryrun:
+    base_params.extend(["--dryrun"])
+if args.unlock:
+    base_params.extend(["--unlock"])
+if args.dag:
+    base_params.extend(["--rulegraph"])
+if args.s :
+    base_params.extend(args.s)
+
 
 with cd(LOCAL_DIR):
     call_cnt=0
@@ -79,7 +80,7 @@ with cd(LOCAL_DIR):
 
     # load config for conditional execution
     with open(config_path) as config_in:
-        config = yaml.load(config_in)
+        config = yaml.safe_load(config_in)
     fill_default_values(config)
     
     # Finally start the pipeline

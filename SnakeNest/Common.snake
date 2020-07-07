@@ -42,6 +42,7 @@ FRAGMENT_SIZE = config["concoct_fragment_size"]
 MIN_CONTIG_SIZE = config["concoct_contig_size"]
 BINMULTIPLIER = config["concoct_bin_multiplier"]
 BINMAX = config["concoct_bin_max"]
+MAG_QUAL_THRESHOLD = config["mag_quality_threshold"]
 # -------- Desman -----------------
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]

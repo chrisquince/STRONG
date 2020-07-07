@@ -17,6 +17,7 @@ default_values = {
     "concoct_contig_size": 500,
     "concoct_bin_multiplier": 3,
     "concoct_bin_max": 2000,
+    "mag_quality_threshold": 0.75,
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21, 33, 55],
                     "mem": 120, "threads": 16, "groups": []},
@@ -48,13 +49,13 @@ def setdefault_recursively(tgt, default=default_values):
 def fill_default_values(config):
     local_dir = config.get("LOCAL_DIR")
     if local_dir:
-        default_values["scripts"] = os.path.join(local_dir, "Burrow/scripts")
-        default_values["scg_data"] = os.path.join(local_dir, "Burrow/scg_data")
+        default_values["scripts"] = os.path.join(local_dir, "SnakeNest/scripts")
+        default_values["scg_data"] = os.path.join(local_dir, "SnakeNest/scg_data")
         default_values["bayespaths"]["dir"] = os.path.join(local_dir, "BayesPaths")
         default_values["desman"]["dscripts"] = os.path.join(
-            local_dir, "DESMAN/scripts")
+            local_dir, "SnakeNest/scripts")
         default_values["evaluation"]['scripts'] = os.path.join(
-            local_dir, "Burrow/scripts/evaluation")
+            local_dir, "SnakeNest/scripts/evaluation")
         default_values["spades_tools"] = os.path.join(local_dir, "SPAdes/assembler/build_spades/bin")
         default_values["assembly"]['dir'] = os.path.join(
             local_dir, "SPAdes/assembler/bin")

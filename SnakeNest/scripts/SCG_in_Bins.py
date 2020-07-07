@@ -23,12 +23,13 @@ def get_contig_split(contig_bed, contig, scg_bed, orf) :
             best_overlap.append([split_contig,min(end_split,end)-max(start_split,start)])
     return max(best_overlap,key=lambda x:x[1])[0]
 
-def get_mag_list(bins_to_scgs, scg, threshold): 
-    nb_scg = len(scg)
+def get_mag_list(bins_to_scgs, scgs, threshold): 
+    nb_scg = float(len(scgs))
     mags = []
     for bin_,scg_to_contigs in bins_to_scgs.items():
-        nb_unique_scg = sum(Counter([scg for scg,fastas in scg_to_contigs.items() for header,seq in fastas]).values()==1)
-        if nb_unique_scg>=threshold*nb_scg
+        scg_to_nb = Counter([scg for scg,fastas in scg_to_contigs.items() for header,seq in fastas])
+        nb_unique_scg = sum([nb==1 for nb in scg_to_nb.values()])
+        if nb_unique_scg>=threshold*nb_scg:
             mags.append(bin_)
     return mags
 
@@ -90,7 +91,7 @@ def main(Bin_file, Fasta_file, C10K_bed, orf_bed, path, Table, path_list, flag_a
 # -------------- create a folder by Mag with a folder by COG and their sequences inside -------------------
     if path:
         # fings mags which have at least threshold percent of their scg in a single copy
-        List_Mags = get_mag_list(bins_to_scgs, scg, threshold)
+        List_Mags = get_mag_list(Dico_bins_SCG, scgs, threshold)
         # create a folder by Mag with a folder by COG and their sequences inside
         if flag_all_bins:
             bins=list(Dico_bins_SCG.keys())
@@ -108,7 +109,7 @@ def main(Bin_file, Fasta_file, C10K_bed, orf_bed, path, Table, path_list, flag_a
 # -------------- create a list of all Mags ----------------------------------------------------------------
     if path_list:
         # fings mags which have at least threshold percent of their scg in a single copy
-        List_Mags = get_mag_list(bins_to_scgs, scg, threshold)
+        List_Mags = get_mag_list(Dico_bins_SCG, scgs, threshold)
         # create a folder by Mag with a folder by COG and their sequences inside
         Handle = open(path_list, "w")
         Handle.write("\n".join(List_Mags))

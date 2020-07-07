@@ -90,7 +90,7 @@ rule refine:
             {SCRIPTS}/SCG_in_Bins.py {input.bins} {input.SCG} {input.orf_bed} {input.split_bed} {COG_FILE} -t {output.table} -T {MAG_QUAL_THRESHOLD}
             sed '1d' {input.bins}  > {output.R}
             cd binning
-            concoct_refine ../{output.R} ../{input.data} ../{output.table} -t {threads} -T {MAG_QUAL_THRESHOLD} &> ../{log}
+            concoct_refine ../{output.R} ../{input.data} ../{output.table} -t {threads} &> ../{log}
             cd -
             {SCRIPTS}/SCG_in_Bins.py {output.bins_R} {input.SCG} {input.orf_bed} {input.split_bed} {COG_FILE} -t {output.table_R} -T {MAG_QUAL_THRESHOLD}
             """

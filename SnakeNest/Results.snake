@@ -1,0 +1,117 @@
+# include: "Common.snake"
+import glob
+import numpy as np 
+from collections import defaultdict
+from os.path import dirname, basename
+from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
+SCRIPTS = "/mnt/gpfs/seb/Project/STRONG/Burrow/scripts"
+RES_SCRIPTS = SCRIPTS+"/results"
+SELECTED_MAGS = {mag.rstrip() for mag in open("bayespaths/selected_bins.txt")}
+# there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
+MAG_TO_PATHS = {mag:glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag)[0] for mag in SELECTED_MAGS}
+MAG_TO_HAPLO = {mag:glob.glob("bayespaths/%s/*Haplo_*.fa"%mag)[0] for mag in SELECTED_MAGS}
+# number of cogs is dependant on mags 
+MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
+# which mag have more than one strain : 
+MAG_TREE = {mag for mag in SELECTED_MAGS if MAG_TO_HAPLO[mag].split(".fa")[0][-1]!="1"}
+
+rule all: 
+    input: expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_MAGS),
+           expand("results/{mag}/haplotypes_tree.nwk",mag=MAG_TREE)
+
+# ----------------- global summ ry -----------------
+# Adress the following --> nb_strains, coverage of each strains, total mag coverage, divergence, nb mags, nb bins, quality of assembly  
+
+# ----------------- coverage of mag/nb_strains -----------------
+
+
+# ----------------- one denovo tree by mag -----------------
+rule split_by_cog:
+    input: haplo = [MAG_TO_HAPLO[mag] for mag in MAG_TREE]
+    output: tmp = [temp("results/%s/tmp/%s.fna"%(mag,cog)) for mag in MAG_TREE for cog in MAG_TO_COGS[mag]]
+    run : 
+        for file in input["haplo"]:
+            mag = basename(dirname(file))
+            cog_to_strain_seq = defaultdict(lambda:{})
+            for header,seq in sfp(open(file)):
+                cog,strain = header.split("_")
+                cog_to_strain_seq[cog][strain] = seq
+            for cog,strain_to_seq in cog_to_strain_seq.items(): 
+                with open("results/%s/tmp/%s.fna"%(mag,cog),"w") as handle:
+                    handle.writelines(">%s\n%s\n"%(strain,seq) for strain,seq in strain_to_seq.items())
+
+rule run_mafft:
+    input: scg="results/{mag}/tmp/{cog}.fna",
+    output: msa="results/{mag}/tmp/{cog}.msa",
+    log: "results/{mag}/tmp/{cog}_mafft.log"
+    threads:1000
+    shell: """
+    mafft --thread {threads} {input.scg} > {output.msa} 2>{log}
+    """
+
+rule trimal :
+    input: "{path}/{COG}.msa"
+    output: "{path}/{COG}_trim.msa"
+    shell: "trimal -in {input} -out {output} -gt 0.9 -cons 60"
+
+rule cat_cogs :
+    input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]]
+    output : cat = "results/{mag}/tmp/concatenated_cogs.msa"
+    run : 
+        mag = wildcards.mag
+        strain_to_cog_seq = defaultdict(lambda:{})
+        cog_to_strain_seq = defaultdict(lambda:{})
+        for file in input["trim"]:
+            cog = basename(file).replace("_trim.msa","")
+            for strain,seq in sfp(open(file)):
+                strain_to_cog_seq[strain][cog] = seq
+                cog_to_strain_seq[cog][strain] = seq
+        sorted_cogs = sorted(cog_to_strain_seq.keys())
+        sorted_strains = sorted(strain_to_cog_seq.keys())
+        mean_cog_len = {cog:int(np.mean([len(seq) for seq in dict_strain.values()])) for cog,dict_strain in cog_to_strain_seq.items()}
+        # get strain concatenated sequence
+        strain_to_seq = defaultdict(str)
+        for strain in sorted_strains:
+            for cog in sorted_cogs: 
+                if cog in strain_to_cog_seq[strain]:
+                    strain_to_seq[strain]+=strain_to_cog_seq[strain][cog]
+                else :
+                    # deal with missing cogs
+                    strain_to_seq[strain]+=mean_cog_len[cog]*"-"
+        with open(output["cat"],"w") as handle : 
+            handle.writelines(">%s_%s\n%s\n"%(mag,strain,seq) for strain,seq in strain_to_seq.items())
+
+rule Launch_FastTree:
+    input: "{path}/tmp/concatenated_cogs.msa"
+    output: "{path}/haplotypes_tree.nwk"
+    log: "{path}/tmp/fastree.log"
+    shell:"""
+    FastTreeMP -nt -gtr < {input} 2> {log} > {output}
+    """
+
+
+# ----------------- colored .gfa -----------------
+# keep the same color for the same strain --> generate 1 graph by mag by cog
+rule color_graph :
+    input : gfa = "subgraphs/bin_merged/{mag}/simplif/{cog}.gfa",
+            path = lambda w:MAG_TO_PATHS[w.mag]
+    output : "results/{mag}/graph/cogs/{cog}_color.gfa"
+    params : kmer = 77#config["assembly"]["k"]
+    shell : """
+    {RES_SCRIPTS}/color_graph.py {input.gfa} -p {input.path} {output}.temp
+    {SCRIPTS}/Bandage_Cov_correction.py {output}.temp {params.kmer} {output}
+    rm {output}.temp
+    """
+
+# also merge .gfa so that we can see some sort of continuity
+rule join_graphs :
+    input : path = lambda w:MAG_TO_PATHS[w.mag],
+            gfa = lambda w:["results/%s/graph/cogs/%s_color.gfa"%(w.mag,cog) for cog in  MAG_TO_COGS[w.mag]]
+    output : "results/{mag}/graph/joined_SCG_graph.gfa"
+    shell : "{RES_SCRIPTS}/join_graphs.py {input.path} {output} -l {input.gfa}"
+
+
+# ----------------- gtdb tree  -----------------
+# basic gtdb tree
+# orkun improved gtdb tree : keep only mags, add layer of strains
+

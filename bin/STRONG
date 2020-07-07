@@ -8,8 +8,9 @@ import os.path
 import shutil
 import yaml
 import time
-
-from Burrow.scripts.common import fill_default_values, cd
+# if we put STRONG in the bin folder, we need to add the higher folder to the path to be able to see SnakeNest.scripts.common
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath(__file__)))))
+from SnakeNest.scripts.common import fill_default_values, cd
 
 # define args
 parser = argparse.ArgumentParser(description="STRONG - STrain Resolution ON Graphs")
@@ -24,6 +25,7 @@ parser.add_argument('-s', nargs=argparse.REMAINDER,help="Pass additional argumen
 
 # get execution directory of STRONG
 LOCAL_DIR = os.path.dirname(os.path.abspath(os.path.realpath(sys.argv[0])))
+STRONG_DIR = os.path.dirname(LOCAL_DIR)
 
 # get output_dir
 args = parser.parse_args()
@@ -49,7 +51,7 @@ if (not os.path.exists(config_path))&(os.path.exists(args.config)):
 
 
 # base parameters used to call snakeamke
-base_params = ["snakemake", "--directory", output_dir, "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR,"--configfile=%s"%config_path, "--latency-wait", "120","-k"]
+base_params = ["snakemake", "--directory", output_dir, "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + STRONG_DIR,"--configfile=%s"%config_path, "--latency-wait", "120","-k"]
 
 # parse args
 if args.verbose:
@@ -65,7 +67,7 @@ if args.s :
     base_params.extend(args.s)
 
 
-with cd(LOCAL_DIR):
+with cd(STRONG_DIR):
     call_cnt=0
     def call_snake(extra_params=[]):
         global call_cnt
@@ -85,22 +87,22 @@ with cd(LOCAL_DIR):
     
     # Finally start the pipeline
     print("Step #1 - Assembly / Binning / COG Annotation")
-    call_snake(["--snakefile", "Burrow/SCogSubGraph.snake"])
+    call_snake(["--snakefile", "SnakeNest/SCogSubGraph.snake"])
 
     print("Step #2 - Subgraph Processing / Bin merging")
-    call_snake(["--snakefile", "Burrow/HeavyLifting.snake"])
+    call_snake(["--snakefile", "SnakeNest/HeavyLifting.snake"])
     
     print("Step #3 - Strain Decomposition")
-    call_snake(["--snakefile", "Burrow/BayesAGraph.snake"])
+    call_snake(["--snakefile", "SnakeNest/BayesAGraph.snake"])
 
     if config["desman"]["execution"]:
         print("Step #4 - Strain Analysis with Desman") 
-        call_snake(["--snakefile", "Burrow/Desman.snake", "all"])
+        call_snake(["--snakefile", "SnakeNest/Desman.snake", "all"])
 
     if config["maganalysis"]["execution"]:
         print("Step #5 - MAGAnalysis : place mags in a tree of references") 
-        call_snake(["--snakefile", "Burrow/MAGAnalysis.snake"])
+        call_snake(["--snakefile", "SnakeNest/MAGAnalysis.snake"])
         
     if config["evaluation"]["execution"]:
         print("Step #6 - running evaluation") 
-        call_snake(["--snakefile", "Burrow/eval.snake"])
+        call_snake(["--snakefile", "SnakeNest/eval.snake"])

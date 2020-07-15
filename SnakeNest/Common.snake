@@ -51,8 +51,9 @@ ANNOTATED_COGS=[s.rstrip() for s in open(COG_FILE)]
 # -------- Evaluation -----------------
 REFDATA=config["evaluation"]["genomes"]
 EVAL_SCRIPTS=config["evaluation"]["scripts"]
-
-
+# -------- Results -----------------
+RES_SCRIPTS = SCRIPTS+"/results"
+GTDB = config["gtdb_path"]
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented

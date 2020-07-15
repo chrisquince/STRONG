@@ -1,0 +1,133 @@
+from os.path import basename
+import numpy as np
+import glob
+# snakemake to produce ko annotation and coverage profile
+# how to use it : go to the strong output folder and then run  : 
+# snakemake -s ko_profile.snake --use-conda --cores 100
+
+KOFAMSCAN_PROFILES = "/mnt/gpfs/seb/Database/KEGG/kofamscan/profiles"
+KOFAMSCAN_KO = "/mnt/gpfs/seb/Database/KEGG/kofamscan/ko_list"
+KOFAMSCAN_ENV = "/mnt/gpfs/seb/Project/Metahood/Conda_envs/kofamscan.yaml"
+SCRIPTS = "/mnt/gpfs/seb/Project/Metahood/scripts"
+SCG_FILE = "/mnt/gpfs/seb/Project/Metahood/scg_data/scg_cogs_min0.97_max1.03_unique_genera.txt"
+
+# need to be run on a complete run of STRONG or at least one where the first part is done
+SAMPLES = {basename(file).replace(".sorted.bam","") for file in glob.glob("profile/assembly/*.sorted.bam")}
+
+rule results:
+	input : "profile/cov_KEGG.tsv",
+			"profile/Normalisation.tsv"
+
+
+rule kofamscan:
+	input :  "{filename}.faa"
+	output : "{filename}_kofamscan.out"
+	conda : KOFAMSCAN_ENV 
+	params : profiles = KOFAMSCAN_PROFILES,
+			 ko_list = KOFAMSCAN_KO
+	threads : 1000
+	shell :   "exec_annotation {input} -o {output} -p {params.profiles} -k {params.ko_list}  --cpu {threads} --tmp-dir $(dirname {input})/tmp"
+
+
+rule annotation_kofamscan :
+	input : file = "{filename}_kofamscan.out"
+	output : out = "{filename}_KEGG_best_hits.tsv"
+	run : 
+		with open(input['file']) as handle :
+			orf_to_ko={}
+			for line in handle :
+				if line[0] != "*" :
+					continue
+				splitline = line.rstrip().split()[1:6] + [" ".join(line.rstrip().split()[6:])]
+				if splitline[0] in orf_to_ko :
+					orf_to_ko[splitline[0]] = min([orf_to_ko[splitline[0]],splitline],key = lambda x:float(x[4]))
+				else : 
+					orf_to_ko[splitline[0]]=splitline
+		with open(output["out"],"w") as handle_w :
+			handle_w.write('\t'.join(['orf',"KO","threshold","score","KO definition"])+"\n")
+			for line in orf_to_ko.values() : 
+				handle_w.write("\t".join(line)+"\n")
+
+# ---- collate all files  -----------------------
+
+
+rule bedtools:
+    input:   bam="profile/assembly/{sample}.sorted.bam",
+             bed="annotation/assembly.bed"
+    output:  "profile/orfs/{sample}.orfs.cov"
+    log:      "profile/orfs/{sample}.orfs.log"
+    resources:
+        memG=400
+    shell:   "bedtools coverage -a {input.bed} -b {input.bam} -mean > {output} 2>{log} "
+
+# ---- collate all files  -----------------------
+rule coverage:
+    input:   expand("profile/orfs/{sample}.orfs.cov",sample = SAMPLES)
+    output:  "profile/coverage_orfs.tsv"
+    shell : "{SCRIPTS}/collate_coverage.py -o {output} -l {input} "
+
+# ---- generate a mapping of annotation to orfs  -----------------------
+rule map_annotation_to_orfs:
+    input:   "annotation/assembly_{annotation}_best_hits.tsv"
+    output:  "annotation/map_{annotation}_to_orfs.tsv"
+    shell:  """{SCRIPTS}/Annotation_listcontig.py {input} {output} """
+
+rule map_cog_to_orfs:
+    input:   "annotation/Cogs_filtered.tsv"
+    output:  "annotation/map_cogs_to_orfs.tsv"
+    shell:  """{SCRIPTS}/Annotation_listcontig.py {input} {output} """
+
+
+# ---- generate annotation profile  -----------------------
+rule generate_profile:
+    input:  cov="profile/coverage_orfs.tsv",
+            map="annotation/map_{annotation}_to_orfs.tsv"
+    output: "profile/cov_{annotation}.tsv"
+    shell:  "{SCRIPTS}/Extract_gene_profile.py {input.map} {input.cov} {output}"
+
+
+# ---- generate normalisation  -----------------------
+rule median_SCG_cov:
+    input:  cov="profile/cov_cogs.tsv",
+    output: "profile/Normalisation.tsv"
+    run: 
+        set_SCG = {cog.rstrip() for cog in open(SCG_FILE)}
+        List_profile = []
+        # compute median of SCG       
+        with open(input.cov) as handle:
+            samples = next(handle).rstrip().split("\t")[1:]
+            for index,line in enumerate(handle):
+                split_line = line.rstrip().split("\t")
+                cog = split_line[0]
+                if cog in set_SCG:
+                    List_profile.append([float(element) for element in split_line[1:]])
+        scg_norm=np.median(List_profile, axis=0)
+        # output
+        with open(output[0],"w") as handle:
+            handle.write("Normalisation\t"+"\t".join(samples)+"\n")
+            handle.write("median_scg\t"+"\t".join(map(str,scg_norm))+"\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

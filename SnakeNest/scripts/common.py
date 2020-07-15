@@ -31,6 +31,7 @@ default_values = {
                    "max_giter":4},
     "maganalysis": {"execution": 0},
     "evaluation": {"execution": 0, "genomes": ""},
+    "gtdb_path":""
 }
 
 # Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python

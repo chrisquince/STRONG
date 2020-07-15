@@ -1,12 +1,18 @@
-# include: "Common.snake"
+include: "Common.snake"
 import glob
 import numpy as np 
+import seaborn as sns
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from collections import defaultdict
 from os.path import dirname, basename
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
-SCRIPTS = "/mnt/gpfs/seb/Project/STRONG/Burrow/scripts"
-RES_SCRIPTS = SCRIPTS+"/results"
+
+
 SELECTED_MAGS = {mag.rstrip() for mag in open("bayespaths/selected_bins.txt")}
+ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
 # there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
 MAG_TO_PATHS = {mag:glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag)[0] for mag in SELECTED_MAGS}
 MAG_TO_HAPLO = {mag:glob.glob("bayespaths/%s/*Haplo_*.fa"%mag)[0] for mag in SELECTED_MAGS}
@@ -15,15 +21,216 @@ MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_T
 # which mag have more than one strain : 
 MAG_TREE = {mag for mag in SELECTED_MAGS if MAG_TO_HAPLO[mag].split(".fa")[0][-1]!="1"}
 
-rule all: 
-    input: expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_MAGS),
-           expand("results/{mag}/haplotypes_tree.nwk",mag=MAG_TREE)
+#--------------------Snakemake ------------------------
+#### specify wanted outputs
 
-# ----------------- global summ ry -----------------
+# generate colored SCG graphs, one by mag
+TODO_LIST = [expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_MAGS)]
+
+# generate haplotype tree, one for each mag
+TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=MAG_TREE))
+
+# generate haplotype coverage
+TODO_LIST.append("results/haplotypes_coverage.pdf")
+
+# generate haplotype coverage
+TODO_LIST.append("results/haplo_nb_vs_mag_cov.png")
+
+# if GTDB is not empty, generate a gtdb tree of mags 
+if GTDB!="":
+    TODO_LIST += ["results/gtdb/gtdbtk.bac120.summary.tsv"]
+
+rule all: 
+    input: TODO_LIST
+
+# ----------------- global summary -----------------
 # Adress the following --> nb_strains, coverage of each strains, total mag coverage, divergence, nb mags, nb bins, quality of assembly  
+rule generate_summary:
+    input: assembly = "profile/assembly.fasta"
+    output: file = 'results/summary.tsv'
+    run:
+        with open(output["file"],"w") as handle:
+            handle.write("#-------- assembly statistics --------\n")
+        shell("{RES_SCRIPTS}/contig-stats.pl {input.assembly}>>{output}")
+        handle = open(output["file"],"a")
+        handle.write("#-------- MAG --------\n")
+        mag_nb = 
+
+
+
+
 
 # ----------------- coverage of mag/nb_strains -----------------
+##### get SCG coverages
+# keep only cogs corresponding to scg
+rule get_scg_coverage:
+    input:   bed = "annotation/assembly.bed",
+             scg_annot = "annotation/Cogs_filtered.tsv"
+    output:  bed="annotation/scg.bed",
+             scg_to_orfs = "annotation/map_scgs_to_orfs.tsv"
+    run : 
+        scgs = {line.rstrip() for line in open(COG_FILE)}
+        # get scg to orfs mapping
+        scg_to_orfs = defaultdict(list)
+        for line in open(input["scg_annot"]):
+            splitlines = line.split("\t")
+            if splitlines[1] in scgs:
+                scg_to_orfs[splitlines[1]].append(splitlines[0])
+        # select only orfs relevant to scg cogs
+        orfs = {val for values in scg_to_orfs.values() for val in values}
+        with open(output["bed"],"w") as handle:
+            for line in open(input["bed"]):
+                if line.rstrip().split('\t')[3] in orfs:
+                    handle.write(line)
+        # output scg to orf mapping : 
+        with open(output["scg_to_orfs"],"w") as handle:
+            handle.writelines("%s\t%s\n"%(scg,"\t".join(orfs)) for scg,orfs in scg_to_orfs.items())
 
+# extract cov for selected features
+rule bedtools:
+    input:   bam="profile/assembly/{sample}.sorted.bam",
+             bed="annotation/scg.bed"
+    output:  "profile/scgs/{sample}.orfs.cov"
+    log:      "profile/scgs/{sample}.orfs.log"
+    resources:
+        memG=400
+    shell:   "bedtools coverage -a {input.bed} -b {input.bam} -mean > {output} 2>{log} "
+
+# collate all files  
+rule coverage:
+    input:   expand("profile/scgs/{sample}.orfs.cov",sample = SAMPLES)
+    output:  "profile/coverage_scg_orfs.tsv"
+    shell : "{SCRIPTS}/collate_coverage.py -o {output} -l {input} "
+
+# aggregate orf coverage following inputed scg to orfs mapping
+rule generate_profile:
+    input:  cov="profile/coverage_scg_orfs.tsv",
+            map="annotation/map_scgs_to_orfs.tsv"
+    output: "profile/cov_scg.tsv"
+    shell:  "{SCRIPTS}/Extract_gene_profile.py {input.map} {input.cov} {output}"
+
+# just take the median of cov_scg.tsv
+rule median_SCG_cov:
+    input:  cov="profile/cov_scg.tsv",
+    output: "profile/Normalisation.tsv"
+    run: 
+        List_profile = []
+        # compute median of SCG       
+        with open(input.cov) as handle:
+            samples = next(handle).rstrip().split("\t")[1:]
+            List_profile = [[float(element) for element in line.rstrip().split("\t")[1:]] for line in handle]
+        scg_norm=np.median(List_profile, axis=0)
+        # output
+        with open(output[0],"w") as handle:
+            handle.write("Normalisation\t"+"\t".join(samples)+"\n")
+            handle.write("median_scg\t"+"\t".join(map(str,scg_norm))+"\n")
+
+#### get selected all mag coverage
+def matrix_write(matrix,file_name,col_names,row_names) :
+    with open(file_name,"w") as handle:
+        handle.write("/\t%s\n"%"\t".join(col_names))
+        handle.writelines('%s\t%s\n'%(row_names[index],"\t".join(list(map(str,line)))) for index,line in enumerate(matrix))
+
+
+rule mag_coverage:
+    input: cluster = "binning/clustering_gt1000_merged.csv",
+           cov = "profile/split/coverage.tsv",
+           bed = "profile/split.bed"
+    output: cov = "profile/mag_cov.tsv"
+    run:
+        # get list of contigs corresponding ot selected mags 
+        mags = {mag.replace("Bin_","") for mag in ALL_MAGS}
+        mag_to_contigs = defaultdict(list)
+        with open(input["cluster"]) as handle:
+            _=next(handle)
+            for line in handle:
+                contig,mag = line.rstrip().split(",")
+                if mag in mags:
+                    mag_to_contigs["Bin_%s"%mag].append(contig)
+        # translate contig to split contigs, so that we don't need to get cov for non split contigs
+        contigs = {contig for cntgs in mag_to_contigs.values() for contig in cntgs}
+        contigs_to_splits = defaultdict(list)
+        split_to_len = {}
+        for line in open(input["bed"]):
+            contig,start,end,split = line.rstrip().split("\t")
+            if contig in contigs:
+                split_to_len[split]=np.abs(int(end)-int(start))
+                contigs_to_splits[contig].append(split)
+        # read coverage file and only look at selected splits
+        # in the mean time, fill a matrix of number of nucleotide per mag
+        splits_to_mag = {split:mag for mag,contigs in mag_to_contigs.items() for contig in contigs for split in contigs_to_splits[contig]}
+        mag_to_len = defaultdict(int)
+        with open(input["cov"]) as handle:
+            sorted_samples = next(handle).rstrip().split('\t')[1:]
+            sorted_mags = sorted(ALL_MAGS)
+            nuc_matrix = np.zeros((len(sorted_mags),len(sorted_samples)))
+            for line in handle:
+                splitline = line.rstrip().split("\t")
+                if splitline[0] in splits_to_mag:
+                    # get things
+                    mag = splits_to_mag[splitline[0]]
+                    row_index = sorted_mags.index(mag)
+                    split_len = split_to_len[splitline[0]]
+                    profile = split_len*np.array([float(val) for val in splitline[1:]])
+                    # store things
+                    nuc_matrix[row_index,:] += profile
+                    mag_to_len[mag] += split_len
+        # get mag coverage, from mag mapped nucleotides
+        sorted_mag_len = np.array([mag_to_len[mag] for mag in sorted_mags])
+        cov_matrix = (nuc_matrix.T/sorted_mag_len).T
+        # output result:
+        matrix_write(cov_matrix,output["cov"],sorted_samples,sorted_mags)
+
+def load_matrix(file,sample_order=None,strain_order=None) :
+    with open(file) as handle :
+        header = next(handle).rstrip().split("\t")[1:]
+        strains = []
+        matrix = []
+        for line in handle : 
+            splitlines = line.rstrip().split("\t")
+            strains.append(splitlines[0])
+            matrix.append(list(map(float,splitlines[1:])))
+    matrix = np.array(matrix)
+    if sample_order :
+        reorder_samples = [header.index(sample) for sample in sample_order]
+        reorder_strain = [strains.index(strain) for strain in strain_order]
+        return matrix[:,reorder_samples][reorder_strain,:]
+    else : 
+        return matrix,header,strains
+
+
+# plot nb strain, versus total mag coverage
+rule plot_fig :
+    input : cov = "profile/mag_cov.tsv"
+    output: fig = "results/haplo_nb_vs_mag_cov.png"
+    run: 
+        cov,samples,mags = load_matrix(input['cov'])
+        covtot = cov.sum(1)
+        strain_nb = [len({header.split('_')[1] for header,seq in sfp(open(MAG_TO_HAPLO[mag]))}) for mag in mags]
+        ax = sns.regplot(x=covtot, y=strain_nb, logx=True)
+        plt.title("Haplotype number versus total mag coverage")
+        plt.title("Haplotype number versus total mag coverage")
+        plt.xlabel("Total mag coverage over all samples")
+        plt.ylabel("Number of haplotypes resolved for each mag")
+        plt.xscale("log")
+        ax.set_xticks([10**powr for powr in range(int(np.log10(min(covtot)))+1,int(np.log10(max(covtot)))+1)])
+        ax.set_yticks([int(nb) for nb in range(min(strain_nb),max(strain_nb)+1)])
+        plt.savefig(output['fig'])
+
+
+
+# ----------------- barplot strain coverage -----------------
+rule coverage_barplot:
+    input: cov = "bayespaths/{mag}/{mag}F_Intensity.csv",
+           var = "bayespaths/{mag}/{mag}F_varIntensity.csv",
+           norm = "profile/Normalisation.tsv"
+    output: "results/{mag}/haplotypes_coverage.pdf"
+    shell: "{RES_SCRIPTS}/GGBarPlotAbundances.R {input.cov} {input.var} {input.norm} {READ_LENGTH} {output}"
+
+rule cat_pdf:
+    input: expand("results/{mag}/haplotypes_coverage.pdf",mag=SELECTED_MAGS)
+    output: "results/haplotypes_coverage.pdf"
+    shell: "pdfunite {input} {output}"
 
 # ----------------- one denovo tree by mag -----------------
 rule split_by_cog:
@@ -112,6 +319,56 @@ rule join_graphs :
 
 
 # ----------------- gtdb tree  -----------------
-# basic gtdb tree
-# orkun improved gtdb tree : keep only mags, add layer of strains
+rule mag_directory:
+    input: clustering = "binning/clustering_gt1000_merged.csv",
+           assembly = "profile/assembly.fasta",
+           mag_list = "binning/list_mags.tsv"
+    output: done = "binning/MAGs/done"
+    shell: """
+           {SCRIPTS}/Split_fasta_by_bin.py {input.assembly} {input.clustering} $(dirname {output.done}) -l $(cat {input.mag_list})
+           touch {output.done}
+           """
+
+def which(pgm):
+    # https://stackoverflow.com/questions/9877462/is-there-a-python-equivalent-to-the-which-command
+    path=os.getenv('PATH')
+    for p in path.split(os.path.pathsep):
+        p=os.path.join(p,pgm)
+        if os.path.exists(p) and os.access(p,os.X_OK):
+            return p
+
+rule get_gtdb_database:
+    output: done="%s/done"%GTDB
+    run:
+        # get strong env path
+        path = which("gtdbtk")
+        env_path = path.split("/bin/gtdbtk")[0]
+        # just check it is not empty
+        if os.listdir(GTDB)==[".empty"]:
+            # create a copy of download script with new dl directory
+            dl_script = which("download-db.sh")
+            new_dl_script = dirname(dl_script)+"/download-db2.sh"
+            shell("cp %s %s"%(dl_script,new_dl_script))
+            shell("sed -i 's/${GTDBTK_DATA_PATH}/%s/g' %s"%(GTDB,dirnamenew_dl_script))
+            shell("download-db2.sh")
+        # overwrite default database location
+        export_path = env_path+"/etc/conda/activate.d/gtdbtk.sh"
+        with open(export_path,"w") as handle:
+            handle.write("export GTDBTK_DATA_PATH=%s/\n"%GTDB)
+        shell("source %s"%export_path)
+        # signal process went is done
+        shell("touch %s"%output["done"])
+
+rule gtdb:
+    input: done = "binning/MAGs/done",
+           db_done = '%s/done'%GTDB
+    output: bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
+            arc =  "results/gtdb/gtdbtk.ar122.summary.tsv"
+    threads: 50
+    shell: """
+            gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta
+            touch {output.bac}
+            touch {output.arc}
+           """
+
 

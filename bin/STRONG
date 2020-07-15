@@ -95,6 +95,9 @@ with cd(STRONG_DIR):
     print("Step #3 - Strain Decomposition")
     call_snake(["--snakefile", "SnakeNest/BayesAGraph.snake"])
 
+    print("Step #4 - output results")
+    call_snake(["--snakefile", "SnakeNest/Results.snake"])
+
     if config["desman"]["execution"]:
         print("Step #4 - Strain Analysis with Desman") 
         call_snake(["--snakefile", "SnakeNest/Desman.snake", "all"])

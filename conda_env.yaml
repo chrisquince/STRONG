@@ -35,5 +35,6 @@ dependencies:
     - r-ggplot2
     - r-reshape
     - r-getopt
-    - gtdbtk=1.2.0
-    - seaborn
+    - gtdbtk=1.2.0 
+    - seaborn  
+    - poppler 

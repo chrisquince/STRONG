@@ -31,7 +31,7 @@ TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_
 
 # generate haplotype tree, one for each mag
 TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=SELECTED_MAGS))
-TODO_LIST.append(expand("results/{mag}/tmp/dist.tsv",mag=SELECTED_MAGS))
+TODO_LIST.append(expand("results/{mag}/tmp//dist_mat.tsv",mag=SELECTED_MAGS))
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
@@ -163,8 +163,7 @@ def format_row(header,line):
     for el in line:
         row += "\t{:.2g}".format(el)
     return row+"\n"
-def matrix_write(matrix,file_name,col_names,row_names) :
-
+def matrix_write(matrix,file_name,col_names,row_names):
     with open(file_name,"w") as handle:
         handle.write("/\t%s\n"%"\t".join(col_names))
         handle.writelines(format_row(row_names[index],line) for index,line in enumerate(matrix))
@@ -324,7 +323,8 @@ rule split_by_cog:
             cog_to_strain_seq = defaultdict(lambda:{})
             # get resolved haplotypes sequences
             for header,seq in sfp(open(file)):
-                cog,strain = header.split("_")
+                cog,strain_nb = header.split("_")
+                strain = "%s_haplo_%s"%(mag,strain_nb)
                 cog_to_strain_seq[cog][strain] = seq
             # get the low resolution SCG sequence
             file2 = "subgraphs/bin_merged/%s/SCG.fna"%mag
@@ -338,12 +338,23 @@ rule split_by_cog:
 
 rule run_mafft:
     input: scg="results/{mag}/tmp/{cog}.fna",
-    output: msa="results/{mag}/tmp/{cog}.msa",
+    output: msa="results/{mag}/tmp/{cog}.msa_temp",
     log: "results/{mag}/tmp/{cog}_mafft.log"
     threads:1000
     shell: """
     mafft --thread {threads} {input.scg} > {output.msa} 2>{log}
     """
+
+# sometimes scg fragments from low resolution assembly are just too small and this throw a seg fault with trimal, so we need to filter this
+rule check_length :
+    input: msa = "{path}.msa_temp"
+    output: msa = "{path,.*(?!_trim).*}.msa"
+    run:
+        with open(output['msa'],"w") as handle:
+            for header,seq in sfp(open(input["msa"])):
+                nb = seq.count("-")
+                if nb/float(len(seq))<=0.90:
+                    handle.write(">%s\n%s\n"%(header,seq))
 
 rule trimal :
     input: "{path}/{COG}.msa"
@@ -375,14 +386,7 @@ rule cat_cogs :
                     # deal with missing cogs
                     strain_to_seq[strain]+=mean_cog_len[cog]*"-"
         with open(output["cat"],"w") as handle : 
-            handle.writelines(">%s_haplo_%s\n%s\n"%(mag,strain,seq) for strain,seq in strain_to_seq.items())
-
-rule COG_dist:
-    input: "{path}/concatenated_cogs.msa"
-    output:"{path}/dist.tsv"
-    log:"{path}_dist.log"
-    shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
-
+            handle.writelines(">%s\n%s\n"%(strain,seq) for strain,seq in strain_to_seq.items())
 
 rule Launch_FastTree:
     input: "{path}/tmp/concatenated_cogs.msa"
@@ -391,6 +395,33 @@ rule Launch_FastTree:
     shell:"""
     FastTreeMP -nt -gtr < {input} 2> {log} > {output}
     """
+
+#--- look at dist between strains ---
+rule COG_dist:
+    input: "{path}/concatenated_cogs.msa"
+    output:"{path}/dist.tsv"
+    log:"{path}_dist.log"
+    shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
+
+rule parse_emboss_dist:
+    input: dist = "{path}/dist.tsv"
+    output: dist = "{path}/dist_mat.tsv"
+    run:
+        with open(input["dist"]) as handle:
+            for nb in range(8):
+                header=next(handle).rstrip().replace(" ","").split("\t")
+            nb_genomes=len(header)-header.count("")
+            Mat=np.zeros((nb_genomes,nb_genomes))
+            sorted_gen=[]
+            for ind,line in enumerate(handle):
+                splitline=line.rstrip().split("\t")[1:]
+                genome=splitline[-1].split(" ")[0]
+                sorted_gen.append(genome)
+                Mat[ind,ind:]=np.array([float(el) for el in splitline[ind:-2]])
+            Mat+=Mat.T
+        matrix_write(Mat,output["dist"],genome,genome)
+
+
 
 
 # ----------------- colored .gfa -----------------

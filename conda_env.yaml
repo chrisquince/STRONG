@@ -39,3 +39,5 @@ dependencies:
     - seaborn  
     - poppler 
     - emboss
+    - bioconductor-ggtree
+    - r-ape

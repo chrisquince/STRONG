@@ -2,8 +2,9 @@ configfile: "config.yaml"
 
 from itertools import chain
 from functools import partial
-import os.path
 import tempfile
+from os.path import basename,dirname
+import os.path
 import yaml
 
 from scripts.common import detect_reads, fill_default_values

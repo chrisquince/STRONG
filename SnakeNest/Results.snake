@@ -19,8 +19,6 @@ MAG_TO_HAPLO = {mag:glob.glob("bayespaths/%s/*Haplo_*.fa"%mag)[0] for mag in SEL
 MAG_TO_HAPLO_NB = {mag:len({header.split('_')[1] for header,_ in sfp(open(file))}) for mag,file in MAG_TO_PATHS.items()}
 # number of cogs is dependant on mags 
 MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
-# which mag have more than one strain : 
-MAG_TREE = {mag for mag in SELECTED_MAGS if MAG_TO_HAPLO[mag].split(".fa")[0][-1]!="1"}
 
 #--------------------Snakemake ------------------------
 #### specify wanted outputs
@@ -32,7 +30,8 @@ TODO_LIST = ["results/summary.tsv"]
 TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_MAGS))
 
 # generate haplotype tree, one for each mag
-TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=MAG_TREE))
+TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=SELECTED_MAGS))
+TODO_LIST.append(["results/%s/tmp/%s_dist.tsv"%(mag,cog) for mag,cogs in MAG_TO_COGS.items() for cog in cogs])
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
@@ -78,7 +77,7 @@ rule generate_summary:
         shell("{RES_SCRIPTS}/contig-stats.pl %s>>{output}"%input[0])
         handle = open(output["file"],"a")
         # information on mags
-        handle.write("#-------- MAGs summary --------\n")
+        handle.write("#--------     MAGs summary    --------\n")
         mag_nb = len(ALL_MAGS)
         haplo_nb = sum(MAG_TO_HAPLO_NB.values())
         handle.write("mags number: %s\tresolved haplotypes: %s\n"%(mag_nb,haplo_nb))
@@ -87,7 +86,7 @@ rule generate_summary:
             arc_nb = sum([1 for line in open(input[2])])
             handle.write("bacteria: %s\tarcheae: %s\n"%(bac_nb,arc_nb))
             # add taxonomy and RED value
-            handle.write("#-------- MAGs gtdb taxonomy --------\n")
+            handle.write("#-------- MAGs gtdb taxonomy  --------\n")
             handle.write("mag\tnb_haplo\tRED\tDomain\tPhylum\tClass\tOrder\tfamilly\tgenus\tstrain\n\n")
             mag_to_taxa = get_taxa(input[1])
             mag_to_taxa = get_taxa(input[2]) # worst non readable trick I know so far, using an empty dict as defaultvalue will cary over multiple call.... https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python 
@@ -159,10 +158,16 @@ rule median_SCG_cov:
             handle.write("median_scg\t"+"\t".join(map(str,scg_norm))+"\n")
 
 #### get selected all mag coverage
+def format_row(header,line):
+    row = header
+    for el in line:
+        row += "\t{:.2g}".format(el)
+    return row+"\n"
 def matrix_write(matrix,file_name,col_names,row_names) :
+
     with open(file_name,"w") as handle:
         handle.write("/\t%s\n"%"\t".join(col_names))
-        handle.writelines('%s\t%s\n'%(row_names[index],"\t".join(list(map(str,line)))) for index,line in enumerate(matrix))
+        handle.writelines(format_row(row_names[index],line) for index,line in enumerate(matrix))
 
 
 rule mag_coverage:
@@ -246,7 +251,7 @@ def load_intensity(file,mag):
         for line in handle: 
             temp = [0 for ite in range(len(SAMPLES))]
             splitlines = line.rstrip().split(",")
-            sorted_haplo.append("%s_%s"%(mag,splitlines[0]))
+            sorted_haplo.append("%s_haplo_%s"%(mag,splitlines[0]))
             for index,val in enumerate(splitlines[1:]):
                 temp[header[index]]=float(val)
             matrix.append(temp)
@@ -268,12 +273,12 @@ rule create_unique_coverage_matrix:
         with open(output["cov"],"w") as handle: 
             handle.write("/\t%s\n"%"\t".join(SAMPLES))
             for mag in SELECTED_MAGS:
-                handle.write("%s\t%s\n"%(mag,"\t".join([str(value) for value in mag_matrixN[mags.index(mag)]])))
+                handle.write(format_row(mag,mag_matrixN[mags.index(mag)]))
                 file = "bayespaths/%s/%sF_Intensity.csv"%(mag,mag) 
                 haplo_mat,sorted_haplo = load_intensity(file,mag)
                 haplo_matN = haplo_mat/norm
                 for index,line in enumerate(haplo_matN):
-                    handle.write("%s\t%s\n"%(sorted_haplo[index],"\t".join([str(value) for value in line])))
+                    handle.write(format_row(sorted_haplo[index],line))
 
 
 # --------------plot nb strain VS total mag coverage --------------
@@ -295,7 +300,6 @@ rule plot_fig :
         plt.savefig(output['fig'])
 
 
-
 # ----------------- barplot strain coverage -----------------
 rule coverage_barplot:
     input: cov = "bayespaths/{mag}/{mag}F_Intensity.csv",
@@ -311,18 +315,26 @@ rule cat_pdf:
 
 # ----------------- one denovo tree by mag -----------------
 rule split_by_cog:
-    input: haplo = [MAG_TO_HAPLO[mag] for mag in MAG_TREE]
-    output: tmp = [temp("results/%s/tmp/%s.fna"%(mag,cog)) for mag in MAG_TREE for cog in MAG_TO_COGS[mag]]
+    input: haplo = [MAG_TO_HAPLO[mag] for mag in SELECTED_MAGS]
+    output: tmp = ["results/%s/tmp/%s.fna"%(mag,cog) for mag in SELECTED_MAGS for cog in MAG_TO_COGS[mag]]
     run : 
+        # for each selected mag get the low resolution SCG sequence
         for file in input["haplo"]:
             mag = basename(dirname(file))
             cog_to_strain_seq = defaultdict(lambda:{})
+            # get resolved haplotypes sequences
             for header,seq in sfp(open(file)):
                 cog,strain = header.split("_")
                 cog_to_strain_seq[cog][strain] = seq
+            # get the low resolution SCG sequence
+            file2 = "subgraphs/bin_merged/%s/SCG.fna"%mag
+            for header,seq in sfp(open(file2)):
+                cog = header.split(" ")[1]
+                cog_to_strain_seq[cog][mag] = seq
             for cog,strain_to_seq in cog_to_strain_seq.items(): 
                 with open("results/%s/tmp/%s.fna"%(mag,cog),"w") as handle:
                     handle.writelines(">%s\n%s\n"%(strain,seq) for strain,seq in strain_to_seq.items())
+
 
 rule run_mafft:
     input: scg="results/{mag}/tmp/{cog}.fna",
@@ -337,6 +349,12 @@ rule trimal :
     input: "{path}/{COG}.msa"
     output: "{path}/{COG}_trim.msa"
     shell: "trimal -in {input} -out {output} -gt 0.9 -cons 60"
+
+rule COG_dist:
+    input: "{name}_trim.msa"
+    output:"{name}_dist.tsv"
+    log:"{name}_dist.log"
+    shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
 
 rule cat_cogs :
     input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]]
@@ -363,7 +381,7 @@ rule cat_cogs :
                     # deal with missing cogs
                     strain_to_seq[strain]+=mean_cog_len[cog]*"-"
         with open(output["cat"],"w") as handle : 
-            handle.writelines(">%s_%s\n%s\n"%(mag,strain,seq) for strain,seq in strain_to_seq.items())
+            handle.writelines(">%s_haplo_%s\n%s\n"%(mag,strain,seq) for strain,seq in strain_to_seq.items())
 
 rule Launch_FastTree:
     input: "{path}/tmp/concatenated_cogs.msa"

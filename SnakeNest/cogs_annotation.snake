@@ -32,7 +32,7 @@ rule download_rpsblast_cog_db:
 
 rule rpsblast:
     input: faa = "{path}.faa",
-           db_done = "%s/cog_dl_done"%COG_DB
+           db_done = "%s_dl_done"%COG_DB
     output: "{path}.Rpsblast_cogs.tsv"
     log: "{path}.Rpsblast_cogs.log"
     shell: "rpsblast -outfmt '6 qseqid sseqid evalue pident length slen qlen' -evalue 0.00001 -query {input} -db {COG_DB} -out {output}"

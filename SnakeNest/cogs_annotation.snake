@@ -22,10 +22,10 @@ rule split_fasta:
         "{SCRIPTS}/Split_Fasta.py {input} {ANNOTATION_SPLITS} -o annotation/temp_splits/" 
 
 rule download_rpsblast_cog_db:
-    output: "%s/cog_dl_done"%COG_DB
+    output: "%s_dl_done"%COG_DB
     shell: """
-    wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
-    tar -xvzf rpsblast_cog_db.tar.gz
+    wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz 
+    tar -xvzf rpsblast_cog_db.tar.gz -C ($dirname {COG_DB})
     rm rpsblast_cog_db.tar.gz
     touch {output}
     """

@@ -22,7 +22,9 @@ SCRIPTS = config["scripts"]
 DSCRIPTS = config["desman"]["dscripts"]
 SOFT = config["spades_tools"]
 # -------- COGs -----------------
-COG_DB= config["cog_database"]
+COG_DB = config["cog_database"]
+if basename(COG_DB)!="Cog":
+    COG_DB += '/Cog'
 SCG_DATA = config["scg_data"]
 COG_FILE=SCG_DATA+"/scg_cogs_to_run.txt"
 # -------- Assembly -----------------

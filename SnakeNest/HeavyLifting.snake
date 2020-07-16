@@ -91,7 +91,7 @@ rule simplify_subgraphs:
 
 
 checkpoint identify_bins_to_merge:
-    #this is not a good way of defining input : may fail if input is evaluated before execution of some over rule  which should implicitely have been caried out beforehand. The right way to do it, is to have it depend on a checkpoint, for instance it fail if called before bin_merged folder is created.
+    #this is not a good way of defining input : may fail if input is evaluated before execution of some other rule which should implicitly have been caried out beforehand. The right way to do it, is to have it depend on a checkpoint, for instance it fail if called before bin_merged folder is created.
     input: lambda wildcards:expand("{path}/simplif/simplif.done", path = bin_paths_by_type(wildcards["bin_type"])),
            mags = "binning/list_mags.tsv"    
 #TODO should we put cogs to ignore files within the bin subfolders?

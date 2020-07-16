@@ -34,9 +34,10 @@ norm <- read.table(norm, header = TRUE, row.names = 1)
 gammacoverages <- read.csv(coverages, header = FALSE, row.names = 1)
 varGammacoverages <- read.csv(varcoverages, header = TRUE, row.names = 1)
 
-# get consistent colnames with norm
-# bayespath start at 0 for samples1, so we need to increment
-colnames(gammacoverages)= paste("sample",sapply(sapply(gammacoverages[1,]+1,FUN= as.integer),toString), sep="")
+# Super hidden information : normalisation column is always in the same order as bayespath : bayespath order is derived from subgraphs, derived from assembly, derived from SAMPLE
+# Normalisation order derive from collate.py script, which keep the same order as SAMPLE
+# bayespath start at 0 R index start at 1, so we need to increment
+colnames(gammacoverages)= colnames(norm)[unlist(gammacoverages[1,]+1)]
 gammacoverages = gammacoverages[-1,]
 
 # sometimes bayespath does not output coverage for all samples, normalisation need to be done only on these samples
@@ -68,8 +69,8 @@ gammaB$Strain <- as.factor(gammaB$Strain)
 coverageBarPlot <- ggplot(data = gammaB, aes(x = Samples, y = coverage, colour = Strain, fill = Strain, group = Strain))
 coverageBarPlot <- coverageBarPlot + geom_bar(stat = "identity", position = position_dodge())
 coverageBarPlot <- coverageBarPlot + geom_errorbar(aes(ymin = coverage - Sdcoverage, ymax = coverage + Sdcoverage), width = .2, position = position_dodge(.9), colour = "Black")
-coverageBarPlot <- coverageBarPlot + theme(axis.text = element_text(size = 16),axis.text.x = element_text(angle = 45), axis.title = element_text(size = 18), legend.text = element_text(size = 16), plot.title = element_text(hjust = 0.5,size = 20))
+coverageBarPlot <- coverageBarPlot + theme(axis.text = element_text(size = 16),axis.text.x = element_text(angle = 45, hjust = 1), axis.title = element_text(size = 18), legend.text = element_text(size = 16), plot.title = element_text(hjust = 0.5,size = 20))
 coverageBarPlot = coverageBarPlot +  ggtitle(print(gsub("F_Intensity.csv", "", basename(coverages))))
-coverageBarPlot = coverageBarPlot + ylab("coverage per cell")
+coverageBarPlot = coverageBarPlot + ylab("kmer coverage per cell")
 ggsave(savePlot)
 

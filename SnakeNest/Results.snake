@@ -1,21 +1,22 @@
 include: "Common.snake"
+import os
 import glob
 import numpy as np 
 import seaborn as sns
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
 from collections import defaultdict
 from os.path import dirname, basename
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
 
-SELECTED_MAGS = {mag.rstrip() for mag in open("bayespaths/selected_bins.txt")}
+SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")])
 ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
 # there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
 MAG_TO_PATHS = {mag:glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag)[0] for mag in SELECTED_MAGS}
 MAG_TO_HAPLO = {mag:glob.glob("bayespaths/%s/*Haplo_*.fa"%mag)[0] for mag in SELECTED_MAGS}
+MAG_TO_HAPLO_NB = {mag:len({header.split('_')[1] for header,_ in sfp(open(file))}) for mag,file in MAG_TO_PATHS.items()}
 # number of cogs is dependant on mags 
 MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
 # which mag have more than one strain : 
@@ -24,16 +25,20 @@ MAG_TREE = {mag for mag in SELECTED_MAGS if MAG_TO_HAPLO[mag].split(".fa")[0][-1
 #--------------------Snakemake ------------------------
 #### specify wanted outputs
 
+# summary file :
+TODO_LIST = ["results/summary.tsv"]
+
 # generate colored SCG graphs, one by mag
-TODO_LIST = [expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_MAGS)]
+TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_MAGS))
 
 # generate haplotype tree, one for each mag
 TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=MAG_TREE))
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
+TODO_LIST.append("results/mag_and_haplo_cov.tsv")
 
-# generate haplotype coverage
+# fig : haplo_vs_magcov
 TODO_LIST.append("results/haplo_nb_vs_mag_cov.png")
 
 # if GTDB is not empty, generate a gtdb tree of mags 
@@ -45,22 +50,50 @@ rule all:
 
 # ----------------- global summary -----------------
 # Adress the following --> nb_strains, coverage of each strains, total mag coverage, divergence, nb mags, nb bins, quality of assembly  
+
+def get_taxa(file,mag_to_classification={}):
+    if os.path.getsize(file)!=0:
+        with open(file) as handle : 
+            header = next(handle)
+            for line in handle :
+                splitline = line.rstrip().split("\t")
+                mag = splitline[0]
+                classification = [ taxa.split("__")[1] for taxa in splitline[1].split(';')]
+                classification = [taxa if taxa else '/' for taxa in classification]
+                Red = splitline[-2]
+                if Red == 'N/A' :
+                    Red = 1
+                mag_to_classification[mag] = "\t".join([str(Red)]+classification)
+    return mag_to_classification
+
+generate_summary_input = ["profile/assembly.fasta"]+(GTDB!="")*["results/gtdb/gtdbtk.bac120.summary.tsv","results/gtdb/gtdbtk.ar122.summary.tsv"]
+
 rule generate_summary:
-    input: assembly = "profile/assembly.fasta"
+    input: generate_summary_input
     output: file = 'results/summary.tsv'
     run:
+        # information on assembly
         with open(output["file"],"w") as handle:
             handle.write("#-------- assembly statistics --------\n")
-        shell("{RES_SCRIPTS}/contig-stats.pl {input.assembly}>>{output}")
+        shell("{RES_SCRIPTS}/contig-stats.pl %s>>{output}"%input[0])
         handle = open(output["file"],"a")
-        handle.write("#-------- MAG --------\n")
-        mag_nb = 
+        # information on mags
+        handle.write("#-------- MAGs summary --------\n")
+        mag_nb = len(ALL_MAGS)
+        haplo_nb = sum(MAG_TO_HAPLO_NB.values())
+        handle.write("mags number: %s\tresolved haplotypes: %s\n"%(mag_nb,haplo_nb))
+        if GTDB:
+            bac_nb = sum([1 for line in open(input[1])])
+            arc_nb = sum([1 for line in open(input[2])])
+            handle.write("bacteria: %s\tarcheae: %s\n"%(bac_nb,arc_nb))
+            # add taxonomy and RED value
+            handle.write("#-------- MAGs gtdb taxonomy --------\n")
+            handle.write("mag\tnb_haplo\tRED\tDomain\tPhylum\tClass\tOrder\tfamilly\tgenus\tstrain\n\n")
+            mag_to_taxa = get_taxa(input[1])
+            mag_to_taxa = get_taxa(input[2]) # worst non readable trick I know so far, using an empty dict as defaultvalue will cary over multiple call.... https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python 
+            handle.writelines("%s\t%s\t%s\n"%(mag,MAG_TO_HAPLO_NB[mag],taxo) for mag,taxo in mag_to_taxa.items())
 
-
-
-
-
-# ----------------- coverage of mag/nb_strains -----------------
+# ----------------- coverage of mag/strains -----------------
 ##### get SCG coverages
 # keep only cogs corresponding to scg
 rule get_scg_coverage:
@@ -198,8 +231,52 @@ def load_matrix(file,sample_order=None,strain_order=None) :
     else : 
         return matrix,header,strains
 
+def convert_intensity_to_kcov(mat):
+    return mat*READ_LENGTH
 
-# plot nb strain, versus total mag coverage
+def convert_kcov_to_cov(mat):
+#Ck*Read_length = C *(Read_length-kmer_size+1)
+    return mat*READ_LENGTH/float(READ_LENGTH-ASSEMBLY_K+1)
+
+def load_intensity(file,mag):
+    with open(file) as handle:
+        header = [int(val) for val in next(handle).rstrip().split(",")[1:]]
+        sorted_haplo = [] 
+        matrix = []
+        for line in handle: 
+            temp = [0 for ite in range(len(SAMPLES))]
+            splitlines = line.rstrip().split(",")
+            sorted_haplo.append("%s_%s"%(mag,splitlines[0]))
+            for index,val in enumerate(splitlines[1:]):
+                temp[header[index]]=float(val)
+            matrix.append(temp)
+        matrix = np.array(matrix)
+        matrix = convert_intensity_to_kcov(matrix)
+        matrix = convert_kcov_to_cov(matrix)
+        return matrix,sorted_haplo
+
+
+# get one matrix with mag coverage and strains coverages
+rule create_unique_coverage_matrix:
+    input: cov = "profile/mag_cov.tsv",
+           norm = "profile/Normalisation.tsv"
+    output: cov = 'results/mag_and_haplo_cov.tsv'
+    run:
+        mag_matrix,samples,mags = load_matrix(input["cov"])
+        norm,_,_ = load_matrix(input["norm"])
+        mag_matrixN = mag_matrix/norm
+        with open(output["cov"],"w") as handle: 
+            handle.write("/\t%s\n"%"\t".join(SAMPLES))
+            for mag in SELECTED_MAGS:
+                handle.write("%s\t%s\n"%(mag,"\t".join([str(value) for value in mag_matrixN[mags.index(mag)]])))
+                file = "bayespaths/%s/%sF_Intensity.csv"%(mag,mag) 
+                haplo_mat,sorted_haplo = load_intensity(file,mag)
+                haplo_matN = haplo_mat/norm
+                for index,line in enumerate(haplo_matN):
+                    handle.write("%s\t%s\n"%(sorted_haplo[index],"\t".join([str(value) for value in line])))
+
+
+# --------------plot nb strain VS total mag coverage --------------
 rule plot_fig :
     input : cov = "profile/mag_cov.tsv"
     output: fig = "results/haplo_nb_vs_mag_cov.png"
@@ -213,7 +290,7 @@ rule plot_fig :
         plt.xlabel("Total mag coverage over all samples")
         plt.ylabel("Number of haplotypes resolved for each mag")
         plt.xscale("log")
-        ax.set_xticks([10**powr for powr in range(int(np.log10(min(covtot)))+1,int(np.log10(max(covtot)))+1)])
+        ax.set_xticks([10**powr for powr in range(int(np.log10(min(covtot))),int(np.log10(max(covtot)))+1)])
         ax.set_yticks([int(nb) for nb in range(min(strain_nb),max(strain_nb)+1)])
         plt.savefig(output['fig'])
 
@@ -338,7 +415,7 @@ def which(pgm):
             return p
 
 rule get_gtdb_database:
-    output: done="%s/done"%GTDB
+    output: db_done="results/gtdb/done",
     run:
         # get strong env path
         path = which("gtdbtk")
@@ -349,7 +426,7 @@ rule get_gtdb_database:
             dl_script = which("download-db.sh")
             new_dl_script = dirname(dl_script)+"/download-db2.sh"
             shell("cp %s %s"%(dl_script,new_dl_script))
-            shell("sed -i 's/${GTDBTK_DATA_PATH}/%s/g' %s"%(GTDB,dirnamenew_dl_script))
+            shell("sed -i 's/${GTDBTK_DATA_PATH}/%s/g' %s"%(GTDB,new_dl_script))
             shell("download-db2.sh")
         # overwrite default database location
         export_path = env_path+"/etc/conda/activate.d/gtdbtk.sh"
@@ -357,7 +434,7 @@ rule get_gtdb_database:
             handle.write("export GTDBTK_DATA_PATH=%s/\n"%GTDB)
         shell("source %s"%export_path)
         # signal process went is done
-        shell("touch %s"%output["done"])
+        shell("touch %s"%output["db_done"])
 
 rule gtdb:
     input: done = "binning/MAGs/done",

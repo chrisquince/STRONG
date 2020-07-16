@@ -25,7 +25,7 @@ rule download_rpsblast_cog_db:
     output: "%s_dl_done"%COG_DB
     shell: """
     wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz 
-    tar -xvzf rpsblast_cog_db.tar.gz -C $(dirname {COG_DB})
+    tar -xvzf rpsblast_cog_db.tar.gz -C $(dirname {COG_DB}) --strip 1
     rm rpsblast_cog_db.tar.gz
     touch {output}
     """

@@ -35,7 +35,7 @@ rule rpsblast:
            db_done = "%s_dl_done"%COG_DB
     output: "{path}.Rpsblast_cogs.tsv"
     log: "{path}.Rpsblast_cogs.log"
-    shell: "rpsblast -outfmt '6 qseqid sseqid evalue pident length slen qlen' -evalue 0.00001 -query {input} -db {COG_DB} -out {output}"
+    shell: "rpsblast -outfmt '6 qseqid sseqid evalue pident length slen qlen' -evalue 0.00001 -query {input.faa} -db {COG_DB} -out {output}"
 
 rule cat_split_annotation:
     input: expand("annotation/temp_splits/assembly_{nb}.Rpsblast_cogs.tsv", nb=range(ANNOTATION_SPLITS))

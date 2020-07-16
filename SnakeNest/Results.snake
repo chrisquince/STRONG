@@ -31,7 +31,7 @@ TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_
 
 # generate haplotype tree, one for each mag
 TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=SELECTED_MAGS))
-TODO_LIST.append(["results/%s/tmp/%s_dist.tsv"%(mag,cog) for mag,cogs in MAG_TO_COGS.items() for cog in cogs])
+TODO_LIST.append(expand("results/{mag}/tmp/dist.tsv",mag=SELECTED_MAGS))
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
@@ -350,12 +350,6 @@ rule trimal :
     output: "{path}/{COG}_trim.msa"
     shell: "trimal -in {input} -out {output} -gt 0.9 -cons 60"
 
-rule COG_dist:
-    input: "{name}_trim.msa"
-    output:"{name}_dist.tsv"
-    log:"{name}_dist.log"
-    shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
-
 rule cat_cogs :
     input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]]
     output : cat = "results/{mag}/tmp/concatenated_cogs.msa"
@@ -382,6 +376,13 @@ rule cat_cogs :
                     strain_to_seq[strain]+=mean_cog_len[cog]*"-"
         with open(output["cat"],"w") as handle : 
             handle.writelines(">%s_haplo_%s\n%s\n"%(mag,strain,seq) for strain,seq in strain_to_seq.items())
+
+rule COG_dist:
+    input: "{path}/concatenated_cogs.msa"
+    output:"{path}/dist.tsv"
+    log:"{path}_dist.log"
+    shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
+
 
 rule Launch_FastTree:
     input: "{path}/tmp/concatenated_cogs.msa"

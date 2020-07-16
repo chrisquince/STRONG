@@ -108,8 +108,9 @@ rule create_bin_folders:
              fasta="annotation/SCG.fna",
              orf_bed = "annotation/assembly.bed",
              split_bed = "profile/split.bed"
-    output:  mags="binning/list_mags.tsv"
-    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} {input.orf_bed} {input.split_bed} {COG_FILE} -all subgraphs/bin_init/ -l {output.mags} -T {MAG_QUAL_THRESHOLD}"
+    output:  mags="binning/list_mags.tsv",
+             table = "binning/clustering_g%s_SCG_table_merged.csv" % MIN_CONTIG_SIZE
+    shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} {input.orf_bed} {input.split_bed} {COG_FILE} -all subgraphs/bin_init/ -l {output.mags} -T {MAG_QUAL_THRESHOLD} -t {output.table}"
 
 rule compute_avg_cov:
     input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE

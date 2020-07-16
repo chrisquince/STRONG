@@ -38,3 +38,4 @@ dependencies:
     - gtdbtk=1.2.0 
     - seaborn  
     - poppler 
+    - emboss

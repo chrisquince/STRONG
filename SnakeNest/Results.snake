@@ -471,7 +471,7 @@ rule get_gtdb_database:
         path = which("gtdbtk")
         env_path = path.split("/bin/gtdbtk")[0]
         # just check it is not empty
-        if os.listdir(GTDB)==[".empty"]:
+        if len(os.listdir(GTDB))<=1:
             # create a copy of download script with new dl directory
             dl_script = which("download-db.sh")
             new_dl_script = dirname(dl_script)+"/download-db2.sh"

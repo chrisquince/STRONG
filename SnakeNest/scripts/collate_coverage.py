@@ -13,7 +13,7 @@ def collate_iterator(cov_files, output):
     get_cov = lambda line : str(float(line.rstrip().split("\t")[4])) # change "0.0000000" to "0.0"
     get_feature = lambda line : line.rstrip().split("\t")[3]
     # sample order will be the same as what the coverage files given
-    sorted_sample = [".".join(basename(path).split('.')[:-2]) for path in cov_files] 
+    sorted_samples = [".".join(basename(path).split('.')[:-2]) for path in cov_files] 
     List_handle = [open(file) for file in cov_files]
     with open(output, "w") as handle:
         handle.write("\t".join(["cov"]+sorted_samples)+"\n")
@@ -25,7 +25,7 @@ def collate_iterator(cov_files, output):
 def collate_in_memory(cov_files, output):
     # we know that all coverage are sorted in the same fashion since they originiate from the same .bed file, then let's drop the dictionary, we still need to store everything in memory, mainly since I do have more than 1024 files.
     # sample order will be the same as what the coverage files given
-    sorted_sample = [".".join(basename(path).split('.')[:-2]) for path in cov_files] 
+    sorted_samples = [".".join(basename(path).split('.')[:-2]) for path in cov_files] 
     sorted_feature = [line.rstrip().split("\t")[3] for line in open(cov_files[0])]
     for file in cov_files:
         for index_row, line in enumerate(open(file)):

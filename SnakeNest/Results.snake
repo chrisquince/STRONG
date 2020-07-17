@@ -476,7 +476,7 @@ rule get_gtdb_database:
             dl_script = which("download-db.sh")
             new_dl_script = dirname(dl_script)+"/download-db2.sh"
             shell("cp %s %s"%(dl_script,new_dl_script))
-            shell("sed -i 's/${GTDBTK_DATA_PATH}/%s/g' %s"%(GTDB,new_dl_script))
+            shell("sed -i 's/${{GTDBTK_DATA_PATH}}/%s/g' %s"%(GTDB,new_dl_script))
             shell("download-db2.sh")
         # overwrite default database location
         export_path = env_path+"/etc/conda/activate.d/gtdbtk.sh"

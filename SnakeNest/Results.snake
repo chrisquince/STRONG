@@ -482,7 +482,6 @@ rule get_gtdb_database:
         export_path = env_path+"/etc/conda/activate.d/gtdbtk.sh"
         with open(export_path,"w") as handle:
             handle.write("export GTDBTK_DATA_PATH=%s/\n"%GTDB)
-        shell("source %s"%export_path)
         # signal process went is done
         shell("touch %s"%output["db_done"])
 
@@ -493,7 +492,7 @@ rule gtdb:
             arc =  "results/gtdb/gtdbtk.ar122.summary.tsv"
     threads: 50
     shell: """
-            export GTDBTK_DATA_PATH={GTDB}/"
+            export "GTDBTK_DATA_PATH={GTDB}/"
             gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta
             touch {output.bac}
             touch {output.arc}

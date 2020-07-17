@@ -31,7 +31,7 @@ TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_
 
 # generate haplotype tree, one for each mag
 TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=SELECTED_MAGS))
-TODO_LIST.append(expand("results/{mag}/tmp//dist_mat.tsv",mag=SELECTED_MAGS))
+TODO_LIST.append(expand("results/{mag}/tmp/dist_mat.tsv",mag=SELECTED_MAGS))
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
@@ -419,7 +419,7 @@ rule parse_emboss_dist:
                 sorted_gen.append(genome)
                 Mat[ind,ind:]=np.array([float(el) for el in splitline[ind:-2]])
             Mat+=Mat.T
-        matrix_write(Mat,output["dist"],genome,genome)
+        matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
 
 
 
@@ -488,7 +488,7 @@ rule get_gtdb_database:
 
 rule gtdb:
     input: done = "binning/MAGs/done",
-           db_done = '%s/done'%GTDB
+           db_done = 'results/gtdb/done'
     output: bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
             arc =  "results/gtdb/gtdbtk.ar122.summary.tsv"
     threads: 50

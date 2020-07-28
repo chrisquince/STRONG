@@ -140,7 +140,7 @@ def main(Fasta_file,Gff_file,output_bed,Chunk_size,Replace) :
 			print(">"+title+"\n"+sequence)
 	# Output cuts contigs, as feature on intial contigs, in a bed file
 	Handle=open(output_bed,"w")
-	List_uncut_contigs=[[contig,"0",str(length-1),contig] for contig,length in Dico_contigs.items() if contig not in Dico_Contigid_Cutlocation]
+	List_uncut_contigs=[[contig,"1",str(length-1),contig] for contig,length in Dico_contigs.items() if contig not in Dico_Contigid_Cutlocation]
 	List_cut_contigs=[[contig,str(start),str(end-1),contig+"."+str(index)] for contig,list_coordinate in Dico_Contigid_Cutlocation.items() for index,(start,end) in enumerate(list_coordinate)]
 	Handle.write("\n".join("\t".join(List) for List in List_uncut_contigs+List_cut_contigs))
 	Handle.close()

@@ -1,39 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
-from Bio.SeqIO.FastaIO import *
+from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 from collections import defaultdict,Counter
 import numpy as np
 import argparse
 import os 
 
-def main(fasta_file,nb_chunks,output) :
-    Sorted_Names=[]
-    Dico_genome_seq={}
-    Dico_genome_len={}
-    for header,seq in SimpleFastaParser(open(fasta_file)) :
-        Sorted_Names.append(header)
-        Dico_genome_seq[header]=seq
-        Dico_genome_len[header]=len(seq)
-    Total_length=sum(Dico_genome_len.values())
-    Chunk_size=Total_length/float(nb_chunks)
+def main(fasta_file,nb_chunks,output):
+    header_len=[[header,len(seq)] for header,seq in sfp(open(fasta_file))]
+    header_len = sorted(header_len,key=lambda x:-x[1] )
+    # open nb_chunks handles 
     os.system("mkdir -p "+output)
-    # Start of loop
-    num=0
-    extension="."+fasta_file.split(".")[-1]
+    ext=fasta_file.split(".")[-1]
     fasta_path=output+"/"+fasta_file.split('/')[-1].split(".")[0]
-    Current_filename=lambda x:fasta_path+"_"+str(x)+extension
-    Handle=open(Current_filename(num),"w")
-    Temp_length=0
-    for header in Sorted_Names :
-        if Temp_length>Chunk_size :
-            Temp_length=0
-            num+=1
-            Handle.close()
-            Handle=open(Current_filename(num),"w")
-        Seq=Dico_genome_seq[header]
-        Temp_length+=len(Seq)
-        Handle.write(">"+header+"\n"+Seq+"\n")
-    Handle.close()
+    handles =[open("%s_%s.%s"%(fasta_path,nb,ext),"w") for nb in range(100)]
+    # map header to handle, biggest to smallest seq, so it sort of even out
+    index = 0
+    header_to_handle={}
+    for header,_ in header_len:
+        header_to_handle[header] = handles[index]
+        index = (index+1)%nb_chunks
+    # read the file again, and this time write on all handles at the same time
+    for header,seq in sfp(open(fasta_file)):
+        header_to_handle[header].write(">%s\n%s\n"%(header,seq))
+    # close all handles
+    for handle in handles:
+        handle.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

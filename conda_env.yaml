@@ -3,6 +3,7 @@ channels:
     - bioconda
     - anaconda
     - conda-forge
+    -r 
 dependencies:
     - snakemake >=5.5.4
     - python
@@ -40,4 +41,5 @@ dependencies:
     - poppler 
     - emboss
     - bioconductor-ggtree
-    - r-ape
+    - r-tidyr
+    - r-wesanderson

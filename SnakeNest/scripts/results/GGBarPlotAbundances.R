@@ -19,15 +19,16 @@ library(reshape2)
 library(ggplot2)
 args = commandArgs(trailingOnly = TRUE)
 
-if (length(args) !=5){
-  stop("Five arguments must be supplied (intensity file, intensity variance, normalisation, read length and file name for plot)", call = FALSE)
+if (length(args) !=6){
+  stop("Five arguments must be supplied (intensity file, intensity variance, normalisation, read length, assembly kmer length and file name for plot)", call = FALSE)
 }
 
 coverages <- args[1]
 varcoverages <- args[2]
 norm <- args[3]
 Read_length <- as.numeric(args[4])
-savePlot <- args[5]
+kmer_size <- as.numeric(args[5])
+savePlot <- args[6]
 
 # read data
 norm <- read.table(norm, header = TRUE, row.names = 1)
@@ -43,13 +44,18 @@ gammacoverages = gammacoverages[-1,]
 # sometimes bayespath does not output coverage for all samples, normalisation need to be done only on these samples
 norm = norm[,match(colnames(gammacoverages),colnames(norm),nomatch = 0)]
 
+# transform intensity in coverage:
+# nb_reads_per_genome = (gamma * genome_length)
+# Ck =  (gamma * genome_length) * read_length / genome_length
+
 # transform kmer coverage to coverage
 #Ck*Read_length/(Read_length-kmer_size+1) = C
+kmer_intensity_to_nuc_coverage = (Read_length*Read_length/(Read_length-kmer_size+1))
 
 # transforme intensity in normalised kmer coverage
-gammaP <- Read_length*t(gammacoverages)/t(norm)[,1]
+gammaP <- kmer_intensity_to_nuc_coverage*t(gammacoverages)/t(norm)[,1]
 # be carefull to apply scalling to variance not std
-gammaVarP <- sqrt(Read_length*t(varGammacoverages)/t(norm)[,1])
+gammaVarP <- sqrt(kmer_intensity_to_nuc_coverage*t(varGammacoverages)/t(norm)[,1])
 
 #gammaPS <- cbind.data.frame(gammaP)
 gammaPSMelt <- melt(gammaP, id.var = 1)
@@ -71,6 +77,6 @@ coverageBarPlot <- coverageBarPlot + geom_bar(stat = "identity", position = posi
 coverageBarPlot <- coverageBarPlot + geom_errorbar(aes(ymin = coverage - Sdcoverage, ymax = coverage + Sdcoverage), width = .2, position = position_dodge(.9), colour = "Black")
 coverageBarPlot <- coverageBarPlot + theme(axis.text = element_text(size = 16),axis.text.x = element_text(angle = 45, hjust = 1), axis.title = element_text(size = 18), legend.text = element_text(size = 16), plot.title = element_text(hjust = 0.5,size = 20))
 coverageBarPlot = coverageBarPlot +  ggtitle(print(gsub("F_Intensity.csv", "", basename(coverages))))
-coverageBarPlot = coverageBarPlot + ylab("kmer coverage per cell")
+coverageBarPlot = coverageBarPlot + ylab("coverage per genome")
 ggsave(savePlot)
 

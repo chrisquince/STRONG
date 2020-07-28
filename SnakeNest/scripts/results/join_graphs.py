@@ -8,11 +8,16 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
 
 
-def generate_edges(paths):
+def generate_edges(paths,new_vertices):
 	edges=[]
 	for index,path in enumerate(paths[:-1]):
 		next_path = paths[index+1]
-		edges.append("\t".join(["L",path[-1][:-1],path[-1][-1],next_path[0][:-1],next_path[0][-1],"0M\n"]))
+		new_vertex = "%s_to_%s"%(path[0].split("_")[0],next_path[0].split("_")[0])
+		new_vertices|={new_vertex}
+		# edge from path to new_vertex
+		edges.append("\t".join(["L",path[-1][:-1],path[-1][-1],new_vertex,"+","0M\n"]))
+		# edge from path to new_vertex		
+		edges.append("\t".join(["L",new_vertex,"+",next_path[0][:-1],next_path[0][-1],"0M\n"]))
 	return edges
 
 def main(paths,output,gfa_files):
@@ -25,10 +30,12 @@ def main(paths,output,gfa_files):
 		cog,strain = line[0].split("_")
 		cogs2|={cog}
 		strain_paths[strain].append(["%s_%s"%(cog,unitig) for unitig in line[1:]])
-	# get new edges
-	new_strain_edges = "".join([new_edgs for strain,paths in strain_paths.items() for new_edgs in generate_edges(paths)])
+	# get new edges and buffer vertices
+	new_vertices = set()
+	new_strain_edges = "".join([new_edgs for strain,paths in strain_paths.items() for new_edgs in generate_edges(paths,new_vertices)])
+	# add buffer vertices
+	new_vertices = "".join(["S\t%s\t%s\tKC:i:10\tCL:z:#000000\tC2:z:#000000\t\n"%(name,100*'N') for name in new_vertices])
 	# rename contigs and add edges,
-	new_vertex = "" 
 	new_edges = ""
 	for cog in cogs2:
 		with open(cog_to_gfa[cog]) as handle:
@@ -36,7 +43,7 @@ def main(paths,output,gfa_files):
 				splitline = line.rstrip().split("\t")
 				if line[0]=="S":
 					new_contig = "%s_%s"%(cog,splitline[1])
-					new_vertex += "S\t%s\t%s\n"%(new_contig,"\t".join(splitline[1:]))
+					new_vertices += "S\t%s\t%s\n"%(new_contig,"\t".join(splitline[2:]))
 				if line[0]=="L":
 					new_contig1 = "%s_%s"%(cog,splitline[1])
 					new_contig2 = "%s_%s"%(cog,splitline[3])
@@ -44,8 +51,7 @@ def main(paths,output,gfa_files):
 	new_edges += new_strain_edges
 	# output joint gfa
 	with open(output,"w") as handle:
-		handle.write(new_vertex+new_edges)
-
+		handle.write(new_vertices+new_edges)
 
 
 if __name__ == "__main__":

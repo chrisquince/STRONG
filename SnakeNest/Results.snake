@@ -21,8 +21,14 @@ MAG_TO_HAPLO_NB = {mag:len({header.split('_')[1] for header,_ in sfp(open(file))
 MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
 
 #--------------------Snakemake ------------------------
-#### specify wanted outputs
+# when building tree+heatmap fig, deel with case where only 1 concatenated seq can be found
+def pdf_tree(w):
+    _ = [checkpoints.cat_cogs.get(mag=mag) for mag in SELECTED_MAGS]
+    mag_to_nb = {mag:len(list(sfp(open("results/%s/tmp/concatenated_cogs.msa"%mag)))) for mag in SELECTED_MAGS}
+    mag_to_drow = [mag for mag,nb in mag_to_nb.items() if nb>1]
+    return expand("results/{mag}/haplotypes_tree.pdf",mag=mag_to_drow)
 
+#### specify wanted outputs
 # summary file :
 TODO_LIST = ["results/summary.tsv"]
 
@@ -31,7 +37,7 @@ TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_
 
 # generate haplotype tree, one for each mag
 TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=SELECTED_MAGS))
-TODO_LIST.append(expand("results/{mag}/tmp/dist_mat.tsv",mag=SELECTED_MAGS))
+TODO_LIST.append(pdf_tree)
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
@@ -87,7 +93,7 @@ rule generate_summary:
             handle.write("bacteria: %s\tarcheae: %s\n"%(bac_nb,arc_nb))
             # add taxonomy and RED value
             handle.write("#-------- MAGs gtdb taxonomy  --------\n")
-            handle.write("mag\tnb_haplo\tRED\tDomain\tPhylum\tClass\tOrder\tfamilly\tgenus\tstrain\n\n")
+            handle.write("mag\tnb_haplo\tRED\tDomain\tPhylum\tClass\tOrder\tfamilly\tgenus\tstrain\n")
             mag_to_taxa = get_taxa(input[1])
             mag_to_taxa = get_taxa(input[2]) # worst non readable trick I know so far, using an empty dict as defaultvalue will cary over multiple call.... https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python 
             handle.writelines("%s\t%s\t%s\n"%(mag,MAG_TO_HAPLO_NB[mag],taxo) for mag,taxo in mag_to_taxa.items())
@@ -158,65 +164,27 @@ rule median_SCG_cov:
             handle.write("median_scg\t"+"\t".join(map(str,scg_norm))+"\n")
 
 #### get selected all mag coverage
-def format_row(header,line):
-    row = header
-    for el in line:
-        row += "\t{:.2g}".format(el)
-    return row+"\n"
-def matrix_write(matrix,file_name,col_names,row_names):
-    with open(file_name,"w") as handle:
-        handle.write("/\t%s\n"%"\t".join(col_names))
-        handle.writelines(format_row(row_names[index],line) for index,line in enumerate(matrix))
-
-
 rule mag_coverage:
     input: cluster = "binning/clustering_gt1000_merged.csv",
            cov = "profile/split/coverage.tsv",
            bed = "profile/split.bed"
     output: cov = "profile/mag_cov.tsv"
-    run:
-        # get list of contigs corresponding ot selected mags 
-        mags = {mag.replace("Bin_","") for mag in ALL_MAGS}
-        mag_to_contigs = defaultdict(list)
-        with open(input["cluster"]) as handle:
-            _=next(handle)
-            for line in handle:
-                contig,mag = line.rstrip().split(",")
-                if mag in mags:
-                    mag_to_contigs["Bin_%s"%mag].append(contig)
-        # translate contig to split contigs, so that we don't need to get cov for non split contigs
-        contigs = {contig for cntgs in mag_to_contigs.values() for contig in cntgs}
-        contigs_to_splits = defaultdict(list)
-        split_to_len = {}
-        for line in open(input["bed"]):
-            contig,start,end,split = line.rstrip().split("\t")
-            if contig in contigs:
-                split_to_len[split]=np.abs(int(end)-int(start))
-                contigs_to_splits[contig].append(split)
-        # read coverage file and only look at selected splits
-        # in the mean time, fill a matrix of number of nucleotide per mag
-        splits_to_mag = {split:mag for mag,contigs in mag_to_contigs.items() for contig in contigs for split in contigs_to_splits[contig]}
-        mag_to_len = defaultdict(int)
-        with open(input["cov"]) as handle:
-            sorted_samples = next(handle).rstrip().split('\t')[1:]
-            sorted_mags = sorted(ALL_MAGS)
-            nuc_matrix = np.zeros((len(sorted_mags),len(sorted_samples)))
-            for line in handle:
-                splitline = line.rstrip().split("\t")
-                if splitline[0] in splits_to_mag:
-                    # get things
-                    mag = splits_to_mag[splitline[0]]
-                    row_index = sorted_mags.index(mag)
-                    split_len = split_to_len[splitline[0]]
-                    profile = split_len*np.array([float(val) for val in splitline[1:]])
-                    # store things
-                    nuc_matrix[row_index,:] += profile
-                    mag_to_len[mag] += split_len
-        # get mag coverage, from mag mapped nucleotides
-        sorted_mag_len = np.array([mag_to_len[mag] for mag in sorted_mags])
-        cov_matrix = (nuc_matrix.T/sorted_mag_len).T
-        # output result:
-        matrix_write(cov_matrix,output["cov"],sorted_samples,sorted_mags)
+    shell : "mag_coverage_from_splitcontigs.py {input.cluster} {input.cov} {input.bed} {output.cov}"
+
+
+
+def format_row(header,line):
+    row = header
+    for el in line:
+        if np.isnan(el):
+            row += "\tNA"
+        else:
+            row += "\t{:.2g}".format(el)
+    return row+"\n"
+def matrix_write(matrix,file_name,col_names,row_names):
+    with open(file_name,"w") as handle:
+        handle.write("/\t%s\n"%"\t".join(col_names))
+        handle.writelines(format_row(row_names[index],line) for index,line in enumerate(matrix))
 
 def load_matrix(file,sample_order=None,strain_order=None) :
     with open(file) as handle :
@@ -242,11 +210,12 @@ def convert_kcov_to_cov(mat):
 #Ck*Read_length = C *(Read_length-kmer_size+1)
     return mat*READ_LENGTH/float(READ_LENGTH-ASSEMBLY_K+1)
 
-def load_intensity(file,mag):
+def load_intensity(file,mag,norm):
     with open(file) as handle:
         header = [int(val) for val in next(handle).rstrip().split(",")[1:]]
         sorted_haplo = [] 
         matrix = []
+        NA_terms = [index for index in range(len(SAMPLES)) if index not in header]
         for line in handle: 
             temp = [0 for ite in range(len(SAMPLES))]
             splitlines = line.rstrip().split(",")
@@ -254,10 +223,13 @@ def load_intensity(file,mag):
             for index,val in enumerate(splitlines[1:]):
                 temp[header[index]]=float(val)
             matrix.append(temp)
-        matrix = np.array(matrix)
-        matrix = convert_intensity_to_kcov(matrix)
-        matrix = convert_kcov_to_cov(matrix)
-        return matrix,sorted_haplo
+    matrix = np.array(matrix)
+    matrix = convert_intensity_to_kcov(matrix)
+    matrix = convert_kcov_to_cov(matrix)
+    matrixN = matrix/norm
+    matrixNA = matrixN
+    matrixNA[:,NA_terms]=np.nan
+    return matrixNA,sorted_haplo
 
 
 # get one matrix with mag coverage and strains coverages
@@ -274,8 +246,7 @@ rule create_unique_coverage_matrix:
             for mag in SELECTED_MAGS:
                 handle.write(format_row(mag,mag_matrixN[mags.index(mag)]))
                 file = "bayespaths/%s/%sF_Intensity.csv"%(mag,mag) 
-                haplo_mat,sorted_haplo = load_intensity(file,mag)
-                haplo_matN = haplo_mat/norm
+                haplo_matN,sorted_haplo = load_intensity(file,mag,norm)
                 for index,line in enumerate(haplo_matN):
                     handle.write(format_row(sorted_haplo[index],line))
 
@@ -285,19 +256,10 @@ rule plot_fig :
     input : cov = "profile/mag_cov.tsv"
     output: fig = "results/haplo_nb_vs_mag_cov.png"
     run: 
-        cov,samples,mags = load_matrix(input['cov'])
-        covtot = cov.sum(1)
-        strain_nb = [len({header.split('_')[1] for header,seq in sfp(open(MAG_TO_HAPLO[mag]))}) for mag in mags]
-        ax = sns.regplot(x=covtot, y=strain_nb, logx=True)
-        plt.title("Haplotype number versus total mag coverage")
-        plt.title("Haplotype number versus total mag coverage")
-        plt.xlabel("Total mag coverage over all samples")
-        plt.ylabel("Number of haplotypes resolved for each mag")
-        plt.xscale("log")
-        ax.set_xticks([10**powr for powr in range(int(np.log10(min(covtot))),int(np.log10(max(covtot)))+1)])
-        ax.set_yticks([int(nb) for nb in range(min(strain_nb),max(strain_nb)+1)])
-        plt.savefig(output['fig'])
-
+        with open("results/mag_to_haplo_nb.tsv","w") as handle:
+            handle.writelines("%s\t%s\n"%(mag,nb) for mag,nb in MAG_TO_HAPLO_NB.items())
+        shell("{RES_SCRIPTS}/plot_mag_to_nb.R {input} results/mag_to_haplo_nb.tsv {output}" )
+        shell("rm results/mag_to_haplo_nb.tsv")
 
 # ----------------- barplot strain coverage -----------------
 rule coverage_barplot:
@@ -305,7 +267,7 @@ rule coverage_barplot:
            var = "bayespaths/{mag}/{mag}F_varIntensity.csv",
            norm = "profile/Normalisation.tsv"
     output: "results/{mag}/haplotypes_coverage.pdf"
-    shell: "{RES_SCRIPTS}/GGBarPlotAbundances.R {input.cov} {input.var} {input.norm} {READ_LENGTH} {output}"
+    shell: "{RES_SCRIPTS}/GGBarPlotAbundances.R {input.cov} {input.var} {input.norm} {READ_LENGTH} {ASSEMBLY_K} {output}"
 
 rule cat_pdf:
     input: expand("results/{mag}/haplotypes_coverage.pdf",mag=SELECTED_MAGS)
@@ -313,6 +275,20 @@ rule cat_pdf:
     shell: "pdfunite {input} {output}"
 
 # ----------------- one denovo tree by mag -----------------
+def add_seq_to_dict(mag,seq,mag_to_seq):
+    # there meay be contamination or fragment, so multiple cogs for 1 mag, keep all version and name them differently
+    if mag in mag_to_seq:
+        if "_nb_" in mag :
+            counter = int(mag.split("_nb_")[1])
+            counter += 1
+            add_seq_to_dict(mag,seq,mag_to_seq)
+        else : 
+            mag = mag+"_nb_2"
+            add_seq_to_dict(mag,seq,mag_to_seq)
+    else:
+        mag_to_seq[mag] = seq
+
+
 rule split_by_cog:
     input: haplo = [MAG_TO_HAPLO[mag] for mag in SELECTED_MAGS]
     output: tmp = ["results/%s/tmp/%s.fna"%(mag,cog) for mag in SELECTED_MAGS for cog in MAG_TO_COGS[mag]]
@@ -330,7 +306,7 @@ rule split_by_cog:
             file2 = "subgraphs/bin_merged/%s/SCG.fna"%mag
             for header,seq in sfp(open(file2)):
                 cog = header.split(" ")[1]
-                cog_to_strain_seq[cog][mag] = seq
+                add_seq_to_dict(mag,seq,cog_to_strain_seq[cog])
             for cog,strain_to_seq in cog_to_strain_seq.items(): 
                 with open("results/%s/tmp/%s.fna"%(mag,cog),"w") as handle:
                     handle.writelines(">%s\n%s\n"%(strain,seq) for strain,seq in strain_to_seq.items())
@@ -361,7 +337,7 @@ rule trimal :
     output: "{path}/{COG}_trim.msa"
     shell: "trimal -in {input} -out {output} -gt 0.9 -cons 60"
 
-rule cat_cogs :
+checkpoint cat_cogs :
     input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]]
     output : cat = "results/{mag}/tmp/concatenated_cogs.msa"
     run : 
@@ -400,7 +376,7 @@ rule Launch_FastTree:
 rule COG_dist:
     input: "{path}/concatenated_cogs.msa"
     output:"{path}/dist.tsv"
-    log:"{path}_dist.log"
+    log:"{path}/dist.log"
     shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
 
 rule parse_emboss_dist:
@@ -421,8 +397,14 @@ rule parse_emboss_dist:
             Mat+=Mat.T
         matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
 
+#--- plot tree + dist between strain ---
 
-
+rule plot_tree_fig:
+    input: dist = "{path}/tmp/dist_mat.tsv",
+           tree = "{path}/haplotypes_tree.nwk"
+    output: "{path}/haplotypes_tree.pdf"
+    log : "{path}/tmp/haplotypes_tree.log"
+    shell: "{RES_SCRIPTS}/plot_scg_tree.R {input.tree} {input.dist} {output} &>{log}"
 
 # ----------------- colored .gfa -----------------
 # keep the same color for the same strain --> generate 1 graph by mag by cog
@@ -466,6 +448,7 @@ def which(pgm):
 
 rule get_gtdb_database:
     output: db_done="results/gtdb/done",
+    log: "results/gtdb/download.log"
     run:
         # get strong env path
         path = which("gtdbtk")
@@ -477,7 +460,7 @@ rule get_gtdb_database:
             new_dl_script = dirname(dl_script)+"/download-db2.sh"
             shell("cp %s %s"%(dl_script,new_dl_script))
             shell("sed -i 's=${{GTDBTK_DATA_PATH}}=%s=g' %s"%(GTDB,new_dl_script))
-            shell("download-db2.sh")
+            shell("download-db2.sh &>{log}")
         # overwrite default database location
         export_path = env_path+"/etc/conda/activate.d/gtdbtk.sh"
         with open(export_path,"w") as handle:
@@ -490,10 +473,11 @@ rule gtdb:
            db_done = 'results/gtdb/done'
     output: bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
             arc =  "results/gtdb/gtdbtk.ar122.summary.tsv"
+    log: "results/gtdb/logs"
     threads: 50
     shell: """
             export "GTDBTK_DATA_PATH={GTDB}/"
-            gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta
+            gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta &> {log} 
             touch {output.bac}
             touch {output.arc}
            """

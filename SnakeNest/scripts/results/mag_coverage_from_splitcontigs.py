@@ -5,11 +5,12 @@ import argparse
 import numpy as np 
 from collections import defaultdict
 
+ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
 
 def format_row(header,line):
     row = header
     for el in line:
-        row += "\t{:.2g}".format(el)
+        row += "\t{:.4g}".format(el)
     return row+"\n"
 def matrix_write(matrix,file_name,col_names,row_names):
     with open(file_name,"w") as handle:

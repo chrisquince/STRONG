@@ -26,11 +26,7 @@ def merge_color(colors):
     merged_color = "#"+"".join([int_to_hex(value) for value in mean_color])
     return merged_color
 
-def main(gfa_file, contig_to_strains, output):
-    sorted_strains=sorted({strain for strains in contig_to_strains.values() for strain in strains if "NA" not in strain})
-    contig_to_color={contig:merge_color([color_scheme[sorted_strains.index(strain)] for strain in strains]) for contig,strains in contig_to_strains.items()}
-
-    # next add this information to the gfa file 
+def color_gfa(gfa_file,contig_to_color):
     colored_gfa=""
     with open(gfa_file) as handle : 
         for line in handle : 
@@ -45,8 +41,28 @@ def main(gfa_file, contig_to_strains, output):
                 colored_gfa+='%s\tCL:z:%s\tC2:z:%s\n'%(line.rstrip(),color,color)
             else : 
                 colored_gfa+=line
+    return colored_gfa
+
+def main(gfa_file, contig_to_strains, output, split):
+    sorted_strains=sorted({strain for strains in contig_to_strains.values() for strain in strains if "NA" not in strain})
+    contig_to_color={contig:merge_color([color_scheme[sorted_strains.index(strain)] for strain in strains]) for contig,strains in contig_to_strains.items()}
+
+    # next add this information to the gfa file 
+    colored_gfa = color_gfa(gfa_file,contig_to_color)
+
+    # and output 
     with open(output,"w") as handle:
         handle.write(colored_gfa)
+
+    ### case we want 1 gfa per strain, everything else in grey 
+    if split:
+        for strain in sorted_strains:
+            contig_to_color = {contig:color_scheme[sorted_strains.index(strain)] for contig,strains in contig_to_strains.items() if strain in strains }
+            colored_gfa = color_gfa(gfa_file,contig_to_color)
+            new_output = ".".join(output.split(".")[:-1])+"_%s.gfa"%strain
+            with open(new_output,"w") as handle:
+                handle.write(colored_gfa)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -54,6 +70,7 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-p',help="haplotypes paths in all cogs, output of bayespaths")
     group.add_argument('-a',help="contig assignmeent file : bin/group/strain assigned to contig, first term is contig name following are list of bin/... contig it is in. Some contigs may not be assigned to anything, they are then colored grey, .tsv file")
+    parser.add_argument("-s", action='store_true', help="flag, output 1 gfa per strain ")
     parser.add_argument("output",help="output name for colored gfa")
     args = parser.parse_args()
     # deal with multiple way of passing contig assignment
@@ -69,6 +86,6 @@ if __name__ == "__main__":
     else :
         contig_to_strains={line.split()[0]:line.split()[1:] for line in open(args.a)}
 
-    main(args.gfa_file,contig_to_strains,args.output)
+    main(args.gfa_file,contig_to_strains,args.output,args.s)
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+ #!/usr/bin/env Rscript
 library(ggplot2)
 
 # -------- get args ------------
@@ -15,7 +15,7 @@ hap_nb = read.table(haplo_nb,row.name=1)
 # plot it 
 data = data.frame("cov"=cov_tot[rownames(hap_nb)],"nb"=hap_nb[,])
 png(output)
-ggplot(data=data, aes(x=cov, y=nb))+geom_point()+ stat_smooth(span=2)+xlab("Total mag coverage over all samples")+ylab("Number of haplotypes resolved for each mag") + theme_bw() + ggtitle("Haplotype number versus total mag coverage")
+ggplot(data=data, aes(x=cov, y=nb))+geom_point()+ geom_smooth()+xlab("Total mag coverage over all samples")+ylab("Number of haplotypes resolved for each mag") + theme_bw() + ggtitle("Haplotype number versus total mag coverage")
 dev.off()
 
 

@@ -169,7 +169,7 @@ rule mag_coverage:
            cov = "profile/split/coverage.tsv",
            bed = "profile/split.bed"
     output: cov = "profile/mag_cov.tsv"
-    shell : "{SCRIPTS_RES}/mag_coverage_from_splitcontigs.py {input.cluster} {input.cov} {input.bed} {output.cov}"
+    shell : "{RES_SCRIPTS}/mag_coverage_from_splitcontigs.py {input.cluster} {input.cov} {input.bed} {output.cov}"
 
 
 

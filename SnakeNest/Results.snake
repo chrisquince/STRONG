@@ -96,7 +96,12 @@ rule generate_summary:
             handle.write("mag\tnb_haplo\tRED\tDomain\tPhylum\tClass\tOrder\tfamilly\tgenus\tstrain\n")
             mag_to_taxa = get_taxa(input[1])
             mag_to_taxa = get_taxa(input[2]) # worst non readable trick I know so far, using an empty dict as defaultvalue will cary over multiple call.... https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python 
-            handle.writelines("%s\t%s\t%s\n"%(mag,MAG_TO_HAPLO_NB[mag],taxo) for mag,taxo in mag_to_taxa.items())
+            for mag,taxo in mag_to_taxa.items():
+                if mag in MAG_TO_HAPLO_NB:
+                    haplo_nb = MAG_TO_HAPLO_NB[mag]
+                else: 
+                    haplo_nb = "NA"
+                handle.write("%s\t%s\t%s\n"%(mag,haplo_nb,taxo))
 
 # ----------------- coverage of mag/strains -----------------
 ##### get SCG coverages

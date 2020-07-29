@@ -1,4 +1,4 @@
- #!/usr/bin/env Rscript
+#!/usr/bin/env Rscript
 library(ggplot2)
 
 # -------- get args ------------

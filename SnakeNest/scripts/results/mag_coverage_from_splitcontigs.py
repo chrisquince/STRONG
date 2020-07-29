@@ -5,7 +5,7 @@ import argparse
 import numpy as np 
 from collections import defaultdict
 
-ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
+SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")])
 
 def format_row(header,line):
     row = header
@@ -19,7 +19,7 @@ def matrix_write(matrix,file_name,col_names,row_names):
 
 def main(cluster,coverage,bed,output):
     # get list of contigs corresponding ot selected mags 
-    mags = {mag.replace("Bin_","") for mag in ALL_MAGS}
+    mags = {mag.replace("Bin_","") for mag in SELECTED_MAGS}
     mag_to_contigs = defaultdict(list)
     with open(cluster) as handle:
         _=next(handle)
@@ -42,7 +42,7 @@ def main(cluster,coverage,bed,output):
     mag_to_len = defaultdict(int)
     with open(coverage) as handle:
         sorted_samples = next(handle).rstrip().split('\t')[1:]
-        sorted_mags = sorted(ALL_MAGS)
+        sorted_mags = sorted(SELECTED_MAGS)
         nuc_matrix = np.zeros((len(sorted_mags),len(sorted_samples)))
         for line in handle:
             splitline = line.rstrip().split("\t")

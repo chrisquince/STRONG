@@ -170,7 +170,7 @@ rule median_SCG_cov:
 
 #### get selected all mag coverage
 rule mag_coverage:
-    input: cluster = "binning/clustering_gt1000_merged.csv",
+    input: cluster = "subgraphs/bin_merged/clustering.csv",
            cov = "profile/split/coverage.tsv",
            bed = "profile/split.bed"
     output: cov = "profile/mag_cov.tsv"

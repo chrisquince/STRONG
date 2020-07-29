@@ -279,8 +279,9 @@ def add_seq_to_dict(mag,seq,mag_to_seq):
     # there meay be contamination or fragment, so multiple cogs for 1 mag, keep all version and name them differently
     if mag in mag_to_seq:
         if "_nb_" in mag :
-            counter = int(mag.split("_nb_")[1])
-            counter += 1
+            name,counter = mag.split("_nb_")
+            counter = int(counter)+1
+            mag = "%s_nb_%s"%(name,counter)
             add_seq_to_dict(mag,seq,mag_to_seq)
         else : 
             mag = mag+"_nb_2"

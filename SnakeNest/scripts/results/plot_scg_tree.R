@@ -1,8 +1,9 @@
 #!/usr/bin/env Rscript
 rm(list = ls()) 
+library(tidyr)
+library(stringr)
 library(ggtree)
 library(ggplot2)
-library(tidyr)
 library(wesanderson)
 
 
@@ -13,6 +14,7 @@ gheatmap2 = function (p, data, offset = 0, width = 1)
     pal <- wes_palette("Zissou1", 100, type = "continuous")
     variable <- value <- lab <- y <- NULL
     width <- width * (p$data$x %>% range(na.rm = TRUE) %>% diff)/ncol(data)
+    if (width==0){width = 1/ncol(data)}
     isTip <- x <- y <- variable <- value <- from <- to <- NULL
     df <- p$data
     df <- df[df$isTip, ]
@@ -40,7 +42,7 @@ gheatmap2 = function (p, data, offset = 0, width = 1)
     p2 <- p + geom_tile(data = dd, aes(x, y, fill = value), 
             width = width, color = "white",inherit.aes = FALSE)
     # add annotation on tiles 
-    p2 <- p2 + geom_text(data = dd, aes(x,y,label=value, fontface="bold"),inherit.aes = FALSE)
+    p2 <- p2 + geom_text(data = dd, aes(x,y,label=value, fontface="bold"),size=6/sqrt(ncol(data)),inherit.aes = FALSE)
     # add color 
     p2 <- p2 + scale_fill_gradientn(colours = pal)
     p2 <- p2 + theme(legend.position = "right")
@@ -67,8 +69,14 @@ is_mag = list("Haplotype" = tips[which(has_haplo)], "Mag" = tips[which(!has_hapl
 p = groupOTU(p, is_mag, 'SCG') + aes(color=SCG)
 
 # add heatmap using dist mat 
+offset=1.5*max(p$data$x)
+if (offset==0){offset=1}
 data = read.table(dist_matrix,header=TRUE,row.name=1)
-r = gheatmap2(p, data, offset=1.5*max(p$data$x),width=2)+ scale_x_ggtree()+ylim(0.5,max(p$data$y)+0.5) + labs(fill="Percent substitution")
+r = gheatmap2(p, data,offset=offset,width=1)+ scale_x_ggtree()+ylim(0.5,max(p$data$y)+0.5) + labs(fill="Percent substitution")
+
+# title please
+mag = str_split(newick, "/")[[1]][2]
+r = r + ggtitle(mag)
 
 # -------- just draw the fig ------------
 pdf(savePlot)

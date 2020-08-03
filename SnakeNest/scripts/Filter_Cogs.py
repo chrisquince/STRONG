@@ -89,7 +89,7 @@ if __name__ == "__main__":
     rpsblast_ouptut = args.rpsblast_ouptut
     database_file = args.cdd_cog_file
     if args.E != 0:
-        min_evalue = -np.log10(args.E)
+        min_evalue = -np.log10(float(args.E))
     else:
         min_evalue = args.E
     min_pid = float(args.P)

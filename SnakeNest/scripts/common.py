@@ -54,7 +54,7 @@ def fill_default_values(config):
         default_values["scg_data"] = os.path.join(local_dir, "SnakeNest/scg_data")
         default_values["bayespaths"]["dir"] = os.path.join(local_dir, "BayesPaths")
         default_values["desman"]["dscripts"] = os.path.join(
-            local_dir, "SnakeNest/scripts")
+            local_dir, "DESMAN/scripts")
         default_values["evaluation"]['scripts'] = os.path.join(
             local_dir, "SnakeNest/scripts/evaluation")
         default_values["spades_tools"] = os.path.join(local_dir, "SPAdes/assembler/build_spades/bin")

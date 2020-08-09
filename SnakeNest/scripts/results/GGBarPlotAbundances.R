@@ -20,7 +20,7 @@ library(ggplot2)
 args = commandArgs(trailingOnly = TRUE)
 
 if (length(args) !=6){
-  stop("Five arguments must be supplied (intensity file, intensity variance, normalisation, read length, assembly kmer length and file name for plot)", call = FALSE)
+  stop("Six arguments must be supplied (intensity file, intensity variance, normalisation, read length, assembly kmer length and file name for plot)", call = FALSE)
 }
 
 coverages <- args[1]

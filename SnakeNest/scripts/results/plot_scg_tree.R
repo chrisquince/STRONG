@@ -42,7 +42,7 @@ gheatmap2 = function (p, data, offset = 0, width = 1)
     p2 <- p + geom_tile(data = dd, aes(x, y, fill = value), 
             width = width, color = "white",inherit.aes = FALSE)
     # add annotation on tiles 
-    p2 <- p2 + geom_text(data = dd, aes(x,y,label=value, fontface="bold"),size=6/sqrt(ncol(data)),inherit.aes = FALSE)
+    p2 <- p2 + geom_text(data = dd, aes(x,y,label=value, fontface="bold"),size=7/sqrt(ncol(data)),inherit.aes = FALSE)
     # add color 
     p2 <- p2 + scale_fill_gradientn(colours = pal)
     p2 <- p2 + theme(legend.position = "right")
@@ -65,14 +65,26 @@ p = p + theme_tree2(axis.text.x = element_text(angle = 45, hjust = 1))
 # add color if mag
 tips = p$data[p$data$isTip,]$label
 has_haplo = grepl("haplo",tips)
-is_mag = list("Haplotype" = tips[which(has_haplo)], "Mag" = tips[which(!has_haplo)])
+has_eval = grepl("eval",tips)
+has_gtdb = grepl("gtdb",tips)
+is_mag = list("Haplotype" = tips[which(has_haplo)], "Mag" = tips[which(!(has_haplo|has_eval|has_gtdb))])
+if (sum(has_eval)!=0){is_mag[["Evaluation"]]=tips[has_eval]}
+if (sum(has_gtdb)!=0){is_mag[["GTDB Reference"]]=tips[has_gtdb]}
+
 p = groupOTU(p, is_mag, 'SCG') + aes(color=SCG)
 
 # add heatmap using dist mat 
 offset=1.5*max(p$data$x)
 if (offset==0){offset=1}
 data = read.table(dist_matrix,header=TRUE,row.name=1)
-r = gheatmap2(p, data,offset=offset,width=1)+ scale_x_ggtree()+ylim(0.5,max(p$data$y)+0.5) + labs(fill="Percent substitution")
+# reorder data so that the distmat is in the same order :
+
+y_order = order(p$data$y[p$data$isTip])
+label_order = p$data$label[p$data$isTip][y_order]
+data = t(t(data)[,label_order])[,rev(label_order)]
+
+
+r = gheatmap2(p, data,offset=offset,width=2)+ scale_x_ggtree()+ylim(0.5,max(p$data$y)+0.5) + labs(fill="Percent substitution")
 
 # title please
 mag = str_split(newick, "/")[[1]][2]

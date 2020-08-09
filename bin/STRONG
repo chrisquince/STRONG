@@ -85,7 +85,7 @@ with cd(STRONG_DIR):
         config = yaml.safe_load(config_in)
     fill_default_values(config)
     
-    # Finally start the pipeline
+    Finally start the pipeline
     print("Step #1 - Assembly / Binning / COG Annotation")
     call_snake(["--snakefile", "SnakeNest/SCogSubGraph.snake"])
 
@@ -95,17 +95,15 @@ with cd(STRONG_DIR):
     print("Step #3 - Strain Decomposition")
     call_snake(["--snakefile", "SnakeNest/BayesAGraph.snake"])
 
+    if config["evaluation"]["execution"]:
+        print("Optional - running evaluation") 
+        call_snake(["--snakefile", "SnakeNest/eval.snake"])
+
     print("Step #4 - output results")
     call_snake(["--snakefile", "SnakeNest/Results.snake"])
 
     if config["desman"]["execution"]:
-        print("Step #4 - Strain Analysis with Desman") 
+        print("Strain Analysis with Desman") 
         call_snake(["--snakefile", "SnakeNest/Desman.snake", "all"])
 
-    if config["maganalysis"]["execution"]:
-        print("Step #5 - MAGAnalysis : place mags in a tree of references") 
-        call_snake(["--snakefile", "SnakeNest/MAGAnalysis.snake"])
         
-    if config["evaluation"]["execution"]:
-        print("Step #6 - running evaluation") 
-        call_snake(["--snakefile", "SnakeNest/eval.snake"])

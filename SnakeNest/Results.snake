@@ -10,8 +10,10 @@ from collections import defaultdict
 from os.path import dirname, basename
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
-
 SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")])
+# also include mag used for merging
+MERGED_TO_MAGS = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open("subgraphs/bin_init/bins_to_merge.tsv")}
+SELECTED_MAGS2 = SELECTED_MAGS+ [mag for merged,mags in MERGED_TO_MAGS.items() for mag in mags if merged in SELECTED_MAGS]  
 ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
 # there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
 MAG_TO_PATHS = {mag:glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag)[0] for mag in SELECTED_MAGS}
@@ -19,14 +21,10 @@ MAG_TO_HAPLO = {mag:glob.glob("bayespaths/%s/*Haplo_*.fa"%mag)[0] for mag in SEL
 MAG_TO_HAPLO_NB = {mag:len({header.split('_')[1] for header,_ in sfp(open(file))}) for mag,file in MAG_TO_PATHS.items()}
 # number of cogs is dependant on mags 
 MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
+# evaluation results
+MAG_TO_STRAINS = {mag:[line.split(",")[0] for line in open("evaluation/bayespaths/%s_combine.tsv"%mag)] for mag in SELECTED_MAGS}
 
 #--------------------Snakemake ------------------------
-# when building tree+heatmap fig, deel with case where only 1 concatenated seq can be found
-def pdf_tree(w):
-    _ = [checkpoints.cat_cogs.get(mag=mag) for mag in SELECTED_MAGS]
-    mag_to_nb = {mag:len(list(sfp(open("results/%s/tmp/concatenated_cogs.msa"%mag)))) for mag in SELECTED_MAGS}
-    mag_to_drow = [mag for mag,nb in mag_to_nb.items() if nb>1]
-    return expand("results/{mag}/haplotypes_tree.pdf",mag=mag_to_drow)
 
 #### specify wanted outputs
 # summary file :
@@ -37,7 +35,7 @@ TODO_LIST.append(expand("results/{mag}/graph/joined_SCG_graph.gfa",mag=SELECTED_
 
 # generate haplotype tree, one for each mag
 TODO_LIST.append(expand("results/{mag}/haplotypes_tree.nwk",mag=SELECTED_MAGS))
-TODO_LIST.append(pdf_tree)
+TODO_LIST.append("results/haplotypes_tree.pdf")
 
 # generate haplotype coverage
 TODO_LIST.append("results/haplotypes_coverage.pdf")
@@ -279,6 +277,123 @@ rule cat_pdf:
     output: "results/haplotypes_coverage.pdf"
     shell: "pdfunite {input} {output}"
 
+
+# ----------------- haplotype reanotation -----------------
+# due to prior step, if an orf is completely on a well resolved contig, the whole contig is outputed.
+# the same contig can be outputed for multiple cogs and even if the contig is of size simillar to the cog considered, there is no guaranty that it's start and end, are the start and end of the cog. So let's just run prodigal/rpsblast on thoses
+rule reduced_fasta:
+    output:file = "results/{mag}/tmp/annotation/haplo_unique.fa" 
+    run:
+        mag = wildcards.mag
+        seq_to_cog = defaultdict(list)
+        for header,seq in sfp(open(MAG_TO_HAPLO[mag])):
+            seq_to_cog[seq].append(header)
+        with open(output["file"],"w") as handle:
+            handle.writelines(">%s\n%s\n"%("|".join(headers),seq) for seq,headers in seq_to_cog.items())
+
+# don't try to run -p single, it removes some SCG.
+rule prodigal:
+    input: "results/{mag}/tmp/annotation/haplo_unique.fa" 
+    output:
+        faa="results/{mag}/tmp/annotation/haplo.faa",
+        fna="results/{mag}/tmp/annotation/haplo.fna",
+        gff="results/{mag}/tmp/annotation/haplo.gff"
+    log: "results/{mag}/tmp/prodigal.log"
+    shell : "prodigal -i {input} -a {output.faa} -d {output.fna} -p meta -f gff -o {output.gff} &> {log} "
+
+rule rpsblast:
+    input: faa = "{path}/{name}.faa"
+    output: "{path}/{name}_Rpsblast_cogs.tsv"
+    log: "{path}/{name}_Rpsblast_cogs.log"
+    shell: "rpsblast -outfmt '6 qseqid sseqid evalue pident length slen qlen' -query {input.faa} -db {COG_DB} -out {output}"
+
+rule parse_cogs_annotation:
+    input:  "{path}/{name}_Rpsblast_cogs.tsv"    
+    output: "{path}/{name}_Cogs_filtered.tsv"
+    log:    "{path}/{name}_cog_filtering.log"
+    shell:  "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output} -E 1 2> {log}"
+
+rule extract_cog_sequence:
+    input:  fa = "results/{mag}/tmp/annotation/haplo_unique.fa",
+            fna = "results/{mag}/tmp/annotation/haplo.fna",
+            cog = "results/{mag}/tmp/annotation/haplo_Cogs_filtered.tsv"
+    output: out = "results/{mag}/haplotypes_cogs.fna"
+    shell: "{RES_SCRIPTS}/haplotypes_to_cogs.py {input.fa} {input.fna} {input.cog} {output.out}"
+
+# ----------------- database cog_annotation -----------------
+rule move_db_seq_to_folder:
+    input: "%s/fastani/database/{ref}_genomic.fna.gz"%GTDB
+    output: "%s/cogs/{ref}/{ref}.fa"%GTDB
+    shell: "gunzip -c {input} > {output}"
+
+# gtdb and eval
+rule prodigal_gtdb:
+    input: "%s/cogs/{ref}/{ref}.fa"%GTDB
+    output:
+        faa="%s/cogs/{ref}/{ref}.faa"%GTDB,
+        fna="%s/cogs/{ref}/{ref}.fna"%GTDB,
+        gff="%s/cogs/{ref}/{ref}.gff"%GTDB
+    log: "%s/cogs/{ref}/prodigal.log"%GTDB
+    shell : "prodigal -i {input} -a {output.faa} -d {output.fna} -p single -f gff -o {output.gff} &> {log} "
+
+rule prodigal_eval:
+    input: "%s/Genomes/{ref}seq.tmp"%REFDATA
+    output:
+        faa="%s/cogs/{ref}/{ref}.faa"%REFDATA,
+        fna="%s/cogs/{ref}/{ref}.fna"%REFDATA,
+        gff="%s/cogs/{ref}/{ref}.gff"%REFDATA
+    log: "%s/cogs/{ref}/prodigal.log"%REFDATA
+    shell : "prodigal -i {input} -a {output.faa} -d {output.fna} -p single -f gff -o {output.gff} &> {log} "
+
+
+rule extract_SCG_sequences:
+    input:
+        annotation="{path}/{ref}/{ref}_Cogs_filtered.tsv",
+        gff="{path}/{ref}/{ref}.gff",
+        fna="{path}/{ref}/{ref}.fna"
+    output:
+        "{path}/{ref}/SCG.fna"
+    shell:
+        "{SCRIPTS}/Extract_SCG.py {input.fna} {input.annotation} {COG_FILE} {input.gff} > {output}"
+
+
+def get_all_refs(w):
+    _ = checkpoints.gtdb.get()
+    bac = [line.rstrip().split("\t")[7] for index,line in enumerate(open("results/gtdb/gtdbtk.bac120.summary.tsv")) if index>0 if line.rstrip().split("\t")[0] in SELECTED_MAGS2]
+    ar  = [line.rstrip().split("\t")[7] for index,line in enumerate(open("results/gtdb/gtdbtk.ar122.summary.tsv")) if index>0 if line.rstrip().split("\t")[0] in SELECTED_MAGS2]
+    return ["%s/cogs/%s/SCG.fna"%(GTDB,name) for name in bac+ar ]
+
+
+
+
+rule link_gtdb_to_folder:
+    input: refs = get_all_refs,
+           bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
+           ar  = "results/gtdb/gtdbtk.ar122.summary.tsv",
+           merged = "subgraphs/bin_init/bins_to_merge.tsv"
+    output: ["results/%s/tmp/gtdb_cogs.fna"%mag for mag in SELECTED_MAGS]
+    run:
+        mag_to_ref = {line.rstrip().split("\t")[0]:[line.rstrip().split("\t")[7]] for file in [input["bac"],input["ar"]] for line in open(file)}
+        merged_to_mag = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open(input["merged"])}
+        mag_to_ref.update({merged:[mag_to_ref[mag][0] for mag in mags] for merged,mags in merged_to_mag.items()})
+        mag_to_ref = {mag:refs for mag,refs in mag_to_ref.items() if mag in SELECTED_MAGS}
+        for mag,refs in mag_to_ref.items():
+            with open("results/%s/tmp/gtdb_cogs.fna"%mag,"w") as handle:
+                for ref in refs:
+                    ref_scg = "%s/cogs/%s/SCG.fna"%(GTDB,ref)
+                    handle.writelines(">%s|%s\n%s\n"%(ref,header,seq) for header,seq in sfp(open(ref_scg)))
+
+rule get_eval_scg:
+    input: refs = expand("%s/cogs/{ref}/SCG.fna"%REFDATA,ref={ref for refs in MAG_TO_STRAINS.values() for ref in refs})
+    output: ["results/%s/tmp/eval_cogs.fna"%mag for mag in SELECTED_MAGS]
+    run:
+        for mag,refs in MAG_TO_STRAINS.items():
+            with open("results/%s/tmp/eval_cogs.fna"%mag,"w") as handle:
+                for ref in refs:
+                    ref_scg = "%s/cogs/%s/SCG.fna"%(REFDATA,ref)
+                    handle.writelines(">%s|%s\n%s\n"%(ref,header,seq) for header,seq in sfp(open(ref_scg)))
+
+
 # ----------------- one denovo tree by mag -----------------
 def add_seq_to_dict(mag,seq,mag_to_seq):
     # there meay be contamination or fragment, so multiple cogs for 1 mag, keep all version and name them differently
@@ -287,88 +402,108 @@ def add_seq_to_dict(mag,seq,mag_to_seq):
             name,counter = mag.split("_nb_")
             counter = int(counter)+1
             mag = "%s_nb_%s"%(name,counter)
-            add_seq_to_dict(mag,seq,mag_to_seq)
+            return add_seq_to_dict(mag,seq,mag_to_seq)
         else : 
             mag = mag+"_nb_2"
-            add_seq_to_dict(mag,seq,mag_to_seq)
+            return add_seq_to_dict(mag,seq,mag_to_seq)
     else:
         mag_to_seq[mag] = seq
+        return mag
 
+
+
+split_by_cog_input =[expand("results/{mag}/haplotypes_cogs.fna",mag=SELECTED_MAGS)]+(GTDB!="")*[expand("results/{mag}/tmp/gtdb_cogs.fna",mag=SELECTED_MAGS)] +(REFDATA!="")*[expand("results/{mag}/tmp/eval_cogs.fna",mag=SELECTED_MAGS)]
 
 rule split_by_cog:
-    input: haplo = [MAG_TO_HAPLO[mag] for mag in SELECTED_MAGS]
-    output: tmp = ["results/%s/tmp/%s.fna"%(mag,cog) for mag in SELECTED_MAGS for cog in MAG_TO_COGS[mag]]
+    input : split_by_cog_input
+    output: tmp = ["results/%s/tmp/%s.fna"%(mag,cog) for mag in SELECTED_MAGS for cog in MAG_TO_COGS[mag]],
+            map = expand("results/{mag}/tmp/map_magseq_to_orf.tsv", mag=SELECTED_MAGS)
     run : 
         # for each selected mag get the low resolution SCG sequence
-        for file in input["haplo"]:
+        for file in ["results/%s/haplotypes_cogs.fna"%mag for mag in SELECTED_MAGS]:
             mag = basename(dirname(file))
-            cog_to_strain_seq = defaultdict(lambda:{})
-            # get resolved haplotypes sequences
+            #### get resolved haplotypes sequences
+            cog_to_strain_seq = defaultdict(lambda:defaultdict(list))
             for header,seq in sfp(open(file)):
-                cog,strain_nb = header.split("_")
+                cog,strain_nb,cog_nb = header.split("_")
                 strain = "%s_haplo_%s"%(mag,strain_nb)
-                cog_to_strain_seq[cog][strain] = seq
-            # get the low resolution SCG sequence
+                cog_to_strain_seq[cog][strain].append([seq,int(cog_nb.replace("nb",""))])
+            # cat sequences with NNNNN
+            for cog,strain_to_seq in cog_to_strain_seq.items():
+                for strain,seqs in strain_to_seq.items():
+                    new_seq = "NNNNN".join([seq for seq,index in sorted(seqs,key=lambda x:x[1])])
+                    cog_to_strain_seq[cog][strain] = new_seq
+
+            #### get the low resolution SCG sequence
             file2 = "subgraphs/bin_merged/%s/SCG.fna"%mag
+            header_to_name = {}
             for header,seq in sfp(open(file2)):
                 cog = header.split(" ")[1]
-                add_seq_to_dict(mag,seq,cog_to_strain_seq[cog])
+                name = add_seq_to_dict(mag,seq,cog_to_strain_seq[cog])
+                header_to_name[header] = name
+            #### get gtdb sequences
+            if GTDB:
+                file3 = "results/%s/tmp/gtdb_cogs.fna"%mag
+                for header,seq in sfp(open(file3)):
+                    cog = header.split(" ")[1]
+                    name = 'gtdb_%s'%header.split("|")[0]
+                    cog_to_strain_seq[cog][name] = seq
+            #### get gtdb sequences
+            if REFDATA:
+                file4 = "results/%s/tmp/eval_cogs.fna"%mag
+                for header,seq in sfp(open(file4)):
+                    cog = header.split(" ")[1]
+                    name = 'eval_%s'%header.split("|")[0]
+                    cog_to_strain_seq[cog][name] = seq
+
+            #### output all sequences
             for cog,strain_to_seq in cog_to_strain_seq.items(): 
                 with open("results/%s/tmp/%s.fna"%(mag,cog),"w") as handle:
                     handle.writelines(">%s\n%s\n"%(strain,seq) for strain,seq in strain_to_seq.items())
+            #### output header to new name
+            with open("results/%s/tmp/map_magseq_to_orf.tsv"%mag,'w') as handle:
+                handle.writelines("%s\t%s\n"%(header,name) for header,name in header_to_name.items())
+
 
 
 rule run_mafft:
-    input: scg="results/{mag}/tmp/{cog}.fna",
-    output: msa="results/{mag}/tmp/{cog}.msa_temp",
-    log: "results/{mag}/tmp/{cog}_mafft.log"
+    input: scg="results/{mag}/tmp/COG{cog}.fna",
+    output: msa="results/{mag}/tmp/COG{cog}.msa",
+    log: "results/{mag}/tmp/COG{cog}_mafft.log"
     threads:1000
     shell: """
     mafft --thread {threads} {input.scg} > {output.msa} 2>{log}
     """
-
-# sometimes scg fragments from low resolution assembly are just too small and this throw a seg fault with trimal, so we need to filter this
-rule check_length :
-    input: msa = "{path}.msa_temp"
-    output: msa = "{path,.*(?!_trim).*}.msa"
-    run:
-        with open(output['msa'],"w") as handle:
-            for header,seq in sfp(open(input["msa"])):
-                nb = seq.count("-")
-                if nb/float(len(seq))<=0.90:
-                    handle.write(">%s\n%s\n"%(header,seq))
 
 rule trimal :
     input: "{path}/{COG}.msa"
     output: "{path}/{COG}_trim.msa"
     shell: "trimal -in {input} -out {output} -gt 0.9 -cons 60"
 
-checkpoint cat_cogs :
-    input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]]
+
+rule COG_dist:
+    input: "{path}/{COG}_trim.msa"
+    output:"{path}/{COG}_dist.tsv"
+    log:"{path}/{COG}_dist.log"
+    run: # better than doing a checkpoint
+        nb = open(input[0]).read().count(">")
+        if nb>1:
+            shell("distmat -nucmethod 0 {input} -outfile {output} &>{log}")
+        else:
+            shell("touch {output}")
+
+rule cat_cogs :
+    input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]],
+            dist = lambda w:["results/%s/tmp/%s_dist_mat.tsv"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]],
+            scg_cov = "profile/coverage_scg_orfs.tsv",
+            map_names = "results/{mag}/tmp/map_magseq_to_orf.tsv"
     output : cat = "results/{mag}/tmp/concatenated_cogs.msa"
-    run : 
-        mag = wildcards.mag
-        strain_to_cog_seq = defaultdict(lambda:{})
-        cog_to_strain_seq = defaultdict(lambda:{})
-        for file in input["trim"]:
-            cog = basename(file).replace("_trim.msa","")
-            for strain,seq in sfp(open(file)):
-                strain_to_cog_seq[strain][cog] = seq
-                cog_to_strain_seq[cog][strain] = seq
-        sorted_cogs = sorted(cog_to_strain_seq.keys())
-        sorted_strains = sorted(strain_to_cog_seq.keys())
-        mean_cog_len = {cog:int(np.mean([len(seq) for seq in dict_strain.values()])) for cog,dict_strain in cog_to_strain_seq.items()}
-        # get strain concatenated sequence
-        strain_to_seq = defaultdict(str)
-        for strain in sorted_strains:
-            for cog in sorted_cogs: 
-                if cog in strain_to_cog_seq[strain]:
-                    strain_to_seq[strain]+=strain_to_cog_seq[strain][cog]
-                else :
-                    # deal with missing cogs
-                    strain_to_seq[strain]+=mean_cog_len[cog]*"-"
-        with open(output["cat"],"w") as handle : 
-            handle.writelines(">%s\n%s\n"%(strain,seq) for strain,seq in strain_to_seq.items())
+# super brittle script : input.trim and input.dist are globed inside, from expected path.
+# will break if trim and dist path change,
+# will break if mag names convention changes (has Bin_ inside, and not haplo, has _nb_ )
+# will break if haplotype names convention changes
+    shell: "{RES_SCRIPTS}/cat_msa_sequences.py {input.scg_cov} {input.map_names} {output.cat}"
+        
 
 rule Launch_FastTree:
     input: "{path}/tmp/concatenated_cogs.msa"
@@ -379,38 +514,49 @@ rule Launch_FastTree:
     """
 
 #--- look at dist between strains ---
-rule COG_dist:
+rule concatenated_seq_dist:
     input: "{path}/concatenated_cogs.msa"
     output:"{path}/dist.tsv"
     log:"{path}/dist.log"
     shell: "distmat -nucmethod 0 {input} -outfile {output} &>{log}" 
 
 rule parse_emboss_dist:
-    input: dist = "{path}/dist.tsv"
-    output: dist = "{path}/dist_mat.tsv"
+    input: dist = "{path}dist.tsv"
+    output: dist = "{path}dist_mat.tsv"
     run:
-        with open(input["dist"]) as handle:
-            for nb in range(8):
-                header=next(handle).rstrip().replace(" ","").split("\t")
-            nb_genomes=len(header)-header.count("")
-            Mat=np.zeros((nb_genomes,nb_genomes))
-            sorted_gen=[]
-            for ind,line in enumerate(handle):
-                splitline=line.rstrip().split("\t")[1:]
-                genome=splitline[-1].split(" ")[0]
-                sorted_gen.append(genome)
-                Mat[ind,ind:]=np.array([float(el) for el in splitline[ind:-2]])
-            Mat+=Mat.T
-        matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
+        if open(input["dist"]).read()=="":
+            # sometimes there is only 1 seq for a cog, we could use a checkpoint, to unschedule such occurence, but it's super heavy dagwise. 
+            # so let's just not use checkpoints and go on when a file is empty
+            shell("touch {output.dist}")
+        else:
+            with open(input["dist"]) as handle:
+                for nb in range(8):
+                    header=next(handle).rstrip().replace(" ","").split("\t")
+                nb_genomes=len(header)-header.count("")
+                Mat=np.zeros((nb_genomes,nb_genomes))
+                sorted_gen=[]
+                for ind,line in enumerate(handle):
+                    splitline=line.rstrip().split("\t")[1:]
+                    genome=splitline[-1].split(" ")[0]
+                    sorted_gen.append(genome)
+                    Mat[ind,ind:]=np.array([float(el) for el in splitline[ind:-2]])
+                Mat+=Mat.T
+            matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
 
 #--- plot tree + dist between strain ---
-
 rule plot_tree_fig:
     input: dist = "{path}/tmp/dist_mat.tsv",
            tree = "{path}/haplotypes_tree.nwk"
     output: "{path}/haplotypes_tree.pdf"
     log : "{path}/tmp/haplotypes_tree.log"
     shell: "{RES_SCRIPTS}/plot_scg_tree.R {input.tree} {input.dist} {output} &>{log}"
+
+rule cat_tree_pdf:
+    input: expand("results/{mag}/haplotypes_tree.pdf",mag=SELECTED_MAGS)
+    output: "results/haplotypes_tree.pdf"
+    shell: "pdfunite {input} {output}"
+
+
 
 # ----------------- colored .gfa -----------------
 # keep the same color for the same strain --> generate 1 graph by mag by cog
@@ -474,7 +620,7 @@ rule get_gtdb_database:
         # signal process went is done
         shell("touch %s"%output["db_done"])
 
-rule gtdb:
+checkpoint gtdb:
     input: done = "binning/MAGs/done",
            db_done = 'results/gtdb/done'
     output: bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
@@ -487,5 +633,24 @@ rule gtdb:
             touch {output.bac}
             touch {output.arc}
            """
+
+# ----------------- visual output gtdb  -----------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

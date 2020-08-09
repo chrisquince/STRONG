@@ -85,7 +85,7 @@ with cd(STRONG_DIR):
         config = yaml.safe_load(config_in)
     fill_default_values(config)
     
-    Finally start the pipeline
+    #Finally start the pipeline
     print("Step #1 - Assembly / Binning / COG Annotation")
     call_snake(["--snakefile", "SnakeNest/SCogSubGraph.snake"])
 

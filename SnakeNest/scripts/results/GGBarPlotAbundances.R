@@ -39,10 +39,10 @@ varGammacoverages <- read.csv(varcoverages, header = TRUE, row.names = 1)
 # Normalisation order derive from collate.py script, which keep the same order as SAMPLE
 # bayespath start at 0 R index start at 1, so we need to increment
 colnames(gammacoverages)= colnames(norm)[unlist(gammacoverages[1,]+1)]
-gammacoverages = gammacoverages[-1,]
+gammacoverages = gammacoverages[-1,,drop=FALSE]
 
 # sometimes bayespath does not output coverage for all samples, normalisation need to be done only on these samples
-norm = norm[,match(colnames(gammacoverages),colnames(norm),nomatch = 0)]
+norm = norm[,match(colnames(gammacoverages),colnames(norm),nomatch = 0),drop=FALSE]
 
 # transform intensity in coverage:
 # nb_reads_per_genome = (gamma * genome_length)

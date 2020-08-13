@@ -311,7 +311,7 @@ rule parse_cogs_annotation:
     input:  "{path}/{name}_Rpsblast_cogs.tsv"    
     output: "{path}/{name}_Cogs_filtered.tsv"
     log:    "{path}/{name}_cog_filtering.log"
-    shell:  "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output} -E 1 2> {log}"
+    shell:  "{SCRIPTS}/Filter_Cogs.py {input} --cdd_cog_file {SCG_DATA}/cdd_to_cog.tsv  > {output} 2> {log}"
 
 rule extract_cog_sequence:
     input:  fa = "results/{mag}/tmp/annotation/haplo_unique.fa",

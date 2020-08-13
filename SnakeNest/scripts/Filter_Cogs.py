@@ -9,10 +9,9 @@ np.warnings.filterwarnings('ignore')
 
 def Print_Final_annotation(querry_annotation):
     # best evalue
-    querry_final_annotation = max(querry_annotation, key=lambda x: float(x[2]))
+    querry_final_annotation = min(querry_annotation, key=lambda x: float(x[2]))
     # retranslate evalue again and format for printing
-    querry_final_annotation = querry_final_annotation[0:2]+list(map(
-        lambda x: "%.4g" % x, [10**(-querry_final_annotation[2])]+querry_final_annotation[3:]))
+    querry_final_annotation = querry_final_annotation[0:2]+list(map(lambda x: "%.4g" % x, querry_final_annotation[2:]))
     # print
     print("\t".join(querry_final_annotation))
 
@@ -44,11 +43,11 @@ def main(rpsblast_ouptut, database_file, min_evalue, min_pid, min_subject_pid, m
             continue
         subject = dict_ref_annotation[full_subject.split("|")[2]]
         # sometimes for really low evalue, float conversion and/or comparison does not work, lets just take the -log10 of the evalue
-        if 'e-' in split_line[2]:
-            evalue = float(split_line[2].split('e-')[1]) - \
-                np.log10(float(split_line[2].split('e-')[0]))
-        else:
-            evalue = -np.log10(float(split_line[2]))
+        try:
+            evalue=float(split_line[2])
+        except ValueError:
+            evalue=0.
+
         pid = float(split_line[3])/100.
         len_alignemnt = float(split_line[4])
         subject_len = float(split_line[5])
@@ -61,7 +60,7 @@ def main(rpsblast_ouptut, database_file, min_evalue, min_pid, min_subject_pid, m
         # compute len of Alignment over size of the query
         query_coverage = len_alignemnt/querry_len
         # Filter things out
-        if (evalue >= min_evalue) & (pid >= min_pid) & (subject_Pid >= min_subject_pid) & (coverage >= min_coverage) & (query_coverage >= min_query_coverage):
+        if (evalue < min_evalue) & (pid >= min_pid) & (subject_Pid >= min_subject_pid) & (coverage >= min_coverage) & (query_coverage >= min_query_coverage):
             querry_annotation.append(
                 [query, subject, evalue, pid, subject_Pid, coverage, query_coverage])
     if querry_annotation:
@@ -76,7 +75,7 @@ if __name__ == "__main__":
                                                 'Useful if running this script in parallel, since '
                                                 'NCBI eutils has a limit on the number of requests per '
                                                 'time unit you can make.'))
-    parser.add_argument("-E", help="cutoff for evalue", default=10**-10)
+    parser.add_argument("-E", help="cutoff for evalue", default=1.0e-10)
     parser.add_argument(
         "-P", help="cutoff for Percentage IDentity (pid), between 0 and 1", default=0)
     parser.add_argument(
@@ -88,10 +87,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     rpsblast_ouptut = args.rpsblast_ouptut
     database_file = args.cdd_cog_file
-    if args.E != 0:
-        min_evalue = -np.log10(float(args.E))
-    else:
-        min_evalue = args.E
+    #import ipdb; ipdb.set_trace()
+    min_evalue = float(args.E)
     min_pid = float(args.P)
     min_ref_pid = float(args.R)
     min_coverage = float(args.C)

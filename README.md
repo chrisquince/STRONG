@@ -94,7 +94,7 @@ python ./setup.py install
 ```
 
 
-BayesPaths use precompiled executables in the runfg_source directory. These are only compatible 
+BayesPaths uses precompiled executables in the runfg_source directory. These are only compatible 
 with Linux x86-64 and on other platforms they will require compilation from source see
 the [BayesPaths repo](https://github.com/chrisquince/BayesPaths]) for details. 
 
@@ -121,10 +121,25 @@ sed -i 's/as_matrix/to_numpy/g' $CPATH
 sed -i 's/int(NK), args.seed, args.threads)/ int(NK), args.seed, args.threads, 500)/g' $CPATH
 ```
 
+The pipeline will attempt downloads of missing databases but we recommend preinstalling. If 
+MAG classifications are required from GTDB then this database should be installed inside 
+the conda installation. In our clean VM that would be here:
+
+```
+cd /home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db
+
+```
+
+The actual download may take a while:
+
+```
+wget https://data.ace.uq.edu.au/public/gtdb/data/releases/release95/95.0/auxillary_files/gtdbtk_r95_data.tar.gz
+tar xvzf gtdbtk_r95_data.tar.gz
+```
+
 ## Native installation (Not supported yet)
 
-STRONG has a lot of required software, this is an attempt to demonstrate how to install all of them to avoid the 
-conda recipe above. 
+STRONG has a lot of required software, at the moment we recommend using the conda recipe above.
 
 
 ## Quick start
@@ -168,8 +183,8 @@ All these paths need to be absolute see below for more details on the config fil
 Then run the following command:
 
 ```
-cd $SPATH/STRONG/COG_pipe
-python3 ./start.py --config test_config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
+cd $SPATH/STRONG/
+./bin/STRONG --config test_config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
 ```
 
 This will run the pipeline in 'dryrun' mode which will list commands to be run without actually 
@@ -209,13 +224,10 @@ samples: '*' # specify a list samples to use or '*' to use all samples
 threads : 8 # single task nb threads
 
 # ------ Assembly parameters ------ 
-data: /mnt/gpfs/Hackathon/Test  # path to data folder
+data:  /home/ubuntu/STRONG_Runs/Test  # path to data folder
 
 # ----- Annotation database -----
-cog_database: /home/sebr/seb/Database/rpsblast_cog_db/Cog # COG database
-
-# ----- SPAdes tools dependency -----
-soft: /home/sergei/cog_tools
+cog_database: /home/ubuntu/rpsblast_cog_db/Cog # COG database
 
 # ----- Binning parameters ------
 concoct_contig_size: 1000
@@ -225,11 +237,15 @@ assembly:
     k: [77]
     mem: 2000
     threads: 24
-    dir: /home/sergei/cog_tools/spades/bin
 
 # ----- BayesPaths parameters ------
 bayespaths:
-    nb_strains: 16
+    nb_strains: 5
+    nmf_runs: 1
+    max_giter: 1
+    min_orf_number_to_merge_bins: 10
+    min_orf_number_to_run_a_bin: 10
+    percent_unitigs_shared: 0.1
 
 # ----- DESMAN parameters ------
 desman:
@@ -238,14 +254,14 @@ desman:
     nb_repeat: 5
     min_cov: 1
 
-# -----  MAGAnalysis ------
-maganalysis: 
-    execution: 0
-
 # -----  Evaluation ------
 evaluation:
     execution: 1
-    genomes: "/mnt/gpfs/Hackathon/Test/Eval" # path to refferences genomes 
+    genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes
+    
+# ---- Results ----
+gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
+    
 ```
 
 ## Pipeline

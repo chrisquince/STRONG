@@ -4,7 +4,14 @@
 
 STRONG resolves strains on assembly graphs by resolving variants on core COGs using co-occurrence across multiple samples.
 
-## Prerequisites
+## Table of Contents  
+[Installation](#Installation)  
+[QuickStart](#QuickStart)  
+
+<a name="Installation"/>
+## Installation
+
+### Prerequisites
 
 The following pieces of software should be installed on your machine before attempting to install STRONG
     - conda (miniconda)
@@ -20,7 +27,7 @@ For a standard Ubuntu 16.04 distribution. The above packages would be installed 
 Python is also need for the conda install we recommend Python 3.7.
 To install miniconda follow the instructions (here)[https://docs.conda.io/en/latest/miniconda.html]:
 
-## Installation
+### Conda installation
 
 STRONG can be installed anywhere but for the below we assume it will be placed in a location
 SPATH that you set as an environment variable:
@@ -141,7 +148,7 @@ tar xvzf gtdbtk_r95_data.tar.gz
 
 STRONG has a lot of required software, at the moment we recommend using the conda recipe above.
 
-
+<a name="QuickStart"/>
 ## Quick start
 
 First we will download a fairly simple synthetic test data set from known microbial strains into another directory 
@@ -273,11 +280,11 @@ gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
 ## Pipeline
 # Assembly and binning 
 ![alt tag](./Figures/Dag_rules1.png)
-# BayesAGraphsSVA
+# BayesPaths
 ![alt tag](./Figures/Dag_rules2.png)
 # Desman 
 ![alt tag](./Figures/Dag_rules4.png)
-# MAGanalysis
-![alt tag](./Figures/Dag_rules5.png)
+# Results
+
 # Evaluation
 ![alt tag](./Figures/Dag_rules6.png)

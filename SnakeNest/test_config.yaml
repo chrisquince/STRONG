@@ -42,6 +42,9 @@ maganalysis:
 # -----  Evaluation ------
 evaluation:
     execution: 1
-    genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes 
+    genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes
+    
+# ---- Results ----
+gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
 
 

@@ -178,6 +178,12 @@ genomes: /mypath/torunthings/STRONG_Runs/Test/Eval
 ```
 For real data this step would be deactivated by setting 'execution: 0'
 
+4. The path to the DTDB database
+```
+gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
+```
+
+
 All these paths need to be absolute see below for more details on the config file.
 
 Then run the following command:

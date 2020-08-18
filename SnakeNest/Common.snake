@@ -2,8 +2,9 @@ configfile: "config.yaml"
 
 from itertools import chain
 from functools import partial
-import os.path
 import tempfile
+from os.path import basename,dirname
+import os.path
 import yaml
 
 from scripts.common import detect_reads, fill_default_values
@@ -22,7 +23,9 @@ SCRIPTS = config["scripts"]
 DSCRIPTS = config["desman"]["dscripts"]
 SOFT = config["spades_tools"]
 # -------- COGs -----------------
-COG_DB= config["cog_database"]
+COG_DB = config["cog_database"]
+if basename(COG_DB)!="Cog":
+    COG_DB += '/Cog'
 SCG_DATA = config["scg_data"]
 COG_FILE=SCG_DATA+"/scg_cogs_to_run.txt"
 # -------- Assembly -----------------
@@ -42,6 +45,7 @@ FRAGMENT_SIZE = config["concoct_fragment_size"]
 MIN_CONTIG_SIZE = config["concoct_contig_size"]
 BINMULTIPLIER = config["concoct_bin_multiplier"]
 BINMAX = config["concoct_bin_max"]
+MAG_QUAL_THRESHOLD = config["mag_quality_threshold"]
 # -------- Desman -----------------
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
 DESMAN_REPEAT = config["desman"]["nb_repeat"]
@@ -50,8 +54,9 @@ ANNOTATED_COGS=[s.rstrip() for s in open(COG_FILE)]
 # -------- Evaluation -----------------
 REFDATA=config["evaluation"]["genomes"]
 EVAL_SCRIPTS=config["evaluation"]["scripts"]
-
-
+# -------- Results -----------------
+RES_SCRIPTS = SCRIPTS+"/results"
+GTDB = config["gtdb_path"]
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented

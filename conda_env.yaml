@@ -3,6 +3,7 @@ channels:
     - bioconda
     - anaconda
     - conda-forge
+    - r 
 dependencies:
     - snakemake >=5.5.4
     - python
@@ -32,6 +33,14 @@ dependencies:
     - scikit-learn
     - bam-readcount
     - r-base
-    - r-ggplot2
+    - r-ggplot2>=3.3.2
     - r-reshape
     - r-getopt
+    - gtdbtk=1.2.0 
+    - seaborn  
+    - poppler 
+    - emboss
+    - bioconductor-ggtree>=2.21
+    - r-tidyr>=1.10
+    - r-wesanderson
+    - r-stringr

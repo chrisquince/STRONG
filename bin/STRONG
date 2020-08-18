@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+import argparse
+import subprocess
+from subprocess import PIPE,Popen
+import sys
+import os
+import os.path
+import shutil
+import yaml
+import time
+# if we put STRONG in the bin folder, we need to add the higher folder to the path to be able to see SnakeNest.scripts.common
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath(__file__)))))
+from SnakeNest.scripts.common import fill_default_values, cd
+
+# define args
+parser = argparse.ArgumentParser(description="STRONG - STrain Resolution ON Graphs")
+parser.add_argument("--threads", "-t", type=int, default=1, help="Number of threads")
+parser.add_argument("dir", type=str, help="Output directory")
+parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to be copied to the directory (unnecessary if config.yaml is already there)")
+parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
+parser.add_argument("--dryrun","-n", action="store_true", help="Show tasks, do not execute them")
+parser.add_argument("--unlock", "-u", action="store_true", help="Unlock the directory")
+parser.add_argument("--dag", "-d", help="file where you want the dag to be stored")
+parser.add_argument('-s', nargs=argparse.REMAINDER,help="Pass additional argument directly to snakemake")
+
+# get execution directory of STRONG
+LOCAL_DIR = os.path.dirname(os.path.abspath(os.path.realpath(sys.argv[0])))
+STRONG_DIR = os.path.dirname(LOCAL_DIR)
+
+# get output_dir
+args = parser.parse_args()
+if not os.path.exists(args.dir):
+    os.makedirs(args.dir)
+output_dir = os.path.abspath(os.path.realpath(args.dir))
+print("Output folder set to", output_dir)
+
+
+# check config file given is the same as the one in the output dir, also copy it there if it does not exist.
+config_path = os.path.join(output_dir, "config.yaml")
+if args.config:
+    if os.path.exists(config_path):
+        if subprocess.call(["diff", config_path, args.config]):
+            print("Config path specified, but different config.yaml already exists in output folder", output_dir)
+            sys.exit(239)
+    else:
+        print("Copying config from", args.config)
+        shutil.copy(args.config, config_path)
+if (not os.path.exists(config_path))&(os.path.exists(args.config)):
+    print("No config file present in %s, and config file was either not specified or not found. Please use --config to specify config file"%output_dir)
+    sys.exit(239)
+
+
+# base parameters used to call snakeamke
+base_params = ["snakemake", "--directory", output_dir, "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + STRONG_DIR,"--configfile=%s"%config_path, "--latency-wait", "120","-k"]
+
+# parse args
+if args.verbose:
+    # Output commands + give reasons + verbose (add "-n" for dry-run)
+    base_params.extend(["-p", "-r", "--verbose"]) 
+if args.dryrun:
+    base_params.extend(["--dryrun"])
+if args.unlock:
+    base_params.extend(["--unlock"])
+if args.dag:
+    base_params.extend(["--rulegraph"])
+if args.s :
+    base_params.extend(args.s)
+
+
+with cd(STRONG_DIR):
+    call_cnt=0
+    def call_snake(extra_params=[]):
+        global call_cnt
+        call_cnt+=1
+        if args.dag:
+            p1=Popen(base_params + extra_params, stdout=PIPE, stderr=sys.stderr)
+            p2=Popen(["dot","-Tpng"], stdin=p1.stdout, stdout=PIPE, stderr=sys.stderr)
+            with open(args.dag.replace(".png", str(call_cnt)+".png"), "bw") as f:
+                f.write(p2.communicate()[0])
+        else:
+            subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
+
+    # load config for conditional execution
+    with open(config_path) as config_in:
+        config = yaml.safe_load(config_in)
+    fill_default_values(config)
+    
+    #Finally start the pipeline
+    print("Step #1 - Assembly / Binning / COG Annotation")
+    call_snake(["--snakefile", "SnakeNest/SCogSubGraph.snake"])
+
+    print("Step #2 - Subgraph Processing / Bin merging")
+    call_snake(["--snakefile", "SnakeNest/HeavyLifting.snake"])
+    
+    print("Step #3 - Strain Decomposition")
+    call_snake(["--snakefile", "SnakeNest/BayesAGraph.snake"])
+
+    if config["evaluation"]["execution"]:
+        print("Optional - running evaluation") 
+        call_snake(["--snakefile", "SnakeNest/eval.snake"])
+
+    print("Step #4 - output results")
+    call_snake(["--snakefile", "SnakeNest/Results.snake"])
+
+    if config["desman"]["execution"]:
+        print("Strain Analysis with Desman") 
+        call_snake(["--snakefile", "SnakeNest/Desman.snake", "all"])
+
+        

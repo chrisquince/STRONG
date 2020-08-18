@@ -11,7 +11,7 @@ STRONG resolves strains on assembly graphs by resolving variants on core COGs us
 [Config File](#ConfigFile)  
 [Pipeline](#Pipeline)  
 [Results](#Results)  
-[Synthetic community data](#SynthData)  
+[Synthetic community data](#Synthetic)  
 
 <a name="Installation"/>
 
@@ -288,13 +288,23 @@ gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
 <a name="Pipeline"/>
 
 ## Pipeline
-# Assembly and binning 
-![alt tag](./Figures/Dag_rules1.png)
-# BayesPaths
-![alt tag](./Figures/Dag_rules2.png)
-# Desman 
-![alt tag](./Figures/Dag_rules4.png)
-# Results
 
-# Evaluation
+### Assembly and binning 
+![alt tag](./Figures/Dag_rules1.png)
+### BayesPaths
+![alt tag](./Figures/Dag_rules2.png)
+### Desman 
+![alt tag](./Figures/Dag_rules4.png)
+### Results
+
+### Evaluation
 ![alt tag](./Figures/Dag_rules6.png)
+
+<a name="Results"/>
+
+## Results
+
+<a name="Synthetic"/>
+
+## Synthetic community data
+

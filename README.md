@@ -5,10 +5,16 @@
 STRONG resolves strains on assembly graphs by resolving variants on core COGs using co-occurrence across multiple samples.
 
 ## Table of Contents  
+
 [Installation](#Installation)  
-[QuickStart](#QuickStart)  
+[Quick Start](#QuickStart)  
+[Config File](#ConfigFile)  
+[Pipeline](#Pipeline)  
+[Results](#Results)  
+[Synthetic community data](#SynthData)  
 
 <a name="Installation"/>
+
 ## Installation
 
 ### Prerequisites
@@ -149,6 +155,7 @@ tar xvzf gtdbtk_r95_data.tar.gz
 STRONG has a lot of required software, at the moment we recommend using the conda recipe above.
 
 <a name="QuickStart"/>
+
 ## Quick start
 
 First we will download a fairly simple synthetic test data set from known microbial strains into another directory 
@@ -226,6 +233,7 @@ python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --verbos
 ```
 The number of threads is optional and should be set as appropriate to your system.
 
+<a name="ConfigFile"/>
 
 ## Config file
 
@@ -276,6 +284,8 @@ evaluation:
 gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
     
 ```
+
+<a name="Pipeline"/>
 
 ## Pipeline
 # Assembly and binning 

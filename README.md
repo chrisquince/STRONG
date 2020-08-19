@@ -364,3 +364,15 @@ The list of single-copy core genes are given as COGs in the data file ***SnakeNe
 
 ## Synthetic community data
 
+The synthetic community data from the paper can be downloaded from the following links complete with config yamls corresponding to the published processing and evaluation.
+
+'''
+wget https://strongtest.s3.climb.ac.uk/Synth_G45_S03D.tar.gz
+ 
+wget https://strongtest.s3.climb.ac.uk/Synth_G45_S03D.tar.gz
+  
+wget https://strongtest.s3.climb.ac.uk/Synth_G45_S03D.tar.gz
+   
+wget https://strongtest.s3.climb.ac.uk/Synth_G45_S03D.tar.gz
+'''
+

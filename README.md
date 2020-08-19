@@ -241,6 +241,10 @@ The number of threads is optional and should be set as appropriate to your syste
 
 ## Config file
 
+The config yaml file is used to store the parameters of a run. It is divided into 
+sections with parts corresponding to the different steps of the pipeline. This is the test_config.yaml 
+for the Test data set
+
 ```
 # ------ Samples ------
 samples: '*' # specify a list samples to use or '*' to use all samples
@@ -284,10 +288,8 @@ evaluation:
     execution: 1
     genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes
     
-# ---- Results ----
-gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
-    
 ```
+
 
 <a name="Pipeline"/>
 

@@ -33,14 +33,12 @@ dependencies:
     - scikit-learn
     - bam-readcount
     - r-base
+    - r-essentials
     - r-ggplot2>=3.3.2
-    - r-reshape
     - r-getopt
     - gtdbtk=1.2.0 
     - seaborn  
     - poppler 
     - emboss
-    - bioconductor-ggtree>=2.21
-    - r-tidyr>=1.10
+    - bioconductor-ggtree
     - r-wesanderson
-    - r-stringr

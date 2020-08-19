@@ -314,7 +314,7 @@ gtdb_path: "/mypathto/miniconda3/envs/gtdbtk/share/gtdbtk-0.3.2/db"
 
 ## Pipeline
 
-### Assembly and binning 
+### Assembly, COG annotation and binning 
 
 The first step of the pipeline is a coassembly of all samples followed by binning. The 
 full pipeline is complex and summarised in the figure:
@@ -341,7 +341,8 @@ This part of the pipeline produces a number of intermediate output files. We det
 2. ***assembly/high_res/***: This directory contains the high resolution assembly graph pre- ***graph_pack.gfa*** and post-simplication ***simplified.gfa*** 
 and also ***simplified.mult_prof*** the unitig kmer coverages of the simplified graph across samples
 3. ***annotation***: This directory contains contains the contig ORF predictions and COG annotations with RPS-BLAST
-
+4. ***binning***: Contains the CONCOCT bins post refinement and merging these are given in ***clustering_gt1000_merged.csv** as a csv file of contig names 
+with bin assignments together with a list of MAGs satisfying 75% single-copy core genes in single copy ***list_mags.tsv*** 
     
 
 ### BayesPaths

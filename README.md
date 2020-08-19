@@ -243,7 +243,8 @@ The number of threads is optional and should be set as appropriate to your syste
 
 The config yaml file is used to store the parameters of a run. It is divided into 
 sections with parts corresponding to the different steps of the pipeline. This is the test_config.yaml 
-for the Test data set
+for the Test data set as an example. We will deal with parameters that are specific to these steps below 
+in the relevant steps but we will highlight a few general parameters here.
 
 ```
 # ------ Samples ------
@@ -290,6 +291,16 @@ evaluation:
     
 ```
 
+### Sample specification
+
+```
+
+STRONG will look for samples in the directory specified by the **data** parameter so above this points 
+to '/home/ubuntu/STRONG_Runs/Test' inside this directory subdirectories should be present named 
+sample1, ..., sampleN these correspond to different samples. The program will expect sequencing 
+reads present in each subdirectory 'sampleX' with file names 'sampleX_R1.fq.gz'  and 'sampleX_R2.fq.gz'
+for the forward and reverse reads. These are assumed paired other file formats e.g. not gzipped should 
+also work. 
 
 <a name="Pipeline"/>
 

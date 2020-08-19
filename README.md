@@ -341,9 +341,11 @@ This part of the pipeline produces a number of intermediate output files. We det
 2. ***assembly/high_res/***: This directory contains the high resolution assembly graph pre- ***graph_pack.gfa*** and post-simplication ***simplified.gfa*** 
 and also ***simplified.mult_prof*** the unitig kmer coverages of the simplified graph across samples
 3. ***annotation***: This directory contains contains the contig ORF predictions and COG annotations with RPS-BLAST
-4. ***binning***: Contains the CONCOCT bins post refinement and merging these are given in ***clustering_gt1000_merged.csv** as a csv file of contig names 
+4. ***binning***: Contains the CONCOCT bins post refinement and merging these are given in ***clustering_gt1000_merged.csv*** as a csv file of contig names 
 with bin assignments together with a list of MAGs satisfying 75% single-copy core genes in single copy ***list_mags.tsv*** 
-    
+
+The list of single-copy core genes are given as COGs in the data file ***SnakeNest/scg_data/scg_cogs_to_run.txt*** as default but this file can be changed.
+
 
 ### BayesPaths
 ![alt tag](./Figures/Dag_rules2.png)

@@ -173,7 +173,7 @@ tar -xvzf Test.tar.gz
 rm Test.tar.gz
 ```
 
-We are now ready to run STRONG from within the COG_pipe directory. Two example yamls are 
+We are now ready to run STRONG from within the STRONG directory. Two example yamls are 
 provided in the SnakeNest directory, for a high quality run of real data start from config.yaml but for this simple example 
 use test_config.yaml which assumes a maximum of 5 strains per MAG as explained below.
 This file will need to be edited though. The following edits are necessary:
@@ -208,7 +208,7 @@ Then run the following command:
 
 ```
 cd $SPATH/STRONG/
-./bin/STRONG --config test_config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
+./bin/STRONG --config ./SnakeNest/test_config.yaml $SRPATH/TestResults --threads 8 --dryrun --verbose
 ```
 
 This will run the pipeline in 'dryrun' mode which will list commands to be run without actually 
@@ -217,18 +217,18 @@ not worry about this. If it looks similar to:
 ```
 Step #3 - Strain Decomposition
 ...
-
-AssertionError in line 176 of /home/ubuntu/repos/STRONG/COG_pipe/Common.snake.
-  File "/home/ubuntu/repos/STRONG/COG_pipe/BayesAGraph.snake", line 7, in <module>
-  File "/home/ubuntu/repos/STRONG/COG_pipe/Common.snake", line 176, in read_selected_bins
+AssertionError in line 184 of /home/ubuntu/repos/STRONG/SnakeNest/Common.snake.
+  File "/home/ubuntu/repos/STRONG/SnakeNest/BayesAGraph.snake", line 7, in <module>
+  File "/home/ubuntu/repos/STRONG/SnakeNest/Common.snake", line 184, in read_selected_bins
 Traceback (most recent call last):
-  File "./start.py", line 105, in <module>
-    call_snake(["--snakefile", "BayesAGraph.snake"])
-  File "./start.py", line 80, in call_snake
+  File "./bin/STRONG", line 96, in <module>
+    call_snake(["--snakefile", "SnakeNest/BayesAGraph.snake"])
+  File "./bin/STRONG", line 81, in call_snake
     subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
   File "/home/ubuntu/miniconda3/envs/STRONG/lib/python3.7/subprocess.py", line 363, in check_call
     raise CalledProcessError(retcode, cmd)
-subprocess.CalledProcessError: Command '['snakemake', '--directory', '/home/ubuntu/STRONG_Runs/TestResults', '--cores', '8', '--config', 'LOCAL_DIR=/home/ubuntu/repos/STRONG/COG_pipe', '--latency-wait', '120', '-k', '-p', '-r', '--verbose', '--dryrun', '--snakefile', 'BayesAGraph.snake']' returned non-zero exit status 1.
+subprocess.CalledProcessError: Command '['snakemake', '--directory', '/home/ubuntu/STRONG_Runs/TestResults2', '--cores', '8', '--config', 'LOCAL_DIR=/home/ubuntu/repos/STRONG', '--configfile=/home/ubuntu/STRONG_Runs/TestResults2/config.yaml', '--latency-wait', '120', '-k', '-p', '-r', '--verbose', '--dryrun', '--snakefile', 'SnakeNest/BayesAGraph.snake']' returned non-zero exit status 1.
+
 ```
 
 Then it is fine to run the actual pipeline as follows:

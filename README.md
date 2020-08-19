@@ -334,7 +334,14 @@ kmers here but they should all be odd so for instance '[33,55,77]'
 5. ***mem***: This is the maximum memory allocated to metaSPAdes in Mb it may have to be increased above 2000 
 for complex data sets:
 5. ***threads***: The number of threads used by metaSPAdes
-    
+
+This part of the pipeline produces a number of intermediate output files. We detail the key ones here:
+
+1.***assembly/spades/***: This directory contains the standard metaSPAdes run including ***assembly.fasta*** the contigs used in MAG construction 
+2.***assembly/high_res/***: This directory contains the high resolution assembly graph pre- ***graph_pack.gfa*** and post-simplication ***simplified.gfa*** 
+and also ***simplified.mult_prof*** the unitig kmer coverages of the simplified graph across samples
+3. ***annotation***: This directory contains contains the contig ORF predictions and COG annotations with RPS-BLAST
+
     
 
 ### BayesPaths

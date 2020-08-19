@@ -30,8 +30,8 @@ For a standard Ubuntu 16.04 distribution. The above packages would be installed 
     sudo apt-get -y install libbz2-dev libreadline-dev cmake g++ zlib1g zlib1g-dev
 ```
 
-Python is also need for the conda install we recommend Python 3.7.
-To install miniconda follow the instructions (here)[https://docs.conda.io/en/latest/miniconda.html]:
+Python is also need for the conda install we recommend Python 3.8.
+To install miniconda follow the instructions [here](https://docs.conda.io/en/latest/miniconda.html):
 
 ### Conda installation
 

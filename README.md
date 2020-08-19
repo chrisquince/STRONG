@@ -310,13 +310,33 @@ then simply specify the location of the GTDB database adding following line to c
 gtdb_path: "/mypathto/miniconda3/envs/gtdbtk/share/gtdbtk-0.3.2/db"
 ```
 
-
 <a name="Pipeline"/>
 
 ## Pipeline
 
 ### Assembly and binning 
+
+The first step of the pipeline is a coassembly of all samples followed by binning. The 
+full pipeline is complex and summarised in the figure:
+
 ![alt tag](./Figures/Dag_rules1.png)
+
+We will explain the config parameters relevant to these steps. These are:
+
+1. ***concoct_contig_size***: mininum contig length for the CONCOCT binning
+2. ***read_length***: read length used for sequencing 
+
+Then within the ***assembly*** subsection:
+
+3. ***assembler***: program for coassembly currently on metaSPAdes is support specify as ***spades***
+4. ***k***: kmer length for assembly 77 is a good choice for 150 bp reads. It is possible to use a list of 
+kmers here but they should all be odd so for instance '[33,55,77]' 
+5. ***mem***: This is the maximum memory allocated to metaSPAdes in Mb it may have to be increased above 2000 
+for complex data sets:
+5. ***threads***: The number of threads used by metaSPAdes
+    
+    
+
 ### BayesPaths
 ![alt tag](./Figures/Dag_rules2.png)
 ### Desman 

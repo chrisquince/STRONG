@@ -293,8 +293,6 @@ evaluation:
 
 ### Sample specification
 
-```
-
 STRONG will look for samples in the directory specified by the **data** parameter so above this points 
 to '/home/ubuntu/STRONG_Runs/Test' inside this directory subdirectories should be present named 
 sample1, ..., sampleN these correspond to different samples. The program will expect sequencing 

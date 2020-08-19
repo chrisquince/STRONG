@@ -298,7 +298,18 @@ to '/home/ubuntu/STRONG_Runs/Test' inside this directory subdirectories should b
 sample1, ..., sampleN these correspond to different samples. The program will expect sequencing 
 reads present in each subdirectory 'sampleX' with file names 'sampleX_R1.fq.gz'  and 'sampleX_R2.fq.gz'
 for the forward and reverse reads. These are assumed paired other file formats e.g. not gzipped should 
-also work. 
+also work. In the sample test data used above eight samples are used. 
+
+
+### GTDB MAG classification
+
+If you wish MAGs to be classified with the excellent [GTDBTk program](https://github.com/Ecogenomics/GTDBTk) 
+then simply specify the location of the GTDB database adding following line to config for example:
+
+```
+gtdb_path: "/mypathto/miniconda3/envs/gtdbtk/share/gtdbtk-0.3.2/db"
+```
+
 
 <a name="Pipeline"/>
 

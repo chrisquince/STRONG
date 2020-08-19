@@ -30,8 +30,9 @@ For a standard Ubuntu 16.04 distribution. The above packages would be installed 
     sudo apt-get -y install libbz2-dev libreadline-dev cmake g++ zlib1g zlib1g-dev
 ```
 
-Python is also need for the conda install we recommend Python 3.8.
-To install miniconda follow the instructions [here](https://docs.conda.io/en/latest/miniconda.html):
+We then need to install miniconda we recommend the Python 3.8 version.
+To install miniconda follow the instructions [here](https://docs.conda.io/en/latest/miniconda.html).
+Remember that conda activation may require logging back in again.
 
 ### Conda installation
 
@@ -139,7 +140,7 @@ MAG classifications are required from GTDB then this database should be installe
 the conda installation. In our clean VM that would be here:
 
 ```
-cd /home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db
+cd /home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/
 
 ```
 
@@ -148,6 +149,8 @@ The actual download may take a while:
 ```
 wget https://data.ace.uq.edu.au/public/gtdb/data/releases/release95/95.0/auxillary_files/gtdbtk_r95_data.tar.gz
 tar xvzf gtdbtk_r95_data.tar.gz
+rm -r db
+mv release95 db
 ```
 
 ## Native installation (Not supported yet)
@@ -171,7 +174,7 @@ rm Test.tar.gz
 ```
 
 We are now ready to run STRONG from within the COG_pipe directory. Two example yamls are 
-provided, for a high quality run of real data start from config.yaml but for this simple example 
+provided in the SnakeNest directory, for a high quality run of real data start from config.yaml but for this simple example 
 use test_config.yaml which assumes a maximum of 5 strains per MAG as explained below.
 This file will need to be edited though. The following edits are necessary:
 
@@ -192,11 +195,12 @@ genomes: /mypath/torunthings/STRONG_Runs/Test/Eval
 ```
 For real data this step would be deactivated by setting 'execution: 0'
 
+ <!--- 
 4. The path to the DTDB database
 ```
 gtdb_path: "/home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/db/release95"
 ```
-
+--> 
 
 All these paths need to be absolute see below for more details on the config file.
 

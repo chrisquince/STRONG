@@ -54,6 +54,7 @@ ANNOTATED_COGS=[s.rstrip() for s in open(COG_FILE)]
 # -------- Evaluation -----------------
 REFDATA=config["evaluation"]["genomes"]
 EVAL_SCRIPTS=config["evaluation"]["scripts"]
+EVAL_RUN=config["evaluation"]["execution"]
 # -------- Results -----------------
 RES_SCRIPTS = SCRIPTS+"/results"
 GTDB = config["gtdb_path"]

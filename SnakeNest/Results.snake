@@ -22,7 +22,11 @@ MAG_TO_HAPLO_NB = {mag:len({header.split('_')[1] for header,_ in sfp(open(file))
 # number of cogs is dependant on mags 
 MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
 # evaluation results
-MAG_TO_STRAINS = {mag:[line.split(",")[0] for line in open("evaluation/bayespaths/%s_combine.tsv"%mag)] for mag in SELECTED_MAGS}
+
+if EVAL_RUN == 1:
+    MAG_TO_STRAINS = {mag:[line.split(",")[0] for line in open("evaluation/bayespaths/%s_combine.tsv"%mag)] for mag in SELECTED_MAGS}
+else:
+    MAG_TO_STRAINS = {mag:[] for mag in SELECTED_MAGS}
 
 #--------------------Snakemake ------------------------
 

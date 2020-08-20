@@ -300,6 +300,9 @@ reads present in each subdirectory 'sampleX' with file names 'sampleX_R1.fq.gz' 
 for the forward and reverse reads. These are assumed paired other file formats e.g. not gzipped should 
 also work. In the sample test data used above eight samples are used. 
 
+As of the current version the ***samples*** variable has to be set to '*' to indicate that 
+all samples in the directory will be used. In future we plan to relax this.
+
 
 ### GTDB MAG classification
 
@@ -318,23 +321,35 @@ gtdb_path: "/mypathto/miniconda3/envs/gtdbtk/share/gtdbtk-0.3.2/db"
 
 The first step of the pipeline is a coassembly of all samples followed by binning. This 
 involves multiple steps, including mapping with bowtie2 to get coverages and annotations 
-to COGs with the RPS-Blast this is summarised in the figure:
+to COGs with RPS-Blast, this is summarised in the figure:
 
 ![alt tag](./Figures/Dag_rules1.png)
 
 We will explain the config parameters relevant to these steps. These are:
 
-1. ***concoct_contig_size***: mininum contig length for the CONCOCT binning
-2. ***read_length***: read length used for sequencing 
+1. ***read_length***: read length used for sequencing 
+
+2. ***mag_quality_threshold***: fraction of SCGs in single-copy for a bin to be considered a MAG, should be set between 0 and 1, defaults to 0.75, a higher value will give higher 
+quality MAGs
+
+Then within the ***concoct*** subsection:
+
+3. ***contig_size***: mininum contig length for the CONCOCT binning defaults to 1000 
+4. ***fragment_size***: size at which contigs are fragmented for CONCOCT inputs defaults to 10000
+5.  ***bin_multiplier***: the program calculates the median SCG number and then multiplies 
+by this value to get the initial bin number for CONCOCT, defaults to 3 
+6. ***bin_max***: maximum initial bin number for CONCOCT defaults to 2000 reduce this to speed up the CONCOCT binning
+
 
 Then within the ***assembly*** subsection:
 
-3. ***assembler***: program for coassembly currently on metaSPAdes is support specify as ***spades***
-4. ***k***: kmer length for assembly 77 is a good choice for 150 bp reads. It is possible to use a list of 
-kmers here but they should all be odd so for instance '[33,55,77]' 
-5. ***mem***: This is the maximum memory allocated to metaSPAdes in Mb it may have to be increased above 2000 
+7. ***assembler***: program for coassembly currently only metaSPAdes is supported specify as ***spades*** which is also the default
+8. ***k***: kmer length for assembly 77 is a good choice for 150 bp reads. It is possible to use a list of 
+kmers here but they should all be odd so for instance '[33,55,77]' defaults to [21, 33, 55]
+9. ***mem***: This is the maximum memory allocated to metaSPAdes in Mb it may have to be increased above 2000 defaults to 120
 for complex data sets:
-5. ***threads***: The number of threads used by metaSPAdes
+10. ***threads***: The number of threads used by metaSPAdes defaults to 16
+
 
 This part of the pipeline produces a number of intermediate output files. We detail the key ones here:
 

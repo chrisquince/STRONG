@@ -396,7 +396,19 @@ path uncertainties
    8. bin_nameF_Precision.csv: unitig precisions
 
 ### Evaluation
+
+This section of the pipeline should only be run if known reference genomes are 
+available because this is a benchnarking run with synthetic reads or in vitro mock communities. The following steps are run:
+
 ![alt tag](./Figures/Dag_rules6.png)
+
+The evaluation section is run if ***execution*** in the evaluation section is set to 1 (default 0), ***genomes*** points at a directory containing the reference genomes. This generates the following outputs:
+
+1. ***evaluation/bayespaths***: a directory with BayesPaths evaluation results
+2.  ***evaluation/desman***: a directory with DESMAN evaluation results
+
+Each directory contains ***SpeciesMaxCov.csv*** and for each bin a file ***bin_name_combine.tsv***
+
 
 ### Results
 
@@ -419,7 +431,7 @@ This produces outputs in the ***desman*** directory for each MAG there is a sub-
 ***bin_name*** which contains:
 
 1. ***best_run.txt***: the predicted strain number for the bin format 
-G,H,R,Err,TauFile
+(G,H,R,Err,TauFile)
 where G is the number of haplotypes, H the number that are reliable, Err their mean error and the TauFile points to the best haplotype encodings
 2. ***Run_m_n***: DESMAN run repeat n for m haplotypes
 3. ***Deviance.pdf***: Deviance plot of fit with haplotype number

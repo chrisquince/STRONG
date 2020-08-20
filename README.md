@@ -260,7 +260,9 @@ data:  /home/ubuntu/STRONG_Runs/Test  # path to data folder
 cog_database: /home/ubuntu/rpsblast_cog_db/Cog # COG database
 
 # ----- Binning parameters ------
-concoct_contig_size: 1000
+concoct:
+    contig_size: 1000
+
 read_length: 150
 assembly: 
     assembler: spades
@@ -288,7 +290,7 @@ desman:
 evaluation:
     execution: 1
     genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes
-    
+
 ```
 
 ### Sample specification

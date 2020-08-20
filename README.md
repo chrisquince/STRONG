@@ -366,7 +366,28 @@ The list of single-copy core genes are given as COGs in the data file ***SnakeNe
 
 
 ### BayesPaths
+
+This part of the pipeline extracts the single-copy core genes for each MAG from the 
+simplified HRAG together with the unitig coverage profiles. These then undergo another round of simplification using the MAG coverages as well as potential merging of bins 
+that share unitigs on the SCG subgraphs. These SCGs for each MAG are then run in the BayesPaths strain resolution algorithm. In detail:
+
 ![alt tag](./Figures/Dag_rules2.png)
+
+There are a number of parameters in the config file controlling this process within the 
+***bayespaths*** subsection:
+
+1. ***min_orf_number_to_merge_bins***: The number of overlapping ORFs that triggers bin merging defaults to 10
+2. ***percent_unitigs_shared***: Fraction of unitigs shared that cause ORFs to be flagged as overlapping defaults to 0.1
+3. ***nb_strains****: initial strain number in a MAG prior to automatic relevance determination, this is the maximum number that can be resolved per MAG, defaults to 16
+4. ***max_giter***: number of iterations of SCG filtering defaults to 4
+
+This section produces a number of outputs:
+
+1. ***subgraphs/bin_merged***
+2. ***bayespaths/selected_bins.txt***
+3.
+
+
 ### Desman 
 ![alt tag](./Figures/Dag_rules4.png)
 ### Results

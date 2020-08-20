@@ -410,12 +410,19 @@ to the BayesPaths algorithm and a validation of its predictions. The detailed pi
 
 The DESMAN steps are parameterised by the following options in the ***desman*** subsection of the config yaml:
 
-1.***execution***: determines whether the DESMAN steps will be run 0 or 1, defaults to 0
-2.***nb_haplotypes***: maximum number of DESMAN haplotypes defaults to 10
-3.***nb_repeat***: repeats for the Gibbs sampler per haplotype defaults to 5
-4.***min_cov***: minimum coverage for a sample to be used defaults to 1
+1. ***execution***: determines whether the DESMAN steps will be run 0 or 1, defaults to 0
+2. ***nb_haplotypes***: maximum number of DESMAN haplotypes defaults to 10
+3. ***nb_repeat***: repeats for the Gibbs sampler per haplotype defaults to 5
+4. ***min_cov***: minimum coverage for a sample to be used defaults to 1
 
+This produces outputs in the ***desman*** directory for each MAG there is a sub-directory 
+***bin_name*** which contains:
 
+1. ***best_run.txt***: the predicted strain number for the bin format 
+G,H,R,Err,TauFile
+where G is the number of haplotypes, H the number that are reliable, Err their mean error and the TauFile points to the best haplotype encodings
+2. ***Run_m_n***: DESMAN run repeat n for m haplotypes
+3. ***Deviance.pdf***: Deviance plot of fit with haplotype number
 
 <a name="Synthetic"/>
 

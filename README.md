@@ -386,8 +386,8 @@ This section produces a number of outputs:
 1. ***subgraphs/bin_merged/bin_name/simplif***: directory contains the simplified SCG graphs for each MAG
 2. ***bayespaths/selected_bins.txt***: text file listing MAGs that are run by BayesPaths
 3. ***bayespaths/bin_name***: directory contains the BayesPaths output for each MAG with id bin_name. This contains:
-    a. bin_nameF_Haplo_X.fa: SCG haplotypes for the X strains predicted for this MAG
-    b. bin_nameF_Intensity.csv: the intensities for each strain in each sample (coverage depth/read length) 
+   a. bin_nameF_Haplo_X.fa: SCG haplotypes for the X strains predicted for this MAG
+   b. bin_nameF_Intensity.csv: the intensities for each strain in each sample (coverage depth/read length) 
     c. bin_nameF_varIntensity.csv: the variance of the intensities for each strain in each sample (coverage depth/read length) 
     d. bin_nameF_Divergence.csv: the divergences for each strain, these are proportional to 
 path uncertainties

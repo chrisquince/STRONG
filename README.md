@@ -9,8 +9,7 @@ STRONG resolves strains on assembly graphs by resolving variants on core COGs us
 [Installation](#Installation)  
 [Quick Start](#QuickStart)  
 [Config File](#ConfigFile)  
-[Pipeline](#Pipeline)  
-[Results](#Results)  
+[Detailed Pipeline](#Pipeline)  
 [Synthetic community data](#Synthetic)  
 
 <a name="Installation"/>
@@ -396,19 +395,20 @@ path uncertainties
    7. bin_nameF_Bias.csv: unitig biases 
    8. bin_nameF_Precision.csv: unitig precisions
 
-
-
-
-### Desman 
-![alt tag](./Figures/Dag_rules4.png)
-### Results
-
 ### Evaluation
 ![alt tag](./Figures/Dag_rules6.png)
 
-<a name="Results"/>
+### Results
 
-## Results
+
+### DESMAN
+
+This section runs the [DESMAN](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1309-9) program on each MAG to infer strains using variant 
+frequencies across samples obtained from read mapping. This can be viewed as a complement 
+to the BayesPaths algorithm and a validation of its predictions. The detailed pipeline is:
+
+![alt tag](./Figures/Dag_rules4.png)
+
 
 <a name="Synthetic"/>
 

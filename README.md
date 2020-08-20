@@ -400,7 +400,6 @@ path uncertainties
 
 ### Results
 
-
 ### DESMAN
 
 This section runs the [DESMAN](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1309-9) program on each MAG to infer strains using variant 
@@ -408,6 +407,14 @@ frequencies across samples obtained from read mapping. This can be viewed as a c
 to the BayesPaths algorithm and a validation of its predictions. The detailed pipeline is:
 
 ![alt tag](./Figures/Dag_rules4.png)
+
+The DESMAN steps are parameterised by the following options in the ***desman*** subsection of the config yaml:
+
+1.***execution***: determines whether the DESMAN steps will be run 0 or 1, defaults to 0
+2.***nb_haplotypes***: maximum number of DESMAN haplotypes defaults to 10
+3.***nb_repeat***: repeats for the Gibbs sampler per haplotype defaults to 5
+4.***min_cov***: minimum coverage for a sample to be used defaults to 1
+
 
 
 <a name="Synthetic"/>

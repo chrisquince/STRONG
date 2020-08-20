@@ -316,8 +316,9 @@ gtdb_path: "/mypathto/miniconda3/envs/gtdbtk/share/gtdbtk-0.3.2/db"
 
 ### Assembly, COG annotation and binning 
 
-The first step of the pipeline is a coassembly of all samples followed by binning. The 
-full pipeline is complex and summarised in the figure:
+The first step of the pipeline is a coassembly of all samples followed by binning. This 
+involves multiple steps, including mapping with bowtie2 to get coverages and annotations 
+to COGs with the RPS-Blast this is summarised in the figure:
 
 ![alt tag](./Figures/Dag_rules1.png)
 

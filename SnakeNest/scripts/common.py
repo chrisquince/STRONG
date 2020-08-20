@@ -13,10 +13,7 @@ import re
 
 
 default_values = {
-    "concoct_fragment_size": 10000,
-    "concoct_contig_size": 500,
-    "concoct_bin_multiplier": 3,
-    "concoct_bin_max": 2000,
+    "concoct":{"fragment_size": 10000, "contig_size": 500, "bin_multiplier": 3, "bin_max": 2000}, 
     "mag_quality_threshold": 0.75,
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21, 33, 55],

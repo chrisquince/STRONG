@@ -1,6 +1,3 @@
-# ------ Samples ------
-samples: '*' # specify a list samples to use or '*' to use all samples
-
 # ------ Resources ------
 threads : 8 # single task nb threads
 
@@ -11,7 +8,9 @@ data:  /home/ubuntu/STRONG_Runs/Test  # path to data folder
 cog_database: /home/ubuntu/rpsblast_cog_db/Cog # COG database
 
 # ----- Binning parameters ------
-concoct_contig_size: 1000
+concoct:
+    contig_size: 1000
+
 read_length: 150
 assembly: 
     assembler: spades

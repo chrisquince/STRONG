@@ -412,6 +412,8 @@ Each directory contains ***SpeciesMaxCov.csv*** and for each bin a file ***bin_n
 
 ### Results
 
+![alt tag](./Figures/Dag_rules7.png)
+
 ### DESMAN
 
 This section runs the [DESMAN](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1309-9) program on each MAG to infer strains using variant 

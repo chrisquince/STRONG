@@ -458,7 +458,7 @@ This will include the Bin consensus contig sequence (Bin_Name) (and alternatives
 ![alt tag](./Figures/IntensityExample.png)
 
 There are also combined pdfs in the top level of results ***haplotypes_coverage.pdf***
-and ***haplotypes_tree.pdf***.
+and ***haplotypes_tree.pdf***. Finally ***summary.tsv*** contains some info on the assembly and number of strains resolved.
 
 ### DESMAN
 

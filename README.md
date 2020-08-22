@@ -437,7 +437,20 @@ e.g.
 
 ### Results
 
+This part of the pipeline generates results summaries of the MAG strain inference. The steps are detailed below:
+
 ![alt tag](./Figures/Dag_rules7.png)
+
+A sub-directory is generated for each bin. These contain:
+
+1. A phylogentic trees of strains created on the single-copy genes with a combined heat map of percent sequence identity for the bin, for example:
+
+![alt tag](./Figures/TreeExample24.png)
+
+This will include the Bin consensus contig haplotype (and alternatives if multiple COGs are present in bin) and evaluation strains when available. 
+
+2.
+
 
 ### DESMAN
 

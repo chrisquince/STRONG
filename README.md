@@ -407,7 +407,32 @@ The evaluation section is run if ***execution*** in the evaluation section is se
 1. ***evaluation/bayespaths***: a directory with BayesPaths evaluation results
 2.  ***evaluation/desman***: a directory with DESMAN evaluation results
 
-Each directory contains ***SpeciesMaxCov.csv*** and for each bin a file ***bin_name_combine.tsv***
+Each directory contains ***SpeciesMaxCov.csv*** which gives the assignment of each bin 
+to evaluation species in format:
+
+```
+Bin_name, Species, Fraction of reads from Species, No. Strains in Species, StrainList, StrainCoverages
+```
+
+e.g.
+
+```
+Bin_54,1833,1,3,234621_0,1136179_0,1289591_0,18.7347619181,35.0871752417,18.0545478654
+```
+
+and for each bin a file ***bin_name_combine.tsv*** that compares inferred haplotypes against the references strains with format:
+
+```
+StrainId,FoundStatus,Coverage,Error rate,Marginal Uncertainty, Divergence, Inferred strain intensity
+```
+
+e.g.
+
+```
+234621_0,Found,18.7347619181,0.0001,0.0017751,0.00353233830846,0.0840492547464
+1136179_0,Found,35.0871752417,0.0,0.00014209,0.0,0.162462141975
+1289591_0,Found,18.0545478654,0.0001,0.0030513,0.00128712871287,0.0799360441519
+```
 
 
 ### Results

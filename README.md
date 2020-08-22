@@ -447,10 +447,13 @@ A sub-directory is generated for each bin. These contain:
 
 ![alt tag](./Figures/TreeExample24.png)
 
-This will include the Bin consensus contig haplotype (and alternatives if multiple COGs are present in bin) and evaluation strains when available. 
+This will include the Bin consensus contig sequence (Bin_Name) (and alternatives if multiple COGs are present in bin - Bin_Name_nb) and evaluation strains when available. 
 
-2.
+2. In the ***graph*** sub-directory gfa files coloured by haplotype. These are viewable with [Bandage](https://rrwick.github.io/Bandage/) the file ***joined_SCG_graph.gfa*** ***cogs*** contains all scgs in a single graph and the individual graphs are in ***cogs***
 
+3.
+
+![alt tag](./Figures/GraphExample.png)
 
 ### DESMAN
 

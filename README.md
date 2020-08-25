@@ -262,7 +262,52 @@ It is also possible to run just part of the pipeline:
 5. ***results***:  Runs just the [results steps](#results)
 6. ***desman***:  Runs just the [desman steps](#desman)
 
+By specifying desired step e.g.:
+```
+./bin/STRONG outputdir --config config.yaml bayespaths
+```
 
+This is useful if for example you wish to rerun strain resolution with alternate parameters then simily remove the bayespaths directory and rerun as above.
+
+The program also takes the following optional parameters:
+
+```
+  --threads THREADS, -t THREADS
+```
+
+Specify the maximum thread number to be used.
+
+```
+  --verbose, -v         Increase verbosity level
+```
+Useful to obtain more info from SnakeMake
+
+```
+  --dryrun, -n          Show tasks, do not execute them
+```
+Again snakemake command to list commands that would be run not to actually execute them.
+
+
+```
+  --unlock, -u          Unlock the directory
+```
+
+Will unlock directories if snakemake fails.
+
+````
+  --dag DAG, -d DAG     file where you want the dag to be stored
+```
+
+Generate diagram of jobs.
+
+
+```
+  -s ...                Pass additional argument directly to snakemake
+```
+
+Enables any additional commands to be passed to snakemake.
+
+  
 
 <a name="ConfigFile"/>
 

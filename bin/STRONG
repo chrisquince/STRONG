@@ -16,6 +16,7 @@ from SnakeNest.scripts.common import fill_default_values, cd
 parser = argparse.ArgumentParser(description="STRONG - STrain Resolution ON Graphs")
 parser.add_argument("--threads", "-t", type=int, default=1, help="Number of threads")
 parser.add_argument("dir", type=str, help="Output directory")
+parser.add_argument("step", nargs='?', default='all', type=str, choices={"all", "assembly", "graphextraction", "bayespaths", "evaluation", "results","desman"}, help="Pipeline step to run options: all, assembly, graphextraction, bayespaths, evaluation, results or desman, default is all")
 parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to be copied to the directory (unnecessary if config.yaml is already there)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--dryrun","-n", action="store_true", help="Show tasks, do not execute them")
@@ -87,6 +88,7 @@ with cd(STRONG_DIR):
     
     #Finally start the pipeline
     print("Step #1 - Assembly / Binning / COG Annotation")
+    if args.step == 
     call_snake(["--snakefile", "SnakeNest/SCogSubGraph.snake"])
 
     print("Step #2 - Subgraph Processing / Bin merging")

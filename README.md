@@ -256,8 +256,8 @@ This will run all steps generate output in ***outputdir*** and search for the co
 It is also possible to run just part of the pipeline:
 
 1. ***assembly***: Runs just the [assembly steps](#assembly)  
-2. ***graphextraction***:
-3. ***bayespaths***:
+2. ***graphextraction***: Runs just the [graph extraction](#graphextraction)
+3. ***bayespaths***: Runs just the [bayespaths](#bayespaths)
 4. ***evaluation***:  Runs just the [evaluation steps](#evaluation)
 5. ***results***:  Runs just the [results steps](#results)
 6. ***desman***:  Runs just the [desman steps](#desman)

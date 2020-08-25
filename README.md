@@ -238,7 +238,8 @@ Then it is fine to run the actual pipeline as follows:
 The number of threads is optional and should be set as appropriate to your system.
 
 <a name="Usage"/>
-##Usage
+
+## Usage
 
 STRONG should be run from within the STRONG repository minimal usage as follows:
 

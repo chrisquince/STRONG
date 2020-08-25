@@ -255,12 +255,12 @@ This will run all steps generate output in ***outputdir*** and search for the co
 
 It is also possible to run just part of the pipeline:
 
-1. ***assembly***: Runs just 
+1. ***assembly***: Runs just the [assembly steps](#assembly)  
 2. ***graphextraction***:
 3. ***bayespaths***:
-4. ***evaluation***:
-5. ***results***:
-6. ***desman***:
+4. ***evaluation***:  Runs just the [evaluation steps](#evaluation)
+5. ***results***:  Runs just the [results steps](#results)
+6. ***desman***:  Runs just the [desman steps](#desman)
 
 
 
@@ -395,11 +395,8 @@ The list of single-copy core genes are given as COGs in the data file ***SnakeNe
 
 <a name="graphextraction"/>
 <a name="bayespaths"/>
-<a name="evaluation"/>
-<a name="results"/>
-<a name="desman"/>
 
-### BayesPaths
+### Graph extraction and BayesPaths
 
 This part of the pipeline extracts the single-copy core genes for each MAG from the 
 simplified HRAG together with the unitig coverage profiles. These then undergo another round of simplification using the MAG coverages as well as potential merging of bins 
@@ -429,6 +426,8 @@ path uncertainties
    6. bin_nameF_geneError.csv: errors associated with individual SCGs
    7. bin_nameF_Bias.csv: unitig biases 
    8. bin_nameF_Precision.csv: unitig precisions
+
+<a name="evaluation"/>
 
 ### Evaluation
 
@@ -469,6 +468,7 @@ e.g.
 1289591_0,Found,18.0545478654,0.0001,0.0030513,0.00128712871287,0.0799360441519
 ```
 
+<a name="results"/>
 
 ### Results
 
@@ -495,6 +495,7 @@ This will include the Bin consensus contig sequence (Bin_Name) (and alternatives
 There are also combined pdfs in the top level of results ***haplotypes_coverage.pdf***
 and ***haplotypes_tree.pdf***. Finally ***summary.tsv*** contains some info on the assembly and number of strains resolved.
 
+<a name="desman"/>
 ### DESMAN
 
 This section runs the [DESMAN](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1309-9) program on each MAG to infer strains using variant 

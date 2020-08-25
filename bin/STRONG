@@ -100,7 +100,7 @@ with cd(STRONG_DIR):
         print("Step #3 - Strain Decomposition")
         call_snake(["--snakefile", "SnakeNest/BayesAGraph.snake"])
 
-    if args.step == 'bayespaths' or args.step == 'all':
+    if args.step == 'evaluation' or args.step == 'all':
         if config["evaluation"]["execution"]:
             print("Optional - running evaluation") 
             call_snake(["--snakefile", "SnakeNest/eval.snake"])

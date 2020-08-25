@@ -8,6 +8,7 @@ STRONG resolves strains on assembly graphs by resolving variants on core COGs us
 
 [Installation](#Installation)  
 [Quick Start](#QuickStart)  
+[Usage](#Usage)  
 [Config File](#ConfigFile)  
 [Detailed Pipeline](#Pipeline)  
 [Synthetic community data](#Synthetic)  
@@ -232,9 +233,35 @@ subprocess.CalledProcessError: Command '['snakemake', '--directory', '/home/ubun
 
 Then it is fine to run the actual pipeline as follows:
 ```
-python3 ./start.py --config config.yaml $SRPATH/TestResults --threads 8 --verbose
+./bin/STRONG --config config.yaml $SRPATH/TestResults --threads 8 --verbose
 ```
 The number of threads is optional and should be set as appropriate to your system.
+
+<a name="Usage"/>
+##Usage
+
+STRONG should be run from within the STRONG repository minimal usage as follows:
+
+```
+./bin/STRONG outputdir
+```
+
+This will run all steps generate output in ***outputdir*** and search for the config yaml in ***outputdir***. Optionally the config file can be specified:
+
+```
+./bin/STRONG outputdir --config config.yaml
+```
+
+It is also possible to run just part of the pipeline:
+
+1. ***assembly***: Runs just 
+2. ***graphextraction***:
+3. ***bayespaths***:
+4. ***evaluation***:
+5. ***results***:
+6. ***desman***:
+
+
 
 <a name="ConfigFile"/>
 
@@ -318,6 +345,8 @@ gtdb_path: "/mypathto/miniconda3/envs/gtdbtk/share/gtdbtk-0.3.2/db"
 
 ## Pipeline
 
+<a name="assembly"/>
+
 ### Assembly, COG annotation and binning 
 
 The first step of the pipeline is a coassembly of all samples followed by binning. This 
@@ -363,6 +392,11 @@ with bin assignments together with a list of MAGs satisfying 75% single-copy cor
 
 The list of single-copy core genes are given as COGs in the data file ***SnakeNest/scg_data/scg_cogs_to_run.txt*** as default but this file can be changed.
 
+<a name="graphextraction"/>
+<a name="bayespaths"/>
+<a name="evaluation"/>
+<a name="results"/>
+<a name="desman"/>
 
 ### BayesPaths
 

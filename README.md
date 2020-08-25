@@ -280,11 +280,13 @@ Specify the maximum thread number to be used.
 ```
   --verbose, -v         Increase verbosity level
 ```
+
 Useful to obtain more info from SnakeMake
 
 ```
   --dryrun, -n          Show tasks, do not execute them
 ```
+
 Again snakemake command to list commands that would be run not to actually execute them.
 
 
@@ -294,7 +296,7 @@ Again snakemake command to list commands that would be run not to actually execu
 
 Will unlock directories if snakemake fails.
 
-````
+```
   --dag DAG, -d DAG     file where you want the dag to be stored
 ```
 

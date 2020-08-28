@@ -5,7 +5,7 @@ channels:
     - r
     - conda-forge 
 dependencies:
-    - snakemake >=5.5.14
+    - snakemake
     - python
     - biopython
     - bowtie2 

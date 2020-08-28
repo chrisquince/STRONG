@@ -2,8 +2,8 @@ name: STRONG
 channels:
     - bioconda
     - anaconda
-    - conda-forge
-    - r 
+    - r
+    - conda-forge 
 dependencies:
     - snakemake >=5.5.14
     - python
@@ -38,8 +38,9 @@ dependencies:
     - r-base
     - r-ggplot2>=3.3.2
     - r-getopt
-    - r-reshape
+    - r-reshape2
     - r-stringr 
     - gtdbtk=1.2.0 
     - bioconductor-ggtree
     - r-wesanderson
+    - libiconv

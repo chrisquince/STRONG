@@ -10,7 +10,8 @@ from collections import defaultdict
 from os.path import dirname, basename
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
-SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")])
+# will break if we change naming convention
+SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")],key=lambda x:int(x.split("_")[-1])+1000*("merged" in x))
 # also include mag used for merging
 MERGED_TO_MAGS = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open("subgraphs/bin_init/bins_to_merge.tsv")}
 SELECTED_MAGS2 = SELECTED_MAGS+ [mag for merged,mags in MERGED_TO_MAGS.items() for mag in mags if merged in SELECTED_MAGS]  
@@ -29,6 +30,7 @@ else:
     MAG_TO_STRAINS = {mag:[] for mag in SELECTED_MAGS}
 
 #--------------------Snakemake ------------------------
+
 
 #### specify wanted outputs
 # summary file :
@@ -284,7 +286,7 @@ rule cat_pdf:
 
 # ----------------- haplotype reanotation -----------------
 # due to prior step, if an orf is completely on a well resolved contig, the whole contig is outputed.
-# the same contig can be outputed for multiple cogs and even if the contig is of size simillar to the cog considered, there is no guaranty that it's start and end, are the start and end of the cog. So let's just run prodigal/rpsblast on thoses
+# the same contig can be outputed for multiple cogs and even if the contig is of size simillar to the cog considered, there is no guaranty that its start and end are the start and end of the cog. So let's just run prodigal/rpsblast on thoses
 rule reduced_fasta:
     output:file = "results/{mag}/tmp/annotation/haplo_unique.fa" 
     run:
@@ -365,7 +367,7 @@ def get_all_refs(w):
     _ = checkpoints.gtdb.get()
     bac = [line.rstrip().split("\t")[7] for index,line in enumerate(open("results/gtdb/gtdbtk.bac120.summary.tsv")) if index>0 if line.rstrip().split("\t")[0] in SELECTED_MAGS2]
     ar  = [line.rstrip().split("\t")[7] for index,line in enumerate(open("results/gtdb/gtdbtk.ar122.summary.tsv")) if index>0 if line.rstrip().split("\t")[0] in SELECTED_MAGS2]
-    return ["%s/cogs/%s/SCG.fna"%(GTDB,name) for name in bac+ar ]
+    return ["%s/cogs/%s/SCG.fna"%(GTDB,name) for name in bac+ar if name!="N/A"]
 
 
 
@@ -378,6 +380,7 @@ rule link_gtdb_to_folder:
     output: ["results/%s/tmp/gtdb_cogs.fna"%mag for mag in SELECTED_MAGS]
     run:
         mag_to_ref = {line.rstrip().split("\t")[0]:[line.rstrip().split("\t")[7]] for file in [input["bac"],input["ar"]] for line in open(file)}
+        mag_to_ref = {mag:ref for mag,ref in mag_to_ref.items() if ref!=["N/A"]}
         merged_to_mag = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open(input["merged"])}
         mag_to_ref.update({merged:[mag_to_ref[mag][0] for mag in mags] for merged,mags in merged_to_mag.items()})
         mag_to_ref = {mag:refs for mag,refs in mag_to_ref.items() if mag in SELECTED_MAGS}
@@ -386,6 +389,8 @@ rule link_gtdb_to_folder:
                 for ref in refs:
                     ref_scg = "%s/cogs/%s/SCG.fna"%(GTDB,ref)
                     handle.writelines(">%s|%s\n%s\n"%(ref,header,seq) for header,seq in sfp(open(ref_scg)))
+        for file in output:
+            shell("touch %s"%file)
 
 rule get_eval_scg:
     input: refs = expand("%s/cogs/{ref}/SCG.fna"%REFDATA,ref={ref for refs in MAG_TO_STRAINS.values() for ref in refs})
@@ -628,12 +633,13 @@ checkpoint gtdb:
     input: done = "binning/MAGs/done",
            db_done = 'results/gtdb/done'
     output: bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
-            arc =  "results/gtdb/gtdbtk.ar122.summary.tsv"
+            arc = "results/gtdb/gtdbtk.ar122.summary.tsv"
     log: "results/gtdb/logs"
+    priority: 50
     threads: 50
     shell: """
             export "GTDBTK_DATA_PATH={GTDB}/"
-            gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta &> {log} 
+            gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta &> {log}
             touch {output.bac}
             touch {output.arc}
            """

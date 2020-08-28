@@ -16,8 +16,7 @@ def Print_Final_annotation(querry_annotation):
     print("\t".join(querry_final_annotation))
 
 def main(rpsblast_ouptut, database_file, min_evalue, min_pid, min_subject_pid, min_coverage, min_query_coverage):
-    dict_ref_annotation = {line.rstrip().split("\t")[0]: line.rstrip().split("\t")[
-        1] for line in open(database_file)}
+    dict_ref_annotation = {line.rstrip().split("\t")[0]: line.rstrip().split("\t")[1] for line in open(database_file)}
     querry_annotation = []
     current_query = ''
     print("\t".join(["Query", "Subject", "Evalue", "PID",
@@ -70,11 +69,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("rpsblast_ouptut", help=(' Output of rpsblast run, assumed to be in tabular format whith. '
                                                  'columns: qseqid sseqid evalue pident score qstart qend sstart send length slen.'))
-    parser.add_argument('--cdd_cog_file', help=('Supply a cdd to cog mapping file in a tsv format '
-                                                'to take precedence over eutils fetching of name. '
-                                                'Useful if running this script in parallel, since '
-                                                'NCBI eutils has a limit on the number of requests per '
-                                                'time unit you can make.'))
+    parser.add_argument('--cdd_cog_file', help=('Supply a cdd to cog mapping file in a tsv format '))
     parser.add_argument("-E", help="cutoff for evalue", default=1.0e-10)
     parser.add_argument(
         "-P", help="cutoff for Percentage IDentity (pid), between 0 and 1", default=0)

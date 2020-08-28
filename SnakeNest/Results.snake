@@ -10,25 +10,39 @@ from collections import defaultdict
 from os.path import dirname, basename
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
+
 # will break if we change naming convention
 SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")],key=lambda x:int(x.split("_")[-1])+1000*("merged" in x))
+
 # also include mag used for merging
 MERGED_TO_MAGS = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open("subgraphs/bin_init/bins_to_merge.tsv")}
 SELECTED_MAGS2 = SELECTED_MAGS+ [mag for merged,mags in MERGED_TO_MAGS.items() for mag in mags if merged in SELECTED_MAGS]  
 ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
+
 # there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
 MAG_TO_PATHS = {mag:glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag)[0] for mag in SELECTED_MAGS}
 MAG_TO_HAPLO = {mag:glob.glob("bayespaths/%s/*Haplo_*.fa"%mag)[0] for mag in SELECTED_MAGS}
 MAG_TO_HAPLO_NB = {mag:len({header.split('_')[1] for header,_ in sfp(open(file))}) for mag,file in MAG_TO_PATHS.items()}
+
 # number of cogs is dependant on mags 
 MAG_TO_COGS = {mag:sorted({header.split('_')[0] for header,seq in sfp(open(MAG_TO_PATHS[mag]))}) for mag in SELECTED_MAGS}
-# evaluation results
 
+# evaluation results
 if EVAL_RUN == 1:
     MAG_TO_STRAINS = {mag:[line.split(",")[0] for line in open("evaluation/bayespaths/%s_combine.tsv"%mag)] for mag in SELECTED_MAGS}
 else:
     MAG_TO_STRAINS = {mag:[] for mag in SELECTED_MAGS}
 
+# get strong env path..... for reason
+def which(pgm):
+    # https://stackoverflow.com/questions/9877462/is-there-a-python-equivalent-to-the-which-command
+    path=os.getenv('PATH')
+    for p in path.split(os.path.pathsep):
+        p=os.path.join(p,pgm)
+        if os.path.exists(p) and os.access(p,os.X_OK):
+            return p
+
+ENV_PATH = dirname(dirname(which("concoct")))
 #--------------------Snakemake ------------------------
 
 
@@ -552,10 +566,18 @@ rule parse_emboss_dist:
                 Mat+=Mat.T
             matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
 
+
+rule fix_stupid_R_conda_install:
+    # may R 3.6.1 burn in hell
+    input: "%s/lib/R/modules/lapack.so"%ENV_PATH
+    output: "%s/lib/R/lib/libRlapack.so"%ENV_PATH
+    shell: "ln -s {input} {output}"
+
 #--- plot tree + dist between strain ---
 rule plot_tree_fig:
     input: dist = "{path}/tmp/dist_mat.tsv",
-           tree = "{path}/haplotypes_tree.nwk"
+           tree = "{path}/haplotypes_tree.nwk",
+           R = "%s/lib/R/lib/libRlapack.so"%ENV_PATH
     output: "{path}/haplotypes_tree.pdf"
     log : "{path}/tmp/haplotypes_tree.log"
     shell: "{RES_SCRIPTS}/plot_scg_tree.R {input.tree} {input.dist} {output} &>{log}"
@@ -599,13 +621,6 @@ rule mag_directory:
            touch {output.done}
            """
 
-def which(pgm):
-    # https://stackoverflow.com/questions/9877462/is-there-a-python-equivalent-to-the-which-command
-    path=os.getenv('PATH')
-    for p in path.split(os.path.pathsep):
-        p=os.path.join(p,pgm)
-        if os.path.exists(p) and os.access(p,os.X_OK):
-            return p
 
 rule get_gtdb_database:
     output: db_done="results/gtdb/done",

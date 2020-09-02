@@ -43,7 +43,7 @@ rule sed_cluster:
     shell: "sed '1d' {input} > {output}"
 
 rule validate:
-    input: cluster = "binning/clustering_gt%d_mergedR.csv" % MIN_CONTIG_SIZE
+    input: cluster = "binning/clustering_gt%d_mergedR.csv" % MIN_CONTIG_SIZE,
            species = "{path}/Contig_Species.csv",
            assembly = "profile/assembly.fasta"
     output: "{path}/Conf.csv"

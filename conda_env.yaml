@@ -35,12 +35,12 @@ dependencies:
     - seaborn  
     - poppler 
     - emboss
-    - r-base
+    - r-base>=3.6.3
     - r-ggplot2>=3.3.2
     - r-getopt
     - r-reshape2
     - r-stringr 
-    - gtdbtk=1.2.0 
+    - gtdbtk>=1.2.0 
     - bioconductor-ggtree
     - r-wesanderson
     - libiconv

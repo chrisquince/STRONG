@@ -38,12 +38,12 @@ rule filtering:
     shell: "{EVAL_SCRIPTS}/Filter.pl < {input} > {output}"
 
 rule sed_cluster:
-    input: "{path}/clustering_gt1000_merged.csv"
-    output: "{path}/clustering_gt1000_mergedR.csv"
+    input: "{path}/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    output: "{path}/clustering_gt%d_mergedR.csv" % MIN_CONTIG_SIZE
     shell: "sed '1d' {input} > {output}"
 
 rule validate:
-    input: cluster = "binning/clustering_gt1000_mergedR.csv",
+    input: cluster = "binning/clustering_gt%d_mergedR.csv" % MIN_CONTIG_SIZE
            species = "{path}/Contig_Species.csv",
            assembly = "profile/assembly.fasta"
     output: "{path}/Conf.csv"

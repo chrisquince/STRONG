@@ -233,7 +233,7 @@ subprocess.CalledProcessError: Command '['snakemake', '--directory', '/home/ubun
 
 Then it is fine to run the actual pipeline as follows:
 ```
-./bin/STRONG --config config.yaml $SRPATH/TestResults --threads 8 --verbose
+./bin/STRONG $SRPATH/TestResults --threads 8 --verbose
 ```
 The number of threads is optional and should be set as appropriate to your system.
 

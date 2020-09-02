@@ -612,7 +612,7 @@ rule join_graphs :
 
 # ----------------- gtdb tree  -----------------
 rule mag_directory:
-    input: clustering = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    input: clustering = "binning/clustering_gt%d_merged.csv"% MIN_CONTIG_SIZE,
            assembly = "profile/assembly.fasta",
            mag_list = "binning/list_mags.tsv"
     output: done = "binning/MAGs/done"

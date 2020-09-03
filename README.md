@@ -83,7 +83,10 @@ cd $SPATH/STRONG
 mamba env create -f conda_env.yaml
 ```
 
-This should take 5 - 10 minutes with mamba.
+This should take 5 - 10 minutes with mamba. There is a bug in the current conda install of R which will give warning errors but can be fixed through the following symbolic link:
+```
+ln -s /home/ubuntu/miniconda3/envs/STRONG/lib/R/modules/lapack.so /home/ubuntu/miniconda3/envs/STRONG/lib/R/modules/libRlapack.so
+```
 
 
 Once the STRONG environment has been installed activate it with the following command :

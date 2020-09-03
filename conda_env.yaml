@@ -38,6 +38,7 @@ dependencies:
     - r-base>=3.6.3
     - r-ggplot2>=3.3.2
     - r-getopt
+    - r-reshape
     - r-reshape2
     - r-stringr 
     - gtdbtk>=1.2.0 

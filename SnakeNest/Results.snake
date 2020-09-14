@@ -14,9 +14,11 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 # will break if we change naming convention
 SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")],key=lambda x:int(x.split("_")[-1])+1000*("merged" in x))
 
-# also include mag used for merging
+# for some rules, we also need to include mag constituting merged mags
 MERGED_TO_MAGS = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open("subgraphs/bin_init/bins_to_merge.tsv")}
 SELECTED_MAGS2 = SELECTED_MAGS+ [mag for merged,mags in MERGED_TO_MAGS.items() for mag in mags if merged in SELECTED_MAGS]  
+
+
 ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
 
 # there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
@@ -437,11 +439,13 @@ def add_seq_to_dict(mag,seq,mag_to_seq):
 
 split_by_cog_input =[expand("results/{mag}/haplotypes_cogs.fna",mag=SELECTED_MAGS)]+(GTDB!="")*[expand("results/{mag}/tmp/gtdb_cogs.fna",mag=SELECTED_MAGS)] +(REFDATA!="")*[expand("results/{mag}/tmp/eval_cogs.fna",mag=SELECTED_MAGS)]
 
-rule split_by_cog:
+checkpoint split_by_cog:
     input : split_by_cog_input
-    output: tmp = ["results/%s/tmp/%s.fna"%(mag,cog) for mag in SELECTED_MAGS for cog in MAG_TO_COGS[mag]],
+    output: mag_cogs = temp("results/mag_to_cogs.tsv"),
             map = expand("results/{mag}/tmp/map_magseq_to_orf.tsv", mag=SELECTED_MAGS)
     run : 
+        # need to recompute mag_to_cogs since sometimes there can be missing ones from rpsblast annotation
+        mag_to_cogs = defaultdict(list)
         # for each selected mag get the low resolution SCG sequence
         for file in ["results/%s/haplotypes_cogs.fna"%mag for mag in SELECTED_MAGS]:
             mag = basename(dirname(file))
@@ -449,6 +453,7 @@ rule split_by_cog:
             cog_to_strain_seq = defaultdict(lambda:defaultdict(list))
             for header,seq in sfp(open(file)):
                 cog,strain_nb,cog_nb = header.split("_")
+                mag_to_cogs[mag].append(cog)
                 strain = "%s_haplo_%s"%(mag,strain_nb)
                 cog_to_strain_seq[cog][strain].append([seq,int(cog_nb.replace("nb",""))])
             # cat sequences with NNNNN
@@ -486,14 +491,18 @@ rule split_by_cog:
             #### output header to new name
             with open("results/%s/tmp/map_magseq_to_orf.tsv"%mag,'w') as handle:
                 handle.writelines("%s\t%s\n"%(header,name) for header,name in header_to_name.items())
-
+        #### output mapping of mags to cogs
+        with open(output["mag_cogs"],'w') as handle:
+            handle.writelines("%s\t%s\n"%(mag,"\t".join(cogs)) for mag,cogs in mag_to_cogs.items())
+        with open(output["mag_cogs"]+'test','w') as handle:
+            handle.writelines("%s\t%s\n"%(mag,"\t".join(cogs)) for mag,cogs in mag_to_cogs.items())            
 
 
 rule run_mafft:
     input: scg="results/{mag}/tmp/COG{cog}.fna",
     output: msa="results/{mag}/tmp/COG{cog}.msa",
     log: "results/{mag}/tmp/COG{cog}_mafft.log"
-    threads:1000
+    threads:1
     shell: """
     mafft --thread {threads} {input.scg} > {output.msa} 2>{log}
     """
@@ -515,9 +524,16 @@ rule COG_dist:
         else:
             shell("touch {output}")
 
+
+def cat_cogs_inputs(w):
+    file = checkpoints.split_by_cog.get().output["mag_cogs"]
+    mag_to_cogs = {line.split("\t")[0]:line.rstrip().split("\t")[1:] for line in open(file)}
+    alignement_trimmed = ["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in mag_to_cogs[w.mag]]
+    alignement_distances = ["results/%s/tmp/%s_dist_mat.tsv"%(w.mag,cog) for cog in mag_to_cogs[w.mag]]
+    return alignement_trimmed+alignement_distances
+
 rule cat_cogs :
-    input : trim = lambda w:["results/%s/tmp/%s_trim.msa"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]],
-            dist = lambda w:["results/%s/tmp/%s_dist_mat.tsv"%(w.mag,cog) for cog in MAG_TO_COGS[w.mag]],
+    input : cat_cogs_inputs,
             scg_cov = "profile/coverage_scg_orfs.tsv",
             map_names = "results/{mag}/tmp/map_magseq_to_orf.tsv"
     output : cat = "results/{mag}/tmp/concatenated_cogs.msa"
@@ -567,10 +583,17 @@ rule parse_emboss_dist:
             matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
 
 
+rule fix_stupid_R_conda_install:
+    # may R 3.6.1 burn in hell
+    input: "%s/lib/R/modules/lapack.so"%ENV_PATH
+    output: "%s/lib/R/lib/libRlapack.so"%ENV_PATH
+    shell: "ln -s {input} {output}"
+
 #--- plot tree + dist between strain ---
 rule plot_tree_fig:
     input: dist = "{path}/tmp/dist_mat.tsv",
-           tree = "{path}/haplotypes_tree.nwk"
+           tree = "{path}/haplotypes_tree.nwk",
+           R = "%s/lib/R/lib/libRlapack.so"%ENV_PATH
     output: "{path}/haplotypes_tree.pdf"
     log : "{path}/tmp/haplotypes_tree.log"
     shell: "{RES_SCRIPTS}/plot_scg_tree.R {input.tree} {input.dist} {output} &>{log}"
@@ -605,7 +628,7 @@ rule join_graphs :
 
 # ----------------- gtdb tree  -----------------
 rule mag_directory:
-    input: clustering = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+    input: clustering = "binning/clustering_gt%d_merged.csv"% MIN_CONTIG_SIZE,
            assembly = "profile/assembly.fasta",
            mag_list = "binning/list_mags.tsv"
     output: done = "binning/MAGs/done"

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-import argparse
-import subprocess
+from os.path import dirname, abspath, realpath, basename, join, exists
 from subprocess import PIPE,Popen
-import sys
-import os
-import os.path
+import subprocess
+import argparse
 import shutil
 import yaml
 import time
+import sys
+import os
 # if we put STRONG in the bin folder, we need to add the higher folder to the path to be able to see SnakeNest.scripts.common
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath(__file__)))))
+sys.path.append(dirname(dirname(abspath(realpath(__file__)))))
 from SnakeNest.scripts.common import fill_default_values, cd
 
 # define args
@@ -25,28 +25,28 @@ parser.add_argument("--dag", "-d", help="file where you want the dag to be store
 parser.add_argument('-s', nargs=argparse.REMAINDER,help="Pass additional argument directly to snakemake")
 
 # get execution directory of STRONG
-LOCAL_DIR = os.path.dirname(os.path.abspath(os.path.realpath(sys.argv[0])))
-STRONG_DIR = os.path.dirname(LOCAL_DIR)
+LOCAL_DIR = dirname(abspath(realpath(sys.argv[0])))
+STRONG_DIR = dirname(LOCAL_DIR)
 
 # get output_dir
 args = parser.parse_args()
-if not os.path.exists(args.dir):
+if not exists(args.dir):
     os.makedirs(args.dir)
-output_dir = os.path.abspath(os.path.realpath(args.dir))
+output_dir = abspath(realpath(args.dir))
 print("Output folder set to", output_dir)
 
 
 # check config file given is the same as the one in the output dir, also copy it there if it does not exist.
-config_path = os.path.join(output_dir, "config.yaml")
+config_path = join(output_dir, "config.yaml")
 if args.config:
-    if os.path.exists(config_path):
+    if exists(config_path):
         if subprocess.call(["diff", config_path, args.config]):
             print("Config path specified, but different config.yaml already exists in output folder", output_dir)
             sys.exit(239)
     else:
         print("Copying config from", args.config)
         shutil.copy(args.config, config_path)
-if (not os.path.exists(config_path))&(os.path.exists(args.config)):
+if (not exists(config_path))&(exists(args.config)):
     print("No config file present in %s, and config file was either not specified or not found. Please use --config to specify config file"%output_dir)
     sys.exit(239)
 
@@ -68,6 +68,7 @@ if args.s :
     base_params.extend(args.s)
 
 
+# cd is usefull in case we call STRONG from a different directory than the repos directory
 with cd(STRONG_DIR):
     call_cnt=0
     def call_snake(extra_params=[]):

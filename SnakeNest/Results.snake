@@ -583,17 +583,11 @@ rule parse_emboss_dist:
             matrix_write(Mat,output["dist"],sorted_gen,sorted_gen)
 
 
-rule fix_stupid_R_conda_install:
-    # may R 3.6.1 burn in hell
-    input: "%s/lib/R/modules/lapack.so"%ENV_PATH
-    output: "%s/lib/R/lib/libRlapack.so"%ENV_PATH
-    shell: "ln -s {input} {output}"
 
 #--- plot tree + dist between strain ---
 rule plot_tree_fig:
     input: dist = "{path}/tmp/dist_mat.tsv",
-           tree = "{path}/haplotypes_tree.nwk",
-           R = "%s/lib/R/lib/libRlapack.so"%ENV_PATH
+           tree = "{path}/haplotypes_tree.nwk"
     output: "{path}/haplotypes_tree.pdf"
     log : "{path}/tmp/haplotypes_tree.log"
     shell: "{RES_SCRIPTS}/plot_scg_tree.R {input.tree} {input.dist} {output} &>{log}"

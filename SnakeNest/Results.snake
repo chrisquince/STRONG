@@ -1,10 +1,10 @@
 include: "Common.snake"
 import os
 import glob
-import numpy as np 
-import seaborn as sns
 import matplotlib as mpl
 mpl.use('Agg')
+import numpy as np 
+import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from os.path import dirname, basename
@@ -397,7 +397,11 @@ rule link_gtdb_to_folder:
     run:
         mag_to_ref = {line.rstrip().split("\t")[0]:[line.rstrip().split("\t")[7]] for file in [input["bac"],input["ar"]] for line in open(file)}
         mag_to_ref = {mag:ref for mag,ref in mag_to_ref.items() if ref!=["N/A"]}
+        # add refs from merged mags
         merged_to_mag = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open(input["merged"])}
+        # remove NA from merged_to_mag :
+        merged_to_mag = {merged:[mag for mag in mags if mag in mag_to_ref] for merged,mags in merged_to_mag.items()}
+        merged_to_mag = {key:values for key,values in merged_to_mag.items() if values}
         mag_to_ref.update({merged:[mag_to_ref[mag][0] for mag in mags] for merged,mags in merged_to_mag.items()})
         mag_to_ref = {mag:refs for mag,refs in mag_to_ref.items() if mag in SELECTED_MAGS}
         for mag,refs in mag_to_ref.items():
@@ -494,8 +498,6 @@ checkpoint split_by_cog:
         #### output mapping of mags to cogs
         with open(output["mag_cogs"],'w') as handle:
             handle.writelines("%s\t%s\n"%(mag,"\t".join(cogs)) for mag,cogs in mag_to_cogs.items())
-        with open(output["mag_cogs"]+'test','w') as handle:
-            handle.writelines("%s\t%s\n"%(mag,"\t".join(cogs)) for mag,cogs in mag_to_cogs.items())            
 
 
 rule run_mafft:

@@ -40,6 +40,7 @@ BAYESPATHS_DIR = config["bayespaths"]["dir"]
 BAYESPATHS_G = config["bayespaths"]["nb_strains"]
 BAYESPATHS_NMF_RUNS = config["bayespaths"]["nmf_runs"]
 BAYESPATHS_MAX_GITER = config["bayespaths"]["max_giter"]
+BAYESPATHS_OPTIONAL_ARGS = config["bayespaths"]["optional_args"]
 # -------- Binning -----------------
 FRAGMENT_SIZE = config["concoct"]["fragment_size"]
 MIN_CONTIG_SIZE = config["concoct"]["contig_size"]

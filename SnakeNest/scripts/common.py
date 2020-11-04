@@ -23,6 +23,7 @@ default_values = {
     "bayespaths": {"min_orf_number_to_merge_bins": 10,
                    "min_orf_number_to_run_a_bin": 10,
                    "percent_unitigs_shared": 0.1,
+                   "optional_args": "",
                    "nb_strains": 16,
                    "nmf_runs":10,
                    "max_giter":4},

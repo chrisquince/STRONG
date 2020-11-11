@@ -7,7 +7,7 @@ import glob
 
 KOFAMSCAN_PROFILES = "/mnt/gpfs/seb/Database/KEGG/kofamscan/profiles"
 KOFAMSCAN_KO = "/mnt/gpfs/seb/Database/KEGG/kofamscan/ko_list"
-KOFAMSCAN_ENV = "/mnt/gpfs/seb/Project/Metahood/Conda_envs/kofamscan.yaml"
+KOFAMSCAN_ENV = "/mnt/gpfs/seb/Project/Metahood/conda_envs/kofamscan.yaml"
 SCRIPTS = "/mnt/gpfs/seb/Project/Metahood/scripts"
 SCG_FILE = "/mnt/gpfs/seb/Project/Metahood/scg_data/scg_cogs_min0.97_max1.03_unique_genera.txt"
 

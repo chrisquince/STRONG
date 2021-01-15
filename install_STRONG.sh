@@ -9,7 +9,7 @@ LOG=$STRONG_dir/install.log
 # SPAdes install
 echo "SPAdes install ongoing"
 cd $STRONG_dir/SPAdes/assembler
-#./build_cog_tools.sh &>$LOG && echo "SPAdes install succesfully"
+./build_cog_tools.sh &>$LOG && echo "SPAdes install succesfully"
 
 echo "creating STRONG env"
 # mamba

@@ -6,7 +6,7 @@ import tempfile
 from os.path import basename,dirname
 import os.path
 import yaml
-
+from subprocess import Popen, PIPE
 from scripts.common import detect_reads, fill_default_values
 
 #Config parameters
@@ -42,10 +42,14 @@ BAYESPATHS_NMF_RUNS = config["bayespaths"]["nmf_runs"]
 BAYESPATHS_MAX_GITER = config["bayespaths"]["max_giter"]
 BAYESPATHS_OPTIONAL_ARGS = config["bayespaths"]["optional_args"]
 # -------- Binning -----------------
-FRAGMENT_SIZE = config["concoct"]["fragment_size"]
 MIN_CONTIG_SIZE = config["concoct"]["contig_size"]
+
+BINNER = config["binner"]
+MIN_CONTIG_SIZE = config[BINNER]["contig_size"]
+FRAGMENT_SIZE = config["concoct"]["fragment_size"]
 BINMULTIPLIER = config["concoct"]["bin_multiplier"]
 BINMAX = config["concoct"]["bin_max"]
+
 MAG_QUAL_THRESHOLD = config["mag_quality_threshold"]
 # -------- Desman -----------------
 DESMAN_HAPLOTYPE_NB = config["desman"]["nb_haplotypes"]
@@ -61,70 +65,40 @@ RES_SCRIPTS = SCRIPTS+"/results"
 GTDB = config["gtdb_path"]
 
 #Autodetect samples and their reads
-#Check that sample names are consecutive and all are presented
-SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
-ALL_SAMPLES = list()
-for i in range(1, len(SAMPLE_DIRS) + 1):
-    sample_name = "sample" + str(i)
-    if sample_name not in SAMPLE_DIRS:
-        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
-    ALL_SAMPLES.append(sample_name)
 
-SAMPLE_READS = { s : detect_reads(os.path.join(IN, s)) for s in ALL_SAMPLES}
+def extended_glob(pattern):
+    process = Popen(['bash -O extglob -c " ls -d %s/ "'%pattern], stdout=PIPE, stderr=PIPE,shell=True)
+    List_path=[element[:-1] for element in process.communicate()[0].decode("utf-8").split("\n") if element]
+    return [path for path in List_path if basename(path)!="multiqc_data"]
 
-def process_sample(i):
-    if type(i) == int:
-        res = "sample" + str(i)
-    elif type(i) == str and i.startswith("sample"):
-        res = i
-    else:
-        raise WorkflowException("Samples in groups must be named either sampleXX or XX, but got " + str(i))
-    return res
+# samples is a list of the samples names founds, directories names are the names of the samples
+SAMPLES = [basename(path) for sample in config["samples"] for path in extended_glob(IN+"/"+sample)]
+# sample_reads is a dictionary of samples to reads files
+SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
+# sample_reads is a dictionary of samples to reads files
+Files_nb = [sample for sample,list_file in SAMPLE_READS.items() if len(list_file)!=2]
+if Files_nb :
+    raise WorkflowError("Samples folder : "+" - ".join(Files_nb)+"  does not have exactly 2 reads files, you may have more or less than 2, files recognised as reads files are the following : .fastq, .fastq.gz, .fq, .fq.gz, .fa, .fa.gz, .fasta, .fasta.gz. You may also want to check the regular expression you used to select samples")
 
-def process_samples(g):
-    if type(g) == list:
-        res = list(map(process_sample, g))
-    elif type(g) == str and g == "*": #Replace the wildcard group with unused samples
-        res = ALL_SAMPLES
-    else:
-        raise WorkflowException("Groups must be either list of samples or a wildcard *, but got " + str(g))
-    return res
+# replace_extension, change file name so that trimmed version is taken for assembly/mapping..etc instead of initials samples
+R1={sample:list_reads[0] for sample,list_reads in SAMPLE_READS.items()}
+R2={sample:list_reads[1] for sample,list_reads in SAMPLE_READS.items()}
 
-#Samples to use
-SAMPLES=process_samples(config["samples"])
-
-#Helpers for locating input files
-#Returns all filepaths with left/right reads for a sample/bin/etc, used as Snakemake input
-    
-
-def get_reads(read_type, wildcards):
-    return SAMPLE_READS[wildcards["sample"]][read_type] 
-
-left_reads = partial(get_reads, 0)
-right_reads = partial(get_reads, 1)
 
 def samples_yaml(samples):
     libs = []
-    for s in samples:
+    for sample in samples:
         info = {}
-        info["left reads"] = [SAMPLE_READS[s][0]]
-        info["right reads"] = [SAMPLE_READS[s][1]]
+        info["left reads"] = [R1[sample]]
+        info["right reads"] = [R2[sample]]
         info["type"] = "paired-end"
         info["orientation"] = "fr"
         libs.append(info)
-
     return yaml.dump(libs, default_style='"', default_flow_style=False)
 
 def is_fastq(wildcards):
-    name = getattr(wildcards, "sample", None)
-    if not name:
-        try:
-            name = GROUPS[wildcards.group][0]
-        except KeyError:
-            name = wildcards.group
-
     for ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"}:
-        if SAMPLE_READS[name][0].endswith(ext):
+        if SAMPLE_READS[wildcards.sample][0].endswith(ext):
             return True
     return False
 
@@ -140,13 +114,14 @@ rule bowtie_index:
 
 #consider ignoring reads aligned without their pairs
 rule bowtie_align:
-    input:   left=left_reads, right=right_reads,
+    input:   left = lambda w:R1[w.sample],
+             right = lambda w:R2[w.sample],
              index="{path}/index.done"
     output:  "{path}/{sample,sample\d+}.bam"
              #temp("{path}/{group,(sample|group)\d+}.bam")
     params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
-             left=lambda w: ",".join(expand("{l}", l=left_reads(w))),
-             right=lambda w: ",".join(expand("{r}", r=right_reads(w))),
+             left=lambda w: ",".join(expand("{l}", l=R1[w.sample])),
+             right=lambda w: ",".join(expand("{r}", r=R2[w.sample])),
              index="{path}/index",
              align="",#"--no-unal --maxins 1000 --n-ceil 0,0 --np 100500",
              view=""#"-q 10"

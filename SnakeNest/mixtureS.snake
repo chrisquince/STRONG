@@ -1,0 +1,103 @@
+include: "Common.snake"
+from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
+
+# snakemake -s /mnt/gpfs/seb/Project/STRONG/SnakeNest/mixtureS.snake -n --config LOCAL_DIR='/mnt/gpfs/seb/Project/STRONG'
+MIXTURES = "/home/sebr/seb/Applications/mixtureS"
+
+mags = {"Bin_%s"%line.rstrip() for line in open("binning/%s/list_mags.tsv"%BINNER)}
+
+# rule results:
+#     input: expand("mixtureS/mags/{mag}/{sample}_done",mag=mags,sample=SAMPLES)
+rule results:
+    input: expand("mixtureS/mags/{mag}/{mag}_{sample}.sorted.bam",mag=mags,sample=SAMPLES)
+
+
+
+rule mag_directory:
+    input: clustering = "binning/%s/clustering_%s.csv"%(BINNER,BINNER),
+           assembly = "profile/assembly.fasta",
+           mag_list = "binning/%s/list_mags.tsv"%BINNER
+    output: mags = expand("binning/%s/MAGs/{mag}.fa"%BINNER,mag = mags) 
+    shell: """
+           {SCRIPTS}/Split_fasta_by_bin.py {input.assembly} {input.clustering} binning/{BINNER}/MAGs -l $(cat {input.mag_list})
+           rename  's/.fasta/.fa/' binning/{BINNER}/MAGs/*.fasta
+           """
+
+rule Add_N_to_mags:
+    input:  mag = "binning/%s/MAGs/{mag}.fa"%BINNER
+    output: mag = "mixtureS/mags/{mag}/{mag}.fa"
+    run: 
+    	print(input)
+        with open(output["mag"],"w") as handle:
+            seqs = (READ_LENGTH*"N").join([seq for _,seq in sfp(open(input["mag"]))])
+            mag = wildcards.mag
+            handle.write(">%s_len=%s\n%s\n"%(mag,len(seqs),seqs))
+
+
+rule bowtie_index2:
+    input:   "mixtureS/mags/{mag}/{mag}.fa"
+    output:  touch("mixtureS/mags/{mag}/index.done")
+    params:  "mixtureS/mags/{mag}/index"
+    threads: THREADS
+    log:     "mixtureS/mags/{mag}/index.log"
+    message: "Building bowtie index for {input}"
+    shell:   "bowtie2-build {input} {params} --threads {THREADS} &> {log}"
+
+rule bowtie_align2:
+    input:   left=lambda w:SAMPLE_READS[w.sample][0],
+             right=lambda w:SAMPLE_READS[w.sample][1],
+             index="{path}/index.done"
+    output:  "{path}/{mag}_{sample}.bam"
+             #temp("{path}/{group,(sample|group)\d+}.bam")
+    params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
+             left=lambda w: ",".join(expand("{l}", l=SAMPLE_READS[w.sample][0])),
+             right=lambda w: ",".join(expand("{r}", r=SAMPLE_READS[w.sample][1])),
+             index="{path}/index",
+             align="",#"--no-unal --maxins 1000 --n-ceil 0,0 --np 100500",
+             view=""#"-q 10"
+    threads: THREADS
+    log:     "{path}/{mag}_{sample}.bowtie.log"
+    message: "Aligning reads of {wildcards.sample} onto {params.index} with bowtie"
+    shell:
+        "bowtie2 -x {params.index} {params.flag} -p {threads} {params.align} -1 {params.left} -2 {params.right} 2> {log}"
+        " | samtools view -bh {params.view} - > {output}"
+
+
+
+rule mixtureS:
+    input: mag = "mixtureS/mags/{mag}/{mag}.fa",
+           bam = "mixtureS/mags/{mag}/{mag}_{sample}.sorted.bam"
+    output: "mixtureS/mags/{mag}/{sample}_done"
+    run:
+        name = next(open(input["mag"]))[1:]
+        length = name.split("=")[1]
+        shell("python {MIXTURES}/mixture_model.py --sample_name {wildcards.sample} --genome_len %s --genome_name %s --genome_file_loc {input.mag} --bam_file {input.bam} --res_dir $(dirname {output})"%(length,name))
+        shell("touch {output}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

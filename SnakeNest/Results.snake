@@ -19,7 +19,7 @@ MERGED_TO_MAGS = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for
 SELECTED_MAGS2 = SELECTED_MAGS+ [mag for merged,mags in MERGED_TO_MAGS.items() for mag in mags if merged in SELECTED_MAGS]  
 
 
-ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/list_mags.tsv")}
+ALL_MAGS = {"Bin_%s"%line.rstrip() for line in open("binning/%s/list_mags.tsv"%BINNER)}
 
 # there is the number of haplotype in the file name, this is hard for snakemake, so I need to get it beforehand
 MAG_TO_PATHS = {mag:glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag)[0] for mag in SELECTED_MAGS}
@@ -607,7 +607,7 @@ rule color_graph :
     input : gfa = "subgraphs/bin_merged/{mag}/simplif/{cog}.gfa",
             path = lambda w:MAG_TO_PATHS[w.mag]
     output : "results/{mag}/graph/cogs/{cog}_color.gfa"
-    params : kmer = 77#config["assembly"]["k"]
+    params : kmer = config["assembly"]["k"]
     shell : """
     {RES_SCRIPTS}/color_graph.py {input.gfa} -p {input.path} {output}.temp
     {SCRIPTS}/Bandage_Cov_correction.py {output}.temp {params.kmer} {output}
@@ -624,10 +624,10 @@ rule join_graphs :
 
 # ----------------- gtdb tree  -----------------
 rule mag_directory:
-    input: clustering = "binning/clustering_gt%d_merged.csv"% MIN_CONTIG_SIZE,
+    input: clustering = "binning/{binner}/clustering_{binner}.csv",
            assembly = "profile/assembly.fasta",
-           mag_list = "binning/list_mags.tsv"
-    output: done = "binning/MAGs/done"
+           mag_list = "binning/{binner}/list_mags.tsv"
+    output: done = "binning/{binner}/MAGs/done"
     shell: """
            {SCRIPTS}/Split_fasta_by_bin.py {input.assembly} {input.clustering} $(dirname {output.done}) -l $(cat {input.mag_list})
            touch {output.done}
@@ -657,7 +657,7 @@ rule get_gtdb_database:
         shell("touch %s"%output["db_done"])
 
 checkpoint gtdb:
-    input: done = "binning/MAGs/done",
+    input: done = "binning/%s/MAGs/done"%BINNER,
            db_done = 'results/gtdb/done'
     output: bac = "results/gtdb/gtdbtk.bac120.summary.tsv",
             arc = "results/gtdb/gtdbtk.ar122.summary.tsv"

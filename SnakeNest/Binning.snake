@@ -1,3 +1,5 @@
+from Bio.SeqIO.FastaIO import SimpleFastaParser as SFP
+import glob
 #TODO change paths?
 #TODO check that works correctly with subset of samples?
 #TODO switch to the gfa input?
@@ -50,17 +52,17 @@ rule coverage:
 # We take a look at all the SCG, take the median over the 36 of them, and multiply that by 2
 rule initial_quantity_of_bins:
     input: "annotation/SCG.fna"
-    output:"binning/ini_bins.cnt"
+    output:"binning/concoct/ini_bins.cnt"
     shell: "{SCRIPTS}/get_num_bin_ini.py {input} {BINMULTIPLIER} {BINMAX} >{output}"
 
 #  concoct 
 rule concoct:
     input:   cov="profile/split/coverage.tsv",
              fasta="profile/split.fasta",
-             bin_cnt="binning/ini_bins.cnt"
-    output:  bins="binning/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
-             data="binning/original_data_gt%d.csv" % MIN_CONTIG_SIZE
-    log :   "binning/concoct.logs"
+             bin_cnt="binning/concoct/ini_bins.cnt"
+    output:  bins="binning/concoct/clustering_gt%d.csv" % MIN_CONTIG_SIZE,
+             data="binning/concoct/original_data_gt%d.csv" % MIN_CONTIG_SIZE
+    log :   "binning/concoct/concoct.logs"
     threads: 1000
     shell:   """
              concoct --coverage_file {input.cov} --composition_file {input.fasta} -b $(dirname {output.bins}) -c $(<{input.bin_cnt}) -l {MIN_CONTIG_SIZE} -t {threads} &>{log} 
@@ -97,23 +99,56 @@ rule refine:
 
 rule merge_contigs:
     input:   "{path}/clustering_refine.csv",
-    output:  "{path}/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    output:  "{path}/clustering_concoct.csv"
     log:     "{path}/consensus.log"
     threads: THREADS
     shell:   "{SCRIPTS}/Consensus.py {input} >{output} 2>{log}"
 
 
 rule create_bin_folders:
-    input:   bin="binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+    input:   bin="binning/{binner}/clustering_{binner}.csv",
              fasta="annotation/SCG.fna",
              orf_bed = "annotation/assembly.bed",
              split_bed = "profile/split.bed"
-    output:  mags="binning/list_mags.tsv",
-             table = "binning/clustering_g%s_SCG_table_merged.csv" % MIN_CONTIG_SIZE
+    output:  mags="binning/{binner}/list_mags.tsv",
+             table = "binning/{binner}/SCG_table_{binner}.csv"
     shell:   "{SCRIPTS}/SCG_in_Bins.py {input.bin} {input.fasta} {input.orf_bed} {input.split_bed} {COG_FILE} -all subgraphs/bin_init/ -l {output.mags} -T {MAG_QUAL_THRESHOLD} -t {output.table}"
 
 rule compute_avg_cov:
-    input:   "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
+    input:   "binning/%s/clustering_%s.csv"%(BINNER,BINNER)
     output:  "subgraphs/bin_init/bin_cov.tsv"
     shell:   "{SCRIPTS}/bin_cov.py {input} {output} {ASSEMBLY_K}"
 
+
+
+# ---------- metabat2 part of the script -------------
+
+rule generate_depth :
+    input:  ["profile/assembly/%s.sorted.bam"%basename(sample) for sample in  SAMPLES]
+    output: "profile/assembly/depth.txt"
+    log : "profile/assembly/depth.log"
+    shell: "jgi_summarize_bam_contig_depths --outputDepth {output} {input} &>{log}" 
+
+rule metabat2 :
+    input:  contig="profile/assembly.fasta",
+            depth="profile/assembly/depth.txt"
+    output: "binning/metabat2/bins/done"
+    params: out="binning/metabat2/bins/Bin",
+            min_contig_size=max(1500,MIN_CONTIG_SIZE) # metabat2 does not bin anything smaller than 1500
+    threads : 20
+    shell: """metabat2 -i {input.contig} -a {input.depth} -t {threads} -o {params.out} -m {params.min_contig_size}
+            rename  's/Bin./Bin_/' {params.out}*
+            touch {output}
+            """
+rule post_processing :
+    input: "binning/metabat2/bins/done"
+    output:"binning/metabat2/clustering_metabat2.csv"
+    run:
+        List_bins=glob.glob("binning/metabat2/bins/Bin*.fa")
+        Handle=open(output[0],"w")
+        Handle.write("contig_id,0\n")
+        for file in List_bins :
+            bin_name=file.split("Bin_")[-1].split('.fa')[0]
+            for name,seq in SFP(open(file)) :
+                Handle.write(",".join([name,bin_name])+"\n")
+        Handle.close()

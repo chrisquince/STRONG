@@ -7,6 +7,7 @@ channels:
 dependencies:
     - snakemake
     - python
+    - metabat2
     - biopython
     - bowtie2 
     - samtools

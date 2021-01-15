@@ -1,0 +1,7 @@
+ggplot2
+getopt
+reshape
+reshape2
+stringr 
+ggtree
+wesanderson

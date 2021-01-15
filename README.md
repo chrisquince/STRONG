@@ -34,7 +34,7 @@ We then need to install miniconda we recommend the Python 3.8 version.
 To install miniconda follow the instructions [here](https://docs.conda.io/en/latest/miniconda.html).
 Remember that conda activation may require logging back in again.
 
-### Conda installation
+## Conda installation
 
 STRONG can be installed anywhere but for the below we assume it will be placed in a location
 SPATH that you set as an environment variable:
@@ -59,6 +59,11 @@ If you need to update in future:
 cd STRONG
 git submodule foreach git pull origin master
 ```
+#### Automatic installation
+All steps described under have been  compiled in the install_STRONG.sh script. It is mostly silent and all logs are found in install.log. 
+This script does not install any database. So please refer to correponding section.
+
+#### SPAdes/DESMAN/Bayespath manual installation
 
 We recommend that you first compile the SPAdes and COG tools executables outside of conda:
 
@@ -160,7 +165,7 @@ mv release95 db
 ```
 
 ### Check install
-Some issues may crop up with R libraries and/or forgotten installation step. This can be checked for by running 
+Some issues may crop up with R libraries and/or forgotten installation step. This can be checked for by running `SnakeNest/scripts/check_on_dependencies.py`
 
 ## Native installation (Not supported yet)
 

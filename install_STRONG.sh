@@ -42,11 +42,7 @@ PATH_concoctR=$(which concoct_refine)
 sed -i 's/values/to_numpy/g' $PATH_concoctR
 sed -i 's/as_matrix/to_numpy/g' $PATH_concoctR
 sed -i 's/int(NK), args.seed, args.threads)/ int(NK), args.seed, args.threads, 500)/g' $PATH_concoctR
-} || echo -e "\033[0;31msomething sinister just happened, check the log at :\n$LOG\033[0;31m"
+} || { echo -e "\033[0;31msomething sinister just happened, check the log at :\n$LOG\033[0m"; exit 1;}
 # check install
-#CONDA_PATH=$(dirname $(dirname $(which conda)))
-echo $CONDA_PATH
-#source $CONDA_PATH/etc/profile.d/conda.sh
-#conda activate STRONG
 $STRONG_dir/SnakeNest/scripts/check_on_dependencies.py
 

@@ -1,5 +1,8 @@
 include: "Common.snake"
+import glob
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
+from Bio.Seq import Seq
+from collections import defaultdict,Counter
 
 # snakemake -s /mnt/gpfs/seb/Project/STRONG/SnakeNest/mixtureS.snake -n --config LOCAL_DIR='/mnt/gpfs/seb/Project/STRONG'
 MIXTURES = "/home/sebr/seb/Applications/mixtureS"
@@ -9,7 +12,7 @@ mags = {"Bin_%s"%line.rstrip() for line in open("binning/%s/list_mags.tsv"%BINNE
 # rule results:
 #     input: expand("mixtureS/mags/{mag}/{sample}_done",mag=mags,sample=SAMPLES)
 rule results:
-    input: expand("mixtureS/mags/{mag}/{mag}_{sample}.sorted.bam",mag=mags,sample=SAMPLES)
+    input: expand("mixtureS/mags/{mag}/results/done",mag=mags)
 
 
 
@@ -25,13 +28,24 @@ rule mag_directory:
 
 rule Add_N_to_mags:
     input:  mag = "binning/%s/MAGs/{mag}.fa"%BINNER
-    output: mag = "mixtureS/mags/{mag}/{mag}.fa"
+    output: mag = "mixtureS/mags/{mag}/{mag}.fa",
+            bed = "mixtureS/mags/{mag}/{mag}.bed"
     run: 
-    	print(input)
         with open(output["mag"],"w") as handle:
-            seqs = (READ_LENGTH*"N").join([seq for _,seq in sfp(open(input["mag"]))])
+            totseq = ""
+            start = 0
+            bed = []
+            header_to_coordinates = {}
+            for header,seq in sfp(open(input["mag"])):
+                totseq+=seq
+                end = start+len(seq)-1
+                bed.append([header,start,end])
+                start=end+READ_LENGTH+1
+                totseq+=READ_LENGTH*"N"
             mag = wildcards.mag
-            handle.write(">%s_len=%s\n%s\n"%(mag,len(seqs),seqs))
+            handle.write(">%s_len=%s\n%s\n"%(mag,len(totseq),totseq))
+        with open(output["bed"],"w") as handle:
+            handle.writelines("%s\t%s\t%s\n"%(header,start,end) for header,start,end in bed)
 
 
 rule bowtie_index2:
@@ -63,29 +77,122 @@ rule bowtie_align2:
         " | samtools view -bh {params.view} - > {output}"
 
 
+rule merge_bam:
+    input:   bam=expand("{{path}}/{{mag}}_{sample}.bam",sample=SAMPLES)
+    output:  "{path}/{mag}_tot.bam"
+    threads: THREADS
+    shell: """samtools merge -c {output} {input.bam} -@{threads}"""
+
 
 rule mixtureS:
     input: mag = "mixtureS/mags/{mag}/{mag}.fa",
-           bam = "mixtureS/mags/{mag}/{mag}_{sample}.sorted.bam"
-    output: "mixtureS/mags/{mag}/{sample}_done"
+           bam = "mixtureS/mags/{mag}/{mag}_tot.sorted.bam",
+           bai = "mixtureS/mags/{mag}/{mag}_tot.sorted.bam.bai",
+    output: "mixtureS/mags/{mag}/results/results_haplotypes"
+    params: "mixtureS/mags/{mag}/"
     run:
-        name = next(open(input["mag"]))[1:]
+        name = next(open(input["mag"]))[1:].rstrip()
         length = name.split("=")[1]
-        shell("python {MIXTURES}/mixture_model.py --sample_name {wildcards.sample} --genome_len %s --genome_name %s --genome_file_loc {input.mag} --bam_file {input.bam} --res_dir $(dirname {output})"%(length,name))
+        shell("python {MIXTURES}/mixture_model.py --sample_name results --genome_len %s --genome_name %s --genome_file_loc {input.mag} --bam_file {input.bam} --res_dir {params}"%(length,name))
         shell("touch {output}")
 
 
+checkpoint generate_SCG_haplotypes:
+    input: mag = "mixtureS/mags/{mag}/{mag}.fa",
+           bed = "mixtureS/mags/{mag}/{mag}.bed",
+           scg_coordinates = "desman/{mag}/scg_coordinates.tsv",
+           hap = "mixtureS/mags/{mag}/results/results_haplotypes"
+    output: done = "mixtureS/mags/{mag}/results/done"
+    run:
+        # get contigs coordinates
+        contig_to_coord = {line.rstrip().split("\t")[0]:list(map(int,line.rstrip().split("\t")[1:])) for line in open(input["bed"])}
+        scg_coordinates = defaultdict(list)
+        for line in open(input["scg_coordinates"]):
+            cog,contig,start,end,orf,orientation = line.rstrip().split(",")
+            scg_coordinates[cog].append([contig,int(start),int(end),orientation])
+        # assert max([len(val) for val in scg_coordinates.values()])==1, "more than one version of COG, check %s"%input["scg_coordinates"]
+        scg_coordinates2 = defaultdict(list)
+        for key,val in scg_coordinates.items():
+            if len(val)>1:
+                for index,value in enumerate(val):
+                    scg_coordinates2["%s_%s"%(key,index+1)]=value    
+            else:
+                scg_coordinates2[key]=val[0]
+
+        scg_coordinates = scg_coordinates2
+
+        # get the different haplotypes founds 
+        header,SEQ = next(sfp(open(input["mag"])))
+        haplotype_to_seq = defaultdict(str)
+        for line in open(input["hap"]):
+            if line[0]==">":
+                header = line[1:].rstrip()
+                haplotype_to_seq[header]=list(SEQ)
+            else:
+                nuc,coord = line.rstrip().split(",")
+                haplotype_to_seq[header][int(coord)]=nuc
+        haplotype_to_seq = {hap:"".join(seq) for hap,seq in haplotype_to_seq.items()}
+        # get corresponding cog seqs
+        cog_to_hapseq = defaultdict(lambda:defaultdict(int))
+        for hap,seq in haplotype_to_seq.items():
+            for cog,(contig,start,end,orientation) in scg_coordinates.items():
+                cont_start,cont_end = contig_to_coord[contig]
+                contig_seq = seq[cont_start:cont_end+1]
+                cog_seq = contig_seq[start:end+1]
+                if orientation=="-1":
+                    cog_seq = str(Seq(cog_seq).reverse_complement()) 
+                cog_to_hapseq[cog][hap] = cog_seq
+        
+        # check if any strain are detected on the core genes
+        if len({len(set(hap_to_seq.values()))==1 for cog,hap_to_seq in cog_to_hapseq.items()})!=1:
+            for cog,hap_to_seq in cog_to_hapseq.items():
+                if len(set(hap_to_seq.values()))==1:
+                    continue
+                with open("%s/%s.fa"%(dirname(output["done"]),cog),"w") as handle:
+                    handle.writelines(">%s\n%s\n"%(hap,seq) for hap,seq in hap_to_seq.items())
+        shell("touch {output.done}")
 
 
+rule desman_cat:
+    input: done = "mixtureS/mags/{mag}/results/done"
+    output: "evaluation/mixtureS/{mag}.fa"
+    run:
+        results = []
+        for file in glob.glob("%s/COG*"%dirname(input["done"])):
+            for header, seq in sfp(open(file)):
+                new_name = os.path.basename(file).replace(".fa", "")+"_"+header
+                results.append(">"+new_name+"\n"+seq)
+        with open(output[0],"w") as handle:
+            handle.write("\n".join(results))
+
+rule blastn:
+    input: "{file}.fa"
+    output: "{file}.blast"
+    threads: THREADS
+    shell: "blastn -db {REFDATA}/AllGenomes.fa -query {input} -outfmt 6 -num_threads {threads} > {output}"
 
 
+rule desman_blast_best:
+    input: "evaluation/mixtureS/{bin}.blast"
+    output: "evaluation/mixtureS/{bin}_blastbest.tsv"
+    shell: "{EVAL_SCRIPTS}/DesmanBlastBest.py {input} {REFDATA}/MapSeq.csv > {output}"
+
+rule combine_eval_d:
+    input: blastbest = "evaluation/mixtureS/{bin}_blastbest.tsv",
+           maxcov = "evaluation/desman/SpeciesMaxCovD.csv"
+    output: output = "evaluation/mixtureS/{bin}_combine.tsv"
+    shell: "{EVAL_SCRIPTS}/CombineD.py {input.blastbest} {input.maxcov} {wildcards.bin} > {output}"
 
 
+def get_haplotype(wildcards):
+    required = [checkpoints.generate_SCG_haplotypes.get(mag=mag) for mag in mags]
+    mag_to_eval = {mag for mag in mags if len(glob.glob("mixtureS/mags/%s/results/COG*"%mag))>1}
+    return ["evaluation/mixtureS/%s_combine.tsv"%mag for mag in mag_to_eval]
 
-
-
-
-
+rule eval_mixtureS:
+    input: get_haplotype
+    output: "evaluation/mixtureS/mixtureS.done"
+    shell: "touch {output}"
 
 
 

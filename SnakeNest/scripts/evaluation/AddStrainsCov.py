@@ -61,8 +61,7 @@ def main(argv):
                 if binName not in mergeMap:
                     nameString = ",".join(strains)
                     covString = ",".join([str(x) for x in total_covs])
-                    print(binName + "," + species + "," + prob + "," +
-                        str(n_strains) + "," + nameString + "," + covString)
+                    print(binName + "," + species + "," + prob + "," + str(n_strains) + "," + nameString + "," + covString)
                 else:
                     mbin = mergeMap[binName]
                     mergeStrains[mbin].extend(strains)
@@ -76,8 +75,7 @@ def main(argv):
         n_strains = len(mergeStrains[mbin])
         speciesM = "-".join(mergeSpecies[mbin])
         probs = "-".join(mergeProbs[mbin])
-        print(mbin + "," + speciesM + "," + probs + "," +
-                        str(n_strains) + "," + nameString + "," + covString)
+        print(mbin + "," + speciesM + "," + probs + "," + str(n_strains) + "," + nameString + "," + covString)
 
 
 

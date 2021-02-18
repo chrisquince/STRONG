@@ -13,6 +13,12 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
 # will break if we change naming convention
 SELECTED_MAGS = sorted([mag.rstrip() for mag in open("bayespaths/selected_bins.txt")],key=lambda x:int(x.split("_")[-1])+1000*("merged" in x))
+# need to remove mags where all samples where ignored
+SELECTED_MAGS = [mag for mag in SELECTED_MAGS if len(glob.glob("bayespaths/%s/*Haplo_*_path.txt"%mag))>0]
+# need to remove mags when bayespath doesn't output haplotype path for any reason.
+SELECTED_MAGS = [mag for mag in SELECTED_MAGS if os.stat(glob.glob('bayespaths/%s/*_Haplo_*_path.txt'%mag)[0]).st_size>0]
+
+
 
 # for some rules, we also need to include mag constituting merged mags
 MERGED_TO_MAGS = {line.rstrip().split("\t")[0]:line.rstrip().split("\t")[1:] for line in open("subgraphs/bin_init/bins_to_merge.tsv")}

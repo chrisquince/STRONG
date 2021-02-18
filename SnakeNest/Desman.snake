@@ -5,7 +5,7 @@ include: "Common.snake"
 include: "Binning.snake"
 
 
-BIN_IDS = read_selected_bins('binning/list_mags.tsv')  
+BIN_IDS = read_selected_bins('binning/%s/list_mags.tsv'%BINNER)  
 BINS = ["Bin_%s" % x for x in BIN_IDS] 
 
 
@@ -17,7 +17,7 @@ rule all:
 
 rule bin_contigs:
     input:
-        bin = "binning/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE,
+        bin = "binning/%s/clustering_%s.csv"%(BINNER,BINNER),
         fasta = "profile/assembly.fasta"
     output: expand("desman/{Bin}/{Bin}.fasta", Bin=BINS)
     params: " ".join(BIN_IDS)

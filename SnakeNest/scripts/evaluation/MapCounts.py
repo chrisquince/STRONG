@@ -85,45 +85,35 @@ def main(argv):
                 mapIdx[idx] = (amb, m.group(2))
                 idx = idx + 1
         else:
-            counts = line.split("\t")
-            contig = counts.pop(0)
-            idx = 0
+            counts = [int(el) for el in line.split("\t")[1:]]
+            contig = line.split("\t")[0]
             total = 0
-            counts = map(int, counts)
 
             countSpecies = Counter()
             countStrain = Counter()
-            for count in counts:
+            for idx,count in enumerate(counts):
                 (amb, seqId) = mapIdx[idx]
                 strainId = mapStrain[seqId]
                 speciesId = mapSpecies[strainId]
 
                 if count > 0:
                     if amb:
+                        countContigStrainAmb[contig][strainId] += count
+                        countContigSpeciesAmb[contig][speciesId] += count
                         if args.amb:
-                            countStrain[strainId] += int(count)
-                            countSpecies[speciesId] += int(count)
+                            countStrain[strainId] += count
+                            countSpecies[speciesId] += count
+                            total += count
                     else:
-                        countStrain[strainId] += int(count)
-                        countSpecies[speciesId] += int(count)
+                        countStrain[strainId] += count
+                        countSpecies[speciesId] += count
+                        total += count
+                        countContigStrainUnamb[contig][strainId] += count
+                        countContigSpeciesUnamb[contig][speciesId] += count
 
-                    if amb:
-                        countContigStrainAmb[contig][strainId] += int(count)
-                        countContigSpeciesAmb[contig][speciesId] += int(count)
-                        if args.amb:
-                            total += int(count)
-                    else:
-                        total += int(count)
-                        countContigStrainUnamb[contig][strainId] += int(count)
-                        countContigSpeciesUnamb[contig][speciesId] += int(
-                            count)
 
-                idx = idx + 1
-
-            sorted_strains = sorted(
-                countStrain.items(), key=operator.itemgetter(1), reverse=True)
-            sorted_species = sorted(countSpecies.items(
-            ), key=operator.itemgetter(1), reverse=True)
+            sorted_strains = sorted(countStrain.items(), key=operator.itemgetter(1), reverse=True)
+            sorted_species = sorted(countSpecies.items(), key=operator.itemgetter(1), reverse=True)
 
             assignedStrains = []
             assignedString = ""
@@ -134,13 +124,10 @@ def main(argv):
                     if count > 0:
                         frac = float(count)/float(total)
                         assignedStrains.append((strain, count, frac))
-                        assignedString += "," + \
-                            ','.join(map(str, [strain, count, frac]))
+                        assignedString += ",%s,%s,%s"%(strain, count, frac)
             nAssigned = len(assignedStrains)
 
-            strain_file.write(contig + "," + str(total) + "," + str(nAssigned))
-            strain_file.write(assignedString)
-            strain_file.write("\n")
+            strain_file.write("%s,%s,%s%s\n"%(contig,total,nAssigned,assignedString))
 
             assignedSpecies = []
             assignedString = ""

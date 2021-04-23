@@ -12,7 +12,8 @@ mags = {"Bin_%s"%line.rstrip() for line in open("binning/%s/list_mags.tsv"%BINNE
 # rule results:
 #     input: expand("mixtureS/mags/{mag}/{sample}_done",mag=mags,sample=SAMPLES)
 rule results:
-    input: expand("mixtureS/mags/{mag}/results/done",mag=mags)
+    input: expand("mixtureS/mags/{mag}/results/done",mag=mags),
+           "evaluation/mixtureS/mixtureS.done"
 
 
 
@@ -187,6 +188,8 @@ rule combine_eval_d:
 def get_haplotype(wildcards):
     required = [checkpoints.generate_SCG_haplotypes.get(mag=mag) for mag in mags]
     mag_to_eval = {mag for mag in mags if len(glob.glob("mixtureS/mags/%s/results/COG*"%mag))>1}
+    results = ["evaluation/mixtureS/%s_combine.tsv"%mag for mag in mag_to_eval]
+    print(results)
     return ["evaluation/mixtureS/%s_combine.tsv"%mag for mag in mag_to_eval]
 
 rule eval_mixtureS:

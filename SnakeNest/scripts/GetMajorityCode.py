@@ -26,7 +26,7 @@ def main(argv):
     freq11 = 0
     freq4 = 0
 
-    handle = open(args.fna_file, "rU")
+    handle = open(args.fna_file)
     for record in SeqIO.parse(handle, "fasta"):
         contig = '_'.join(record.id.split('_')[:-1])
 

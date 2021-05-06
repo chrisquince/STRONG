@@ -1,8 +1,8 @@
 import os.path
 
 # ---- Assembly ----------------------------------------------------------------
-LEFT_READS = [SAMPLE_READS[s][0] for s in SAMPLES]
-RIGHT_READS = [SAMPLE_READS[s][1] for s in SAMPLES]
+LEFT_READS = [R1[s] for s in SAMPLES]
+RIGHT_READS = [R2[s] for s in SAMPLES]
 
 # Assemble with SPAdes
 rule spades:

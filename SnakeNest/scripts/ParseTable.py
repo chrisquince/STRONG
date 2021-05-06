@@ -17,7 +17,7 @@ def main(argv):
 
     contigs = set()
 
-    handle = open(args.fna_file, "rU")
+    handle = open(args.fna_file)
     for record in SeqIO.parse(handle, "fasta"):
         contig = '_'.join(record.id.split('_')[:-1])
 

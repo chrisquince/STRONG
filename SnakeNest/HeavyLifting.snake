@@ -94,7 +94,7 @@ rule simplify_subgraphs:
 checkpoint identify_bins_to_merge:
     #this is not a good way of defining input : may fail if input is evaluated before execution of some other rule which should implicitly have been caried out beforehand. The right way to do it, is to have it depend on a checkpoint, for instance it fail if called before bin_merged folder is created.
     input: lambda wildcards:expand("{path}/simplif/simplif.done", path = bin_paths_by_type(wildcards["bin_type"])),
-           mags = "binning/list_mags.tsv"    
+           mags = "binning/%s/list_mags.tsv"%BINNER    
 #TODO should we put cogs to ignore files within the bin subfolders?
     output:  cogs_to_ignore = "subgraphs/{bin_type}/bin_cogs_to_ignore.tsv",
              bins_to_merge = "subgraphs/{bin_type}/bins_to_merge.tsv"
@@ -108,7 +108,7 @@ checkpoint identify_bins_to_merge:
 
 checkpoint merge_bins:
     input:  merge_plan = "subgraphs/bin_init/bins_to_merge.tsv",
-            contig_assign = "binning/clustering_gt%s_merged.csv" % MIN_CONTIG_SIZE
+            contig_assign = "binning/%s/clustering_%s.csv"%(BINNER,BINNER)
     output: cluster = "subgraphs/bin_merged/clustering.csv"
     log:    "subgraphs/bin_merged/merge.log"
     shell:  "{SCRIPTS}/merge_bins.py {input.merge_plan} $(dirname {input.merge_plan}) "
@@ -149,7 +149,7 @@ def merged_bins_cogs(wildcards):
 
 rule select_bins_for_strain_analysis:
     input:  select = merged_bins_cogs,
-            mags = "binning/list_mags.tsv",
+            mags = "binning/%s/list_mags.tsv"%BINNER,
             merge_recipe = "subgraphs/bin_init/bins_to_merge.tsv", 
             input_csv = "subgraphs/bin_merged/clustering.csv"
     output: selected="subgraphs/bin_merged/selected_bins.txt"

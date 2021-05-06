@@ -12,6 +12,7 @@ cog_database: /home/ubuntu/rpsblast_cog_db/Cog # COG database
 
 
 # ----- Binning parameters ------
+binner: concoct
 concoct:
     contig_size: 1000
 

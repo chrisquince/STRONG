@@ -17,6 +17,8 @@ rule results:
            "evaluation/bayespaths/SpeciesMaxCov.csv",
            "evaluation/desman/SpeciesMaxCovD.csv"
 
+
+# use the fact reads are generated from know genome and use mapping of reads to contigs, to get the number of reads from refference genomes for each contigs.
 rule contig_to_ref_counts:
     input: assembly = "profile/assembly.fasta",
            list_samples = expand("profile/assembly/{sample}.sorted.bam", sample=SAMPLES),
@@ -26,54 +28,67 @@ rule contig_to_ref_counts:
     log: "test.log"
     shell: "{EVAL_SCRIPTS}/contig_read_count_per_genome.py {input.assembly} {REFDATA}/AllGenomes.fa {input.list_samples} -m {threads} >{output}"
 
+# change the previously computed info, so that we get for each contig, the number of reads mapped to it, and the breakdown of all strains these reads come from, in terms of nb of reads and fraction of reads. 
 rule map_counts:
     input: "{path}/final_contigs_counts.tsv"
     output: strain = "{path}/Strain.csv",
             species = "{path}/Species.csv"
     shell: "{EVAL_SCRIPTS}/MapCounts.py {REFDATA}/Genomes {REFDATA}/select.tsv {input} {output.strain} {output.species}"
 
+# keep only 1 species per contigs. 
 rule filtering:
     input: "{path}/Species.csv"
     output: "{path}/Contig_Species.csv"
     shell: "{EVAL_SCRIPTS}/Filter.pl < {input} > {output}"
 
-rule sed_cluster:
-    input: "{path}/clustering_gt%d_merged.csv" % MIN_CONTIG_SIZE
-    output: "{path}/clustering_gt%d_mergedR.csv" % MIN_CONTIG_SIZE
-    shell: "sed '1d' {input} > {output}"
 
+# all the important info (rand index ... etc) are in the log, because obviously that's where it should be 
+# output file is a table of nb of nucleotides of species in each bins. We got this from using species contig assignment
+# you can see how 1 species is split over different bins and how some bins have more than one species.
+# however split species is meaningless as it could be just split strains.
 rule validate:
-    input: cluster = "binning/clustering_gt%d_mergedR.csv" % MIN_CONTIG_SIZE,
+    input: cluster = "binning/%s/clustering_%s.csv"%(BINNER,BINNER),
            species = "{path}/Contig_Species.csv",
            assembly = "profile/assembly.fasta"
     output: "{path}/Conf.csv"
+    params: "binning/%s/no_header_clustering_%s.csv"%(BINNER,BINNER)
     log: "{path}/validate.log"
-    shell: "{EVAL_SCRIPTS}/Validate.pl --cfile={input.cluster} --sfile={input.species} --ffile={input.assembly} --ofile {output} >{log}"
+    shell: """
+    sed '1d' {input.cluster} > {params}
+    {EVAL_SCRIPTS}/Validate.pl --cfile={params} --sfile={input.species} --ffile={input.assembly} --ofile {output} >{log}
+    rm {params}
+    """
 
+# create SpeciesMax.csv file which is just the majority species for each bin + the fraction of the bin nucleotide, it correspond to. 
 rule max_species:
     input: "{path}/Conf.csv"
     output: "{path}/SpeciesMax.csv"
     shell: "Rscript --vanilla {EVAL_SCRIPTS}/MaxSpecies.R {input} {output}"
 
+# create SpeciesMaxCov.csv file. 
+# Bin_name, Species, Fraction of reads from Species, No. Strains in Species, StrainList, StrainCoverages
+# StrainCoverages is just the total coverage over all samples.
 rule strain_coverage:
     input: maxFile = "{path}/SpeciesMax.csv",
            mergeBinFile = "subgraphs/bin_init/bins_to_merge.tsv"
     output: "{path}/SpeciesMaxCov.csv"
     shell: "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {REFDATA}/coverage.tsv {input.maxFile} {input.mergeBinFile} > {output}"
 
+# same, but for desman without the merging we do in bayespath 
 rule strain_coveraged:
     input: maxFile = "evaluation/bayespaths/SpeciesMax.csv",
            mergeBinFile = "subgraphs/bin_init/bins_to_merge.tsv"
     output: "{path}/SpeciesMaxCovD.csv"
     shell: "{EVAL_SCRIPTS}/AddStrainsCov.py {REFDATA}/select.tsv {REFDATA}/coverage.tsv {input.maxFile} {input.mergeBinFile} --nomerge > {output}"
 
-
+# blast mag to genomes of all strains.
 rule blastn:
     input: "{file}.fa"
     output: "{file}.blast"
     threads: THREADS
     shell: "blastn -db {REFDATA}/AllGenomes.fa -query {input} -outfmt 6 -num_threads {threads} > {output}"
 
+# .
 rule blast_best:
     input: blast = lambda w: BIN_TO_BLAST[w.bin],
            margfile = "bayespaths/{bin}/{bin}F_margProb.csv",

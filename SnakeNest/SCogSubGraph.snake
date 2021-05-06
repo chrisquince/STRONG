@@ -10,4 +10,4 @@ rule all:
            "assembly/high_res/simplified.mult_prof",
            "annotation/SCG_tables.tsv",
            "subgraphs/bin_init/bin_cov.tsv",
-           "binning/list_mags.tsv"
+           "binning/%s/list_mags.tsv"%BINNER

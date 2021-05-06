@@ -13,7 +13,9 @@ import re
 
 
 default_values = {
-    "concoct":{"fragment_size": 10000, "contig_size": 1000, "bin_multiplier": 3, "bin_max": 2000}, 
+    "binner":"concoct",
+    "concoct":{"fragment_size": 10000, "contig_size": 1000, "bin_multiplier": 3, "bin_max": 2000},
+    "metabat2":{"contig_size": 1500}, 
     "mag_quality_threshold": 0.75,
     "threads":     8,
     "assembly":    {"assembler": "spades", "k": [21, 33, 55],
@@ -74,26 +76,17 @@ class cd:
         os.chdir(self.savedPath)
 
 
-def sample_name(fullname):
-    return os.path.splitext(os.path.basename(fullname))[0]
-
 
 FASTA_EXTS = {".fasta", ".fasta.gz", ".fa", ".fna", ".fsa",
               ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 
-
-def gather_paths(path, basename=False):
+def gather_paths(path):
     for filename in os.listdir(path):
         name = os.path.basename(filename)
         for ext in FASTA_EXTS:
             if not name.endswith(ext):
                 continue
-            filepath = os.path.join(path, filename)
-            if basename:
-                yield (name[0:-len(ext)], filepath)
-            else:
-                yield filepath
-
+            yield os.path.join(path, filename)
 
 def detect_reads(dir):
-    return sorted(list(gather_paths(dir)))[:2]
+    return sorted(list(gather_paths(dir)))

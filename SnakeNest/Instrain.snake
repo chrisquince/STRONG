@@ -1,0 +1,48 @@
+include: "Common.snake"
+import glob
+from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
+from Bio.Seq import Seq
+from collections import defaultdict,Counter
+
+# snakemake -s /mnt/gpfs/seb/Project/STRONG/SnakeNest/Instrain.snake --cores 100 inStrain.done -n --use-conda --config LOCAL_DIR='/mnt/gpfs/seb/Project/STRONG'
+CONDA_ENVS  = "/mnt/gpfs/seb/Project/Metahood/conda_envs"
+
+rule inStrain_profile:
+   input: bam = "profile/assembly/{sample}.sorted.bam",
+          assembly = "profile/assembly.fasta",
+          mag_def = "binning/%s/mag_def_%s.tsv"%(BINNER,BINNER),
+          fna = "annotation/assembly.fna"
+   conda: "%s/inStrains.yaml"%CONDA_ENVS
+   threads: 20
+   params: 'inStrain/{sample}'
+   output: 'inStrain/{sample}/output/{sample}_genome_info.tsv'
+   shell: "inStrain profile {input.bam} {input.assembly} -s {input.mag_def} -o {params} -p {threads} -g {input.fna}"
+
+
+rule mags_clusters:
+    input: mags = "binning/{BINNER}/list_mags.tsv",
+           cl_def = "binning/{BINNER}/clustering_{BINNER}.csv"
+    output: mag_def = "binning/{BINNER}/mag_def_{BINNER}.tsv"
+    run:
+        mags = {line.rstrip() for line in open(input["mags"])}
+        with open(output["mag_def"],"w") as handle_w:
+            with open(input["cl_def"]) as handle:
+                _ = next(handle)
+                for line in handle:
+                    contig,cluster = line.rstrip().split(",")
+                    if cluster in mags:
+                        handle_w.write("%s\t%s\n"%(contig,cluster))
+
+
+rule inStrain_compare:
+    input: files = expand("inStrain/{sample}/output/{sample}_genome_info.tsv",sample=SAMPLES),
+           mag_def = "binning/%s/mag_def_%s.tsv"%(BINNER,BINNER),
+    params: " ".join(expand("inStrain/{sample}",sample=SAMPLES))
+    conda : "%s/inStrains.yaml"%CONDA_ENVS
+    threads: 100
+    output: "inStrain.done"
+    shell: """
+    inStrain compare -i {params} -s {input.mag_def} -p {threads} -o inStrain/compare/
+    touch {output}
+    """
+

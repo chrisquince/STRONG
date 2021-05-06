@@ -11,9 +11,12 @@ def main(fasta_file,nb_chunks,output):
     header_len = sorted(header_len,key=lambda x:-x[1] )
     # open nb_chunks handles 
     os.system("mkdir -p "+output)
-    ext=fasta_file.split(".")[-1]
+    if len(fasta_file.split("."))>1:
+        ext="."+fasta_file.split(".")[-1]
+    else:
+        ext=""
     fasta_path=output+"/"+fasta_file.split('/')[-1].split(".")[0]
-    handles =[open("%s_%s.%s"%(fasta_path,nb,ext),"w") for nb in range(100)]
+    handles =[open("%s_%s%s"%(fasta_path,nb,ext),"w") for nb in range(nb_chunks)]
     # map header to handle, biggest to smallest seq, so it sort of even out
     index = 0
     header_to_handle={}

@@ -34,7 +34,7 @@ We then need to install miniconda we recommend the Python 3.8 version.
 To install miniconda follow the instructions [here](https://docs.conda.io/en/latest/miniconda.html).
 Remember that conda activation may require logging back in again.
 
-### Conda installation
+## Conda installation
 
 STRONG can be installed anywhere but for the below we assume it will be placed in a location
 SPATH that you set as an environment variable:
@@ -59,6 +59,11 @@ If you need to update in future:
 cd STRONG
 git submodule foreach git pull origin master
 ```
+#### Automatic installation
+All steps described under have been  compiled in the install_STRONG.sh script. It is mostly silent and all logs are found in install.log. 
+This script does not install any database. So please refer to correponding section.
+
+#### SPAdes/DESMAN/Bayespath manual installation
 
 We recommend that you first compile the SPAdes and COG tools executables outside of conda:
 
@@ -83,10 +88,7 @@ cd $SPATH/STRONG
 mamba env create -f conda_env.yaml
 ```
 
-This should take 5 - 10 minutes with mamba. There is a bug in the current conda install of R which will give warning errors but can be fixed through the following symbolic link:
-```
-ln -s /home/ubuntu/miniconda3/envs/STRONG/lib/R/modules/lapack.so /home/ubuntu/miniconda3/envs/STRONG/lib/R/modules/libRlapack.so
-```
+This should take 5 - 10 minutes with mamba. 
 
 
 Once the STRONG environment has been installed activate it with the following command :
@@ -115,7 +117,29 @@ BayesPaths uses precompiled executables in the runfg_source directory. These are
 with Linux x86-64 and on other platforms they will require compilation from source see
 the [BayesPaths repo](https://github.com/chrisquince/BayesPaths]) for details. 
 
+#### Fix conda install
 
+ 1. Fix concoct refine
+
+Unfortunately there is a bug in the conda CONCOCT package caused by updates to Pandas
+this needs to be fixed before running the pipeline:
+
+```
+CPATH=`which concoct_refine`
+sed -i 's/values/to_numpy/g' $CPATH
+sed -i 's/as_matrix/to_numpy/g' $CPATH
+sed -i 's/int(NK), args.seed, args.threads)/ int(NK), args.seed, args.threads, 500)/g' $CPATH
+```
+
+ 2. Fix R lapack library location item
+
+There is a bug in the current conda install of R where the lapack library while being present is not exactly where it should be for all required library to work. It is easily fixed with symbolic link
+```
+ln -s $CONDA_PREFIX/lib/R/modules/lapack.so $CONDA_PREFIX/lib/R/modules/libRlapack.so
+```
+
+
+#### Database needed (COG)
 We will also need a version of the COG database installed. We make this available for download 
 and it can be placed anywhere. Here we point the DB_PATH variable to its location which should 
 be chosen appropriately:
@@ -128,33 +152,20 @@ tar -xvzf rpsblast_cog_db.tar.gz
 rm rpsblast_cog_db.tar.gz
 ```
 
-Unfortunately there is a bug in the conda CONCOCT package caused by updates to Pandas
-this needs to be fixed before running the pipeline:
-
-```
-CPATH=`which concoct_refine`
-sed -i 's/values/to_numpy/g' $CPATH
-sed -i 's/as_matrix/to_numpy/g' $CPATH
-sed -i 's/int(NK), args.seed, args.threads)/ int(NK), args.seed, args.threads, 500)/g' $CPATH
-```
-
-The pipeline will attempt downloads of missing databases but we recommend preinstalling. If 
-MAG classifications are required from GTDB then this database should be installed inside 
-the conda installation. In our clean VM that would be here:
-
-```
-cd /home/ubuntu/miniconda3/envs/STRONG/share/gtdbtk-1.2.0/
-
-```
-
-The actual download may take a while:
+#### Optional Database (GTDB)
+GTDB is used in the last part of the pipeline as for MAG classification optionally. If the a gtdb path is given in the config file, STRONG will check naively for its presence and will download it if it is absent. 
+We recommand preinstalling it, the actual download may take a while:
 
 ```
 wget https://data.ace.uq.edu.au/public/gtdb/data/releases/release95/95.0/auxillary_files/gtdbtk_r95_data.tar.gz
 tar xvzf gtdbtk_r95_data.tar.gz
 rm -r db
 mv release95 db
+
 ```
+
+### Check install
+Some issues may crop up with R libraries and/or forgotten installation step. This can be checked for by running `SnakeNest/scripts/check_on_dependencies.py`
 
 ## Native installation (Not supported yet)
 
@@ -325,7 +336,7 @@ in the relevant steps but we will highlight a few general parameters here.
 
 ```
 # ------ Samples ------
-samples: '*' # specify a list samples to use or '*' to use all samples
+samples: ['*'] # specify a list samples to use or '*' to use all samples
 
 # ------ Resources ------
 threads : 8 # single task nb threads
@@ -372,15 +383,10 @@ evaluation:
 
 ### Sample specification
 
-STRONG will look for samples in the directory specified by the **data** parameter so above this points 
-to '/home/ubuntu/STRONG_Runs/Test' inside this directory subdirectories should be present named 
-sample1, ..., sampleN these correspond to different samples. The program will expect sequencing 
-reads present in each subdirectory 'sampleX' with file names 'sampleX_R1.fq.gz'  and 'sampleX_R2.fq.gz'
-for the forward and reverse reads. These are assumed paired other file formats e.g. not gzipped should 
-also work. In the sample test data used above eight samples are used. 
+STRONG requires for all samples to be in separate folders inside the **data** directory specified above, here this points to '/home/ubuntu/STRONG_Runs/Test'. STRONG needs exactly 2 paired reads files ending with any of the following .fasta, .fasta.gz, .fa, .fna, .fsa, .fastq, .fastq.gz, .fq, .fq.gz, .fna.gz.  No check is done at this point and the pipeline will naturally fail during assembly if your samples do not contain the same number of reads or are not paired.... 
+In the sample test data used above eight samples are used. 
 
-As of the current version the ***samples*** variable has to be set to '*' to indicate that 
-all samples in the directory will be used. In future we plan to relax this.
+Using  the ***samples*** variable it is possible to use bash extended globbing to select which folder should be run. The simplest specification is : ['\*'] which will select all folder inside   **data** directory, in our example this equivalent to the also valid : ["sample1", "sample2", "sample3", "sample4", "sample5", "sample6", "sample7", "sample8".]. More complicated expression can be used, for instance : ['\*{[1-3],[6-7]}'], this will select any folder ending with 1,2,3,6,7. This can be tested beforehand on terminal console.
 
 
 ### GTDB MAG classification
@@ -413,23 +419,31 @@ We will explain the config parameters relevant to these steps. These are:
 2. ***mag_quality_threshold***: fraction of SCGs in single-copy for a bin to be considered a MAG, should be set between 0 and 1, defaults to 0.75, a higher value will give higher 
 quality MAGs
 
+
+3. ***binner***:  The default binner is CONCOCT, it is possible to use metabat2 as an alternative. Accepted value are : "concoct" or "metabat2". If this keyword is not specified CONCOCT will be run by defaults. 
+
+Depending on which binner is chosen, differents options can be specified. Specifying option for metabat2 while choosing CONCOCT with the ***binner*** keywords will not do anything.
+
 Then within the ***concoct*** subsection:
 
-3. ***contig_size***: mininum contig length for the CONCOCT binning defaults to 1000 
-4. ***fragment_size***: size at which contigs are fragmented for CONCOCT inputs defaults to 10000
-5.  ***bin_multiplier***: the program calculates the median SCG number and then multiplies 
+4. ***contig_size***: mininum contig length for the CONCOCT binning defaults to 1000 
+5. ***fragment_size***: size at which contigs are fragmented for CONCOCT inputs defaults to 10000
+6.  ***bin_multiplier***: the program calculates the median SCG number and then multiplies 
 by this value to get the initial bin number for CONCOCT, defaults to 3 
-6. ***bin_max***: maximum initial bin number for CONCOCT defaults to 2000 reduce this to speed up the CONCOCT binning
+7. ***bin_max***: maximum initial bin number for CONCOCT defaults to 2000 reduce this to speed up the CONCOCT binning
 
+Then within the ***metabat2*** subsection:
+
+7. ***contig_size***: mininum contig length for the metabat2  binning defaults to 1500, and anything smaller will be ignored. 
 
 Then within the ***assembly*** subsection:
 
-7. ***assembler***: program for coassembly currently only metaSPAdes is supported specify as ***spades*** which is also the default
-8. ***k***: kmer length for assembly 77 is a good choice for 150 bp reads. It is possible to use a list of 
+8. ***assembler***: program for coassembly currently only metaSPAdes is supported specify as ***spades*** which is also the default
+9. ***k***: kmer length for assembly 77 is a good choice for 150 bp reads. It is possible to use a list of 
 kmers here but they should all be odd so for instance '[33,55,77]' defaults to [21, 33, 55]
-9. ***mem***: This is the maximum memory allocated to metaSPAdes in Mb it may have to be increased above 2000 defaults to 120
+10. ***mem***: This is the maximum memory allocated to metaSPAdes in Mb it may have to be increased above 2000 defaults to 120
 for complex data sets:
-10. ***threads***: The number of threads used by metaSPAdes defaults to 16
+11. ***threads***: The number of threads used by metaSPAdes defaults to 16
 
 
 This part of the pipeline produces a number of intermediate output files. We detail the key ones here:
@@ -438,8 +452,7 @@ This part of the pipeline produces a number of intermediate output files. We det
 2. ***assembly/high_res/***: This directory contains the high resolution assembly graph pre- ***graph_pack.gfa*** and post-simplication ***simplified.gfa*** 
 and also ***simplified.mult_prof*** the unitig kmer coverages of the simplified graph across samples
 3. ***annotation***: This directory contains contains the contig ORF predictions and COG annotations with RPS-BLAST
-4. ***binning***: Contains the CONCOCT bins post refinement and merging these are given in ***clustering_gt1000_merged.csv*** as a csv file of contig names 
-with bin assignments together with a list of MAGs satisfying 75% single-copy core genes in single copy ***list_mags.tsv*** 
+4. ***binning***: Contains the binner output. The CONCOCT folder contain bins post refinement and merging these are given in ***clustering_concoct.csv*** as a csv file of contig names with bin assignments, together with a list of MAGs satisfying 75% single-copy core genes in single copy ***list_mags.tsv*** 
 
 The list of single-copy core genes are given as COGs in the data file ***SnakeNest/scg_data/scg_cogs_to_run.txt*** as default but this file can be changed.
 
@@ -585,4 +598,5 @@ wget https://strongtest.s3.climb.ac.uk/Synth_G45_S10D.tar.gz
    
 wget https://strongtest.s3.climb.ac.uk/Synth_G45_S15D.tar.gz
 ```
+
 

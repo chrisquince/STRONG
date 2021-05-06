@@ -1,5 +1,5 @@
 # ------ Samples ------
-samples: '*' # specify a list samples to use or '*' to use all samples
+samples: ['sample*'] # specify a list samples to use or '*' to use all samples
 
 # ------ Resources ------
 threads : 8 # single task nb threads
@@ -27,7 +27,7 @@ assembly:
 bayespaths:
     nb_strains: 16
     nmf_runs: 10
-    min_orf_number_to_merge_bins: 10
+    min_orf_number_to_merge_bins: 18
     min_orf_number_to_run_a_bin: 10
     percent_unitigs_shared: 0.1
 

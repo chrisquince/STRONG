@@ -1,5 +1,5 @@
 # ------ Samples ------
-samples: '*' # specify a list samples to use or '*' to use all samples
+samples: ['sample*'] # specify a list samples to use or '*' to use all samples
 
 # ------ Resources ------
 threads : 8 # single task nb threads
@@ -9,6 +9,9 @@ data:  /home/ubuntu/STRONG_Runs/Test  # path to data folder
 
 # ----- Annotation database -----
 cog_database: /home/ubuntu/rpsblast_cog_db/Cog # COG database
+
+# ----- Binner ------
+binner: "concoct"
 
 # ----- Binning parameters ------
 concoct:
@@ -26,7 +29,7 @@ bayespaths:
     nb_strains: 5
     nmf_runs: 1
     max_giter: 1
-    min_orf_number_to_merge_bins: 10
+    min_orf_number_to_merge_bins: 18
     min_orf_number_to_run_a_bin: 10
     percent_unitigs_shared: 0.1
 
@@ -42,5 +45,3 @@ evaluation:
     execution: 1
     genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes
     
-
-

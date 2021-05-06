@@ -60,8 +60,16 @@ cd STRONG
 git submodule foreach git pull origin master
 ```
 #### Automatic installation
-All steps described under have been  compiled in the install_STRONG.sh script. It is mostly silent and all logs are found in install.log. 
-This script does not install any database. So please refer to correponding section.
+
+All the steps described below have been compiled for convenience in the install_STRONG.sh script. 
+It is mostly silent and all logs are found in install.log. 
+This script does not however install any databases. So please refer to correponding section for those. The script is 
+run as:
+```
+./install_STRONG.sh 
+```
+From inside the STRONG repo directory.
+
 
 #### SPAdes/DESMAN/Bayespath manual installation
 
@@ -336,7 +344,7 @@ in the relevant steps but we will highlight a few general parameters here.
 
 ```
 # ------ Samples ------
-samples: ['*'] # specify a list samples to use or '*' to use all samples
+samples: ['sample*'] # specify a list samples to use or '*' to use all samples
 
 # ------ Resources ------
 threads : 8 # single task nb threads
@@ -346,6 +354,9 @@ data:  /home/ubuntu/STRONG_Runs/Test  # path to data folder
 
 # ----- Annotation database -----
 cog_database: /home/ubuntu/rpsblast_cog_db/Cog # COG database
+
+# ----- Binner ------
+binner: "concoct"
 
 # ----- Binning parameters ------
 concoct:
@@ -363,7 +374,7 @@ bayespaths:
     nb_strains: 5
     nmf_runs: 1
     max_giter: 1
-    min_orf_number_to_merge_bins: 10
+    min_orf_number_to_merge_bins: 18
     min_orf_number_to_run_a_bin: 10
     percent_unitigs_shared: 0.1
 
@@ -378,7 +389,6 @@ desman:
 evaluation:
     execution: 1
     genomes: "/home/ubuntu/STRONG_Runs/Test/Eval" # path to reference genomes
-
 ```
 
 ### Sample specification
@@ -420,7 +430,8 @@ We will explain the config parameters relevant to these steps. These are:
 quality MAGs
 
 
-3. ***binner***:  The default binner is CONCOCT, it is possible to use metabat2 as an alternative. Accepted value are : "concoct" or "metabat2". If this keyword is not specified CONCOCT will be run by defaults. 
+3. ***binner***:  The default binner is CONCOCT, it is possible to use metabat2 as an alternative. 
+Accepted value for the "binning" parameter are : "concoct" or "metabat2". If this keyword is not specified CONCOCT will be run by defaults. 
 
 Depending on which binner is chosen, differents options can be specified. Specifying option for metabat2 while choosing CONCOCT with the ***binner*** keywords will not do anything.
 

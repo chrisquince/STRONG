@@ -1,3 +1,4 @@
+
 # STRONG - Strain Resolution ON Graphs
 
 ## Overview
@@ -36,10 +37,7 @@ Remember that conda activation may require logging back in again.
 
 ## Conda installation
 
-STRONG can be installed anywhere but for the below we assume it will be placed in a location
-SPATH that you set as an environment variable:
- that you 
-may have to create in your home dir:
+STRONG can be installed anywhere but for the below we assume it will be placed in a location SPATH that you set as an environment variable:
 ```
 export SPATH=/mypath/to/repos
 cd $SPATH
@@ -63,12 +61,13 @@ git submodule foreach git pull origin master
 
 All the steps described below have been compiled for convenience in the install_STRONG.sh script. 
 It is mostly silent and all logs are found in install.log. 
-This script does not however install any databases. So please refer to correponding section for those. The script is 
-run as:
+This script does not however install any databases. So please refer to corresponding section for those : [Database needed (COG)](#DB_cog)  
+
+Inside the STRONG directory, type the following command:
 ```
 ./install_STRONG.sh 
 ```
-From inside the STRONG repo directory.
+
 
 
 #### SPAdes/DESMAN/Bayespath manual installation
@@ -146,6 +145,7 @@ There is a bug in the current conda install of R where the lapack library while 
 ln -s $CONDA_PREFIX/lib/R/modules/lapack.so $CONDA_PREFIX/lib/R/modules/libRlapack.so
 ```
 
+<a name="DB_cog"/>
 
 #### Database needed (COG)
 We will also need a version of the COG database installed. We make this available for download 
@@ -506,11 +506,13 @@ path uncertainties
 ### Evaluation
 
 This section of the pipeline should only be run if known reference genomes are 
-available because this is a benchnarking run with synthetic reads or in vitro mock communities. The following steps are run:
+available because this is a benchmarking run with synthetic reads or in vitro mock communities. The following steps are run:
 
 ![alt tag](./Figures/Dag_rules6.png)
 
-The evaluation section is run if ***execution*** in the evaluation section is set to 1 (default 0), ***genomes*** points at a directory containing the reference genomes. This generates the following outputs:
+The evaluation section is run if ***execution*** in the evaluation section is set to 1 (default 0), ***genomes*** points at a directory containing the reference genomes. Files needed in that folder are described in the section [Requirement for evaluation](#setup_eval).  
+
+This generates the following outputs:
 
 1. ***evaluation/bayespaths***: a directory with BayesPaths evaluation results
 2.  ***evaluation/desman***: a directory with DESMAN evaluation results
@@ -610,4 +612,26 @@ wget https://strongtest.s3.climb.ac.uk/Synth_G45_S10D.tar.gz
 wget https://strongtest.s3.climb.ac.uk/Synth_G45_S15D.tar.gz
 ```
 
+<a name="setup_eval"/>
 
+## Requirement for evaluation
+
+**Disclaimer** : mainly intended for STRONG development, no care has been taken into transforming a series of legacy script into a user friendly framework. Use at your own risk. 
+
+
+
+
+The evaluation section of the pipeline should only be run if known reference genomes are 
+available because this is a benchmarking run with synthetic reads or in vitro mock communities. 
+The evaluation section is run if ***execution*** in the evaluation section is set to 1 (default 0), ***genomes*** points at a directory which should contain the following files/folder:
+
+1. **AllGenomes.fa**: A fasta file resulting from concatenation of all references genomes fasta files. 
+2. **select.tsv**: A .tsv file mapping each reference genome strain taxonomic id to it's species taxonomic id. It contains 4 columns : \<species level taxonomic id\>, \<strain taxonomic\>, \<number of contigs\>, \<misc\>. The last 2 columns can be ignored but should still be populated, with for instance "NA". The strain taxonomic id should be in the format :  \<taxaid\>_\<strainnb\>, where \<taxaid\> can be a species or strain taxonomic id and  \<strainnb\> can be an arbitrary number, for instance 767463_0.
+3. **Genome**:   a folder containing all references genomes fasta files. Each file should be named \<taxaid\>\_\<strainnb\>seq.tmp. With \<taxaid\>\_\<strainnb\> being identical to those of the **select.tsv file**. For instance : 767463_0seq.tmp.
+4. **MapSeq.csv**: This file contains the same information as  **select.tsv** but also list contig header names of each reference genome. The first three columns contains: \<species level taxonomic id>, \<strain taxonomic>, \<number of contigs>. This time it is important that \<number of contigs> is correct. Past the third column, is a list of all headers of that reference genome, if there is 4 contigs, 4 headers are expected. As such, number of column will vary from genome to genome.
+5. **coverage.tsv**: This file should be a "melted" table of coverage of each genome in each sample. It is relevant when using simulated dataset and when species level coverage is known. Like previous file, it is not optional and would need to be completed even with meaningless values. It is used to generate the file ***SpeciesMaxCov.csv***  which will be directly impacted in aforementioned case. 
+The following field are required : \<sample\>, \<species taxonomic id\>,  \<taxaid\>\_\<strainnb\> , \<coverage\>, \<relative coverage\>. The last field is not used but should be populated. 
+
+**Note**:  Please be sure to keep headers without space. 
+
+**Note2**: Previous synthetic datasets all contains example of evaluation folders and files, for a better understanding of how required files should look like. 

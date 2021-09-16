@@ -4,7 +4,6 @@ import glob
 import matplotlib as mpl
 mpl.use('Agg')
 import numpy as np 
-import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from os.path import dirname, basename

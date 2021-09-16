@@ -117,7 +117,7 @@ rule bowtie_align:
     input:   left = lambda w:R1[w.sample],
              right = lambda w:R2[w.sample],
              index="{path}/index.done"
-    output:  "{path}/{sample,sample\d+}.bam"
+    output:  "{path}/{sample}.bam"
              #temp("{path}/{group,(sample|group)\d+}.bam")
     params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
              left=lambda w: ",".join(expand("{l}", l=R1[w.sample])),

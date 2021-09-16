@@ -55,18 +55,9 @@ rule bam_readcount:
         bam-readcount -w 1 -l {input.bed} -f {input.fasta} {input.bam} 2> {log} | gzip > {output}
         """
 
-rule assembly_bed:
-    input:
-        "annotation/assembly.gff",
-    output:
-        "desman/assembly.bed"
-    shell: """
-      {SCRIPTS}/Gff_to_bed.py {input} {output}
-      """
-
 rule scg_bed:
     input:
-        all_bed = "desman/assembly.bed",
+        all_bed = "annotation/assembly.bed",
         scg_file = "annotation/SCG.fna"
     output:
         scg_bed = "desman/SCG.bed"

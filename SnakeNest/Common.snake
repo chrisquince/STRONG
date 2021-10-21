@@ -110,7 +110,7 @@ rule bowtie_index:
     threads: THREADS
     log:     "{path}/{ref}/index.log"
     message: "Building bowtie index for {input}"
-    shell:   "bowtie2-build {input} {params} --threads {THREADS} &> {log}"
+    shell:   "bowtie2-build {input} {params} --threads {THREADS} --large-index &> {log}"
 
 #consider ignoring reads aligned without their pairs
 rule bowtie_align:

@@ -13,10 +13,11 @@ cd $STRONG_dir/SPAdes/assembler
 
 echo "creating STRONG env"
 # mamba
-mamba -h &>$LOG || conda install -c conda-forge mamba
+echo "creating STRONG env" >>$LOG
+mamba -h &>>$LOG || conda install -c conda-forge mamba
 
 # conda env 
-mamba env create -f $STRONG_dir/conda_env.yaml &>$LOG
+mamba env create -f $STRONG_dir/conda_env.yaml &>>$LOG
 
 CONDA_PATH=$(dirname $(dirname $(which conda)))
 echo $CONDA_PATH
@@ -27,12 +28,12 @@ conda activate STRONG
 # install bayespath
 echo "Installing BayesPaths"
 cd  $STRONG_dir/BayesPaths
-python ./setup.py install &>$LOG
+python ./setup.py install &>>$LOG
 
 # install desman
 echo "Installing DESMAN"
 cd $STRONG_dir/DESMAN
-python ./setup.py install &>$LOG
+python ./setup.py install &>>$LOG
 
 # correct R lapack library
 ln -fs $CONDA_PREFIX/lib/R/modules/lapack.so $CONDA_PREFIX/lib/R/modules/libRlapack.so

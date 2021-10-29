@@ -42,6 +42,7 @@ dependencies:
     - r-reshape=0.8.8
     - r-reshape2=1.4.4
     - r-stringr=1.4.0
+    - r-rvcheck=0.1.8
     - gtdbtk>=1.6.0 
     - bioconductor-ggtree=2.2.1
     - bioconductor-treeio=1.12.0

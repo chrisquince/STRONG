@@ -349,18 +349,20 @@ rule extract_cog_sequence:
 
 # ----------------- database cog_annotation -----------------
 rule move_db_seq_to_folder:
-    input: "%s/fastani/database/{ref}_genomic.fna.gz"%GTDB
-    output: "%s/cogs/{ref}/{ref}.fa"%GTDB
-    shell: "gunzip -c {input} > {output}"
+    output: "results/gtdb/refs/{ref}/{ref}.fa"
+    run: 
+        ref = wildcards["ref"]
+        path = next(line for line in open("%s/fastani/genome_paths.tsv"%GTDB)if ref in line).rstrip().split()
+        shell("gunzip -c %s/fastani/%s%s > {output}"%(GTDB,path[1],path[0]))
 
 # gtdb and eval
 rule prodigal_gtdb:
-    input: "%s/cogs/{ref}/{ref}.fa"%GTDB
+    input: "{path}/{ref}/{ref}.fa"
     output:
-        faa="%s/cogs/{ref}/{ref}.faa"%GTDB,
-        fna="%s/cogs/{ref}/{ref}.fna"%GTDB,
-        gff="%s/cogs/{ref}/{ref}.gff"%GTDB
-    log: "%s/cogs/{ref}/prodigal.log"%GTDB
+        faa="{path}/{ref}/{ref}.faa",
+        fna="{path}/{ref}/{ref}.fna",
+        gff="{path}/{ref}/{ref}.gff"
+    log: "{path}/{ref}/prodigal.log"
     shell : "prodigal -i {input} -a {output.faa} -d {output.fna} -p single -f gff -o {output.gff} &> {log} "
 
 rule prodigal_eval:
@@ -388,7 +390,7 @@ def get_all_refs(w):
     _ = checkpoints.gtdb.get()
     bac = [line.rstrip().split("\t")[7] for index,line in enumerate(open("results/gtdb/gtdbtk.bac120.summary.tsv")) if index>0 if line.rstrip().split("\t")[0] in SELECTED_MAGS2]
     ar  = [line.rstrip().split("\t")[7] for index,line in enumerate(open("results/gtdb/gtdbtk.ar122.summary.tsv")) if index>0 if line.rstrip().split("\t")[0] in SELECTED_MAGS2]
-    return ["%s/cogs/%s/SCG.fna"%(GTDB,name) for name in bac+ar if name!="N/A"]
+    return ["results/gtdb/refs/%s/SCG.fna"%name for name in bac+ar if name!="N/A"]
 
 
 
@@ -412,7 +414,7 @@ rule link_gtdb_to_folder:
         for mag,refs in mag_to_ref.items():
             with open("results/%s/tmp/gtdb_cogs.fna"%mag,"w") as handle:
                 for ref in refs:
-                    ref_scg = "%s/cogs/%s/SCG.fna"%(GTDB,ref)
+                    ref_scg = "results/gtdb/refs/%s/SCG.fna"%ref
                     handle.writelines(">%s|%s\n%s\n"%(ref,header,seq) for header,seq in sfp(open(ref_scg)))
         for file in output:
             shell("touch %s"%file)

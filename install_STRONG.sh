@@ -14,7 +14,7 @@ cd $STRONG_dir/SPAdes/assembler
 echo "creating STRONG env"
 # mamba
 echo "creating STRONG env" >>$LOG
-mamba -h &>>$LOG || conda install -c conda-forge mamba
+mamba -h &>>$LOG || conda install -c conda-forge mamba &>>$LOG
 
 # conda env 
 mamba env create -f $STRONG_dir/conda_env.yaml &>>$LOG

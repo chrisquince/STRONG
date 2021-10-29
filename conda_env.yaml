@@ -1,4 +1,4 @@
-name: STRONG_db1
+name: STRONG
 channels:
     - bioconda
     - anaconda

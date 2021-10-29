@@ -72,7 +72,10 @@ def extended_glob(pattern):
     return [path for path in List_path if basename(path)!="multiqc_data"]
 
 # samples is a list of the samples names founds, directories names are the names of the samples
+if not isinstance(config["samples"], list):
+    config["samples"] = [config["samples"]]
 SAMPLES = [basename(path) for sample in config["samples"] for path in extended_glob(IN+"/"+sample)]
+# print(config["samples"])
 # sample_reads is a dictionary of samples to reads files
 SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
 # sample_reads is a dictionary of samples to reads files

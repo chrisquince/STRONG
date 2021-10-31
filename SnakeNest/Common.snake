@@ -63,6 +63,7 @@ EVAL_RUN=config["evaluation"]["execution"]
 # -------- Results -----------------
 RES_SCRIPTS = SCRIPTS+"/results"
 GTDB = config["gtdb_path"]
+SCRATCH_GTDB = config["scratch_gtdb"]
 
 #Autodetect samples and their reads
 

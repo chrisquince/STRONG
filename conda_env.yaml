@@ -48,3 +48,6 @@ dependencies:
     - bioconductor-treeio=1.12.0
     - r-wesanderson
     - libiconv
+    - gfortran_impl_linux-64=7.3.0
+    - gfortran_linux-64=7.3.0
+    - libgfortran-ng=7.3.0

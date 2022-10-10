@@ -51,3 +51,4 @@ dependencies:
     - gfortran_impl_linux-64=7.3.0
     - gfortran_linux-64=7.3.0
     - libgfortran-ng=7.3.0
+    - xorg-libxt=1.1.5

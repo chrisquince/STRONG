@@ -155,7 +155,7 @@ be chosen appropriately:
 ```
 export DB_PATH=/path/to_my/database
 cd $DB_PATH
-wget https://strongtest.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
+wget https://microbial-metag-strong.s3.climb.ac.uk/rpsblast_cog_db.tar.gz
 tar -xvzf rpsblast_cog_db.tar.gz
 rm rpsblast_cog_db.tar.gz
 ```
@@ -190,7 +190,7 @@ First we will download a fairly simple synthetic test data set from known microb
 export SRPATH=/mypath/torunthings/STRONG_Runs
 mkdir $SRPATH
 cd  $SRPATH
-wget https://strongtest.s3.climb.ac.uk/Test.tar.gz
+wget https://microbial-metag-strong.s3.climb.ac.uk/Test.tar.gz
 tar -xvzf Test.tar.gz
 rm Test.tar.gz
 ```

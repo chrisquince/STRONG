@@ -1,0 +1,54 @@
+include: "Common.snake"
+import glob
+from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
+from Bio.Seq import Seq
+from collections import defaultdict,Counter
+
+
+# snakemake -s /mnt/gpfs/seb/Project/STRONG/SnakeNest/StrainFinder.snake -n --config LOCAL_DIR='/mnt/gpfs/seb/Project/STRONG'
+
+MAGs = {"Bin_%s"%line.rstrip() for line in open("binning/%s/list_mags.tsv"%BINNER)}
+StrainFinder = "/home/sebr/seb/Applications/StrainFinder/preprocess"
+
+
+rule generate_preprocessing_input:
+    output : fastq = "StrainFinder/fastq.txt",
+             SCG = "StrainFinder/SCG.fasta",
+             mag_def = "StrainFinder/mag_def.tsv"
+    run:
+        # generate fastq list 
+        with open(output["fastq"],"w") as handle:
+            for sample,fastq in R1.items():
+                handle.write("%s\n%s\n"%(fastq,R2[sample]))
+        # generate scg list
+        files = ["subgraphs/bin_merged/%s/SCG.fna"%mag for mag in MAGs]
+        os.system("cat %s > %s"%(" ".join(files),output["SCG"]))
+        
+        # generate mag_def
+        mag_to_scg = defaultdict(list)
+        with open(output["mag_def"],"w") as handle:    
+            for mag in MAGs:
+                handle.writelines("%s\t%s\n"%(mag,header) for header,seq in sfp(open("subgraphs/bin_merged/%s/SCG.fna"%mag)))
+
+rule preprocessing:
+    input: fastq = "StrainFinder/fastq.txt",
+           SCG = "StrainFinder/SCG.fasta",
+           mag_def = "StrainFinder/mag_def.tsv"
+    shell:"""
+    root=$(pwd)
+    cd {StrainFinder}
+    python 0.run.py --fastqs $root/{input.fastq} --ref $root/{input.SCG} --map $root/{input.mag_def}
+    """
+
+
+
+bwa mem -a SCG.fasta /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz > /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.sam
+
+python 1.filter_sam.py /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.sam 90 40 > /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.filter.sam
+samtools view -bS -F 4 -o /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.bam /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.filter.sam
+samtools sort /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.bam -o /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.sorted
+samtools index /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.sorted.bam
+python 2.make_gene_file.py --fst SCG.fasta --out gene_file.txt
+perl 3.kpileup.pl /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.sorted.bam gene_file.txt 20 0 10 > /mnt/gpfs/chris/Projects/STRONG_Runs/Benchmarking/Synth_G45_S10D/sample2/sample2_R2.fq.gz.kp.txt
+python 4.kp2np.py --samples samples.txt --gene_file gene_file.txt --out all_alignments.cPickle
+python 5.filter_np.py --aln all_alignments.cPickle --map mag_def.tsv --samples samples.txt --tlen 0 --faln 0.5 --mcov 10 --dcov 1.5 --npos None > filter_np.log

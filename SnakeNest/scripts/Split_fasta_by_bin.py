@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # there is a hard limit of number of handles which can be opened
     max_nb_handles=resource.getrlimit(resource.RLIMIT_NOFILE)[0]
     max_nb_handles=max_nb_handles-100
-    List_all_bins=list({line.rstrip().split(",")[1] for line in open(bin_composition)})
+    List_all_bins=list({line.rstrip().split(",")[1] for index,line in enumerate(open(bin_composition)) if index>0})
     Nb_bins=len(List_all_bins)
     nb_batch=Nb_bins//max_nb_handles+1
     List_Batchs=[List_all_bins[batch*max_nb_handles:min((batch+1)*max_nb_handles,Nb_bins)] for batch in range(nb_batch)]

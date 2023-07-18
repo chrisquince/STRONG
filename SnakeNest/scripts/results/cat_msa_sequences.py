@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from Bio.SeqIO.FastaIO import SimpleFastaParser as sfp
 
 
-is_mag = lambda name:("_haplo_" not in name)&('Bin_' in name)
+is_mag = lambda name:(("_haplo_" not in name)&('Bin_' in name)) & (not "Hifi" in name)
 
 def get_cog_coverage(scg_cov, map_name_to_orfs, cog_to_strain_seq):
     cog_mag_to_orf = {(line.rstrip().split("\t")[0].split(" ")[1],line.rstrip().split("\t")[1]):line.rstrip().split("\t")[0].split(" ")[0] for line in open(map_name_to_orfs)}
@@ -66,7 +66,7 @@ def delete_seq(dist_mat,index_mag,rownames,colnames):
         to_del = np.array([index==index_to_del for index in range(len(identicals))])
         reselect = ~(to_del*index_mag)
         dist_mat = dist_mat[reselect,:][:,reselect]
-        colnames = rownames = list(np.array(rownames)[reselect]) 
+        colnames = rownames = list(np.array(rownames)[reselect])
         index_mag = index_mag[reselect]
         identicals = (dist_mat[:,index_mag]==0).sum(1)
     return dist_mat,index_mag,rownames,colnames
@@ -119,6 +119,9 @@ def mags_seqs(path,sorted_cogs,sorted_strains,cog_to_haplo_cov_tot):
                 continue
             dist_mat,colnames,rownames = load_matrix(file)
             index_mag = np.array([is_mag(name) for name in rownames])
+
+            # in some case dist is nan from fragmentation, let's just say it's dist 0 and remove them as identicals
+            dist_mat[np.isnan(dist_mat)] = 0
 
             # ignore any sequence which are identical to others, it can be due to fragmentation, or just the same seq multiple time
             dist_mat,index_mag,rownames,colnames = delete_seq(dist_mat,index_mag,rownames,colnames)

@@ -31,7 +31,7 @@ kmer_size <- as.numeric(args[5])
 savePlot <- args[6]
 
 # read data
-norm <- read.table(norm, header = TRUE, row.names = 1)
+norm <- read.table(norm, header = TRUE, row.names = 1)[1,]
 gammacoverages <- read.csv(coverages, header = FALSE, row.names = 1)
 varGammacoverages <- read.csv(varcoverages, header = TRUE, row.names = 1)
 

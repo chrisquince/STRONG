@@ -75,6 +75,9 @@ TODO_LIST.append("results/haplo_nb_vs_mag_cov.png")
 if GTDB!="":
     TODO_LIST += ["results/gtdb/gtdbtk.bac120.summary.tsv"]
 
+# Additional stat on percent readss mapped
+TODO_LIST += ["profile/mapping_percent.tsv"]
+
 rule all: 
     input: TODO_LIST
 
@@ -179,27 +182,36 @@ rule generate_profile:
 
 # just take the median of cov_scg.tsv
 rule median_SCG_cov:
-    input:  cov="profile/cov_scg.tsv",
+    input:  cov = "profile/cov_scg.tsv",
+            nuc = "profile/nucleotides.tsv"
     output: "profile/Normalisation.tsv"
     run: 
         List_profile = []
+
         # compute median of SCG       
         with open(input.cov) as handle:
-            samples = next(handle).rstrip().split("\t")[1:]
+            sorted_samples = next(handle).rstrip().split("\t")[1:]
             List_profile = [[float(element) for element in line.rstrip().split("\t")[1:]] for line in handle]
         scg_norm=np.median(List_profile, axis=0)
+
+        # get nucleotides
+        nuc,_,_ = load_matrix(input["nuc"],sample_order=sorted_samples)
+
         # output
         with open(output[0],"w") as handle:
-            handle.write("Normalisation\t"+"\t".join(samples)+"\n")
+            handle.write("Normalisation\t"+"\t".join(sorted_samples)+"\n")
             handle.write("median_scg\t"+"\t".join(map(str,scg_norm))+"\n")
+            handle.write("nucleotides\t"+"\t".join(map(str,nuc[0,:]))+"\n")
 
 #### get selected all mag coverage
 rule mag_coverage:
     input: cluster = "subgraphs/bin_merged/clustering.csv",
            cov = "profile/split/coverage.tsv",
-           bed = "profile/split.bed"
-    output: cov = "profile/mag_cov.tsv"
-    shell : "{RES_SCRIPTS}/mag_coverage_from_splitcontigs.py {input.cluster} {input.cov} {input.bed} {output.cov}"
+           bed = "profile/split.bed",
+           norm = "profile/Normalisation.tsv",
+    output: cov = "profile/mag_cov.tsv",
+            p_map = "profile/mag_percent_mapped.tsv"
+    shell : "{RES_SCRIPTS}/mag_coverage_from_splitcontigs.py {input.cluster} {input.cov} {input.bed} {input.norm} {output.cov} {output.p_map}"
 
 
 
@@ -216,7 +228,7 @@ def matrix_write(matrix,file_name,col_names,row_names):
         handle.write("/\t%s\n"%"\t".join(col_names))
         handle.writelines(format_row(row_names[index],line) for index,line in enumerate(matrix))
 
-def load_matrix(file,sample_order=None,strain_order=None) :
+def load_matrix(file,sample_order=None,strain_order=None):
     with open(file) as handle :
         header = next(handle).rstrip().split("\t")[1:]
         strains = []
@@ -226,12 +238,15 @@ def load_matrix(file,sample_order=None,strain_order=None) :
             strains.append(splitlines[0])
             matrix.append(list(map(float,splitlines[1:])))
     matrix = np.array(matrix)
-    if sample_order :
+    if sample_order:
         reorder_samples = [header.index(sample) for sample in sample_order]
+        matrix = matrix[:,reorder_samples]
+        header = sample_order
+    if strain_order:
         reorder_strain = [strains.index(strain) for strain in strain_order]
-        return matrix[:,reorder_samples][reorder_strain,:]
-    else : 
-        return matrix,header,strains
+        matrix = matrix[reorder_strain,:]
+        strains = strain_order
+    return matrix,header,strains
 
 def convert_intensity_to_kcov(mat):
     return mat*READ_LENGTH
@@ -269,10 +284,11 @@ rule create_unique_coverage_matrix:
     output: cov = 'results/mag_and_haplo_cov.tsv'
     run:
         mag_matrix,samples,mags = load_matrix(input["cov"])
-        norm,_,_ = load_matrix(input["norm"])
+        norm,_,_ = load_matrix(input["norm"],sample_order=samples)
+        norm = norm[0,:]
         mag_matrixN = mag_matrix/norm
         with open(output["cov"],"w") as handle: 
-            handle.write("/\t%s\n"%"\t".join(SAMPLES))
+            handle.write("/\t%s\n"%"\t".join(samples))
             for mag in SELECTED_MAGS:
                 handle.write(format_row(mag,mag_matrixN[mags.index(mag)]))
                 file = "bayespaths/%s/%sF_Intensity.csv"%(mag,mag) 
@@ -671,27 +687,68 @@ checkpoint gtdb:
     log: "results/gtdb/logs"
     priority: 50
     threads: 50
-    params: ("--scratch_dir %s"%SCRATCH_GTDB)*(SCRATCH_GTDB!="")
     shell: """
             export "GTDBTK_DATA_PATH={GTDB}/"
-            gtdbtk classify_wf --cpus {threads} --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) {params} --extension .fasta &> {log}
+            gtdbtk classify_wf --cpus {threads} --skip_ani_screen --mash_db --genome_dir $(dirname {input.done})  --out_dir $(dirname {output.bac}) --extension .fasta &> {log}
             touch {output.bac}
             touch {output.arc}
            """
 
 # ----------------- visual output gtdb  -----------------
+#TODO
+
+
+# ----------------- Add nucleotide in normalisation  -----------------
+rule nb_nuc:
+    output: temp("profile/{sample}_nb_nuc.tsv")
+    params: lambda x:R1[x.sample]
+    shell: "seqtk fqchk {params}| grep ALL | cut -f2 > {output}"
+
+rule nb_bases:
+    input: expand("profile/{sample}_nb_nuc.tsv",sample=SAMPLES)
+    output: temp("profile/nucleotides.tsv")
+    run: 
+        print(SAMPLES)
+        dict_sample_nb=defaultdict(list)
+        for file in input:
+            sample = basename(file).split("_nb_nuc.tsv")[0]
+            with open(file) as handle:
+                nb = next(handle).rstrip()
+                dict_sample_nb[sample].append(float(nb))
+        dict_sample_nb = {sample:str(sum(list_nb)) for sample,list_nb in dict_sample_nb.items()}
+        sorted_samples = sorted(dict_sample_nb.keys())
+        with open(output[0],"w") as handle:
+            handle.write("Normalisation\t%s\n"%"\t".join(sorted_samples))
+            handle.write("Nb_nucleotides\t%s\n"%"\t".join([dict_sample_nb[sample] for sample in sorted_samples]))
 
 
 
+# ----------------- Add percent reads mapped to assembly -----------------
+rule mapped_reads:
+    input:  bam="{path}/{sample}.sorted.bam"
+    output: readnb="{path}/{sample}_mapped_read.txt"
+    threads: 2
+    shell: """samtools flagstat {input.bam} -@ {threads} | grep 'mapped (' | cut -f1 -d " " > {output.readnb}""" 
 
+rule reads_qty:
+    input:  R1=lambda w:R1[w["sample"]]
+    output: "{path}/{sample}/{sample}_readsnb.txt"
+    shell: "echo $(($(zcat {input.R1} | wc -l)/2)) > {output}"
 
-
-
-
-
-
-
-
+rule get_percent:
+    input: mapped = expand("profile/assembly/{sample}_mapped_read.txt",sample=R1),
+           total = expand("%s/{sample}/{sample}_readsnb.txt"%IN, sample=R1)
+    output:  "profile/mapping_percent.tsv"
+    shell: """
+            for path in {input.mapped}
+            do
+                file=$(basename $path)
+                sample=${{file%_mapped_read.txt}}
+                tot_reads=$(cat {IN}/$sample/$sample"_readsnb.txt")
+                mapped_reads=$(cat $path)
+                echo -e $sample\t$(bc -l <<< "$mapped_reads / $tot_reads")>>{output}
+            done
+           """
 
 
 

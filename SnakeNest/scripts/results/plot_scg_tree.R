@@ -67,7 +67,8 @@ tips = p$data[p$data$isTip,]$label
 has_haplo = grepl("haplo",tips)
 has_eval = grepl("eval",tips)
 has_gtdb = grepl("gtdb",tips)
-is_mag = list("Haplotype" = tips[which(has_haplo)], "Mag" = tips[which(!(has_haplo|has_eval|has_gtdb))])
+has_hifi = grepl("Hifi",tips)
+is_mag = list("Haplotype" = tips[which(has_haplo)], "Mag" = tips[which(!(has_haplo|has_eval|has_gtdb|has_hifi))])
 if (sum(has_eval)!=0){is_mag[["Evaluation"]]=tips[has_eval]}
 if (sum(has_gtdb)!=0){is_mag[["GTDB Reference"]]=tips[has_gtdb]}
 
@@ -87,7 +88,8 @@ data = t(t(data)[,label_order])[,rev(label_order)]
 r = gheatmap2(p, data,offset=offset,width=2)+ scale_x_ggtree()+ylim(0.5,max(p$data$y)+0.5) + labs(fill="Percent substitution")
 
 # title please
-mag = str_split(newick, "/")[[1]][2]
+split_path = str_split(newick, "/")[[1]]
+mag = split_path[length(split_path)-1]
 r = r + ggtitle(mag)
 
 # -------- just draw the fig ------------
